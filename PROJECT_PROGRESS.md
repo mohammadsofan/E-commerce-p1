@@ -244,3 +244,18 @@ dotnet ef database update --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Ap
 Notes:
 - The CI workflow assumes a solution and the SDK; create the solution locally or update the workflow accordingly.
 - If you prefer another DB provider (Postgres, Sqlite), change the `UseSqlServer` call in `DependencyInjection.AddInfrastructure` and add the corresponding EF provider package.
+
+## Recent Work (delta)
+
+- Added a lightweight command pipeline with behaviors (`LoggingBehavior`, `ValidationBehavior`) and `CommandDispatcher`.
+- Implemented `Checkout` and `ReserveInventory` commands and handlers; added API controller `CheckoutController` and minimal `Program.cs` to run the API.
+- Added validation abstraction and `CheckoutCommandValidator` hooked into the pipeline.
+- Implemented a stub payment gateway in `src/Ecommerce.Infrastructure/Payments/PaymentGateway.cs` and the `IPaymentService` abstraction in the Application layer.
+
+## Next recommended actions
+
+- Implement idempotency key persistence and checks (`IdempotencyKey` entity exists). Ensure checkout/payment flow records idempotency keys and rejects duplicates.
+- Replace the payment gateway stub with an adapter for a real provider (Stripe/PayPal) and add integration tests.
+- Create a solution file and add NuGet package dependencies (EF Core provider, EF.Design, MediatR or continue with custom dispatcher, FluentValidation, AutoMapper, Serilog) then update CI to build solution and run tests.
+- Implement authentication/Identity endpoints and secure the API.
+- Add migrations, seed data, and expand EF configurations for all Domain entities.
