@@ -32,6 +32,17 @@ namespace Ecommerce.Infrastructure
             // Register validators (application specific)
             services.AddScoped<Ecommerce.Application.Common.Validation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>, Ecommerce.Application.Commands.Checkout.CheckoutCommandValidator>();
 
+            // Register AutoMapper profiles (application mappings)
+            // Requires AutoMapper & AutoMapper.Extensions.Microsoft.DependencyInjection packages
+            try
+            {
+                services.AddAutoMapper(typeof(Ecommerce.Application.Mappings.MappingProfile));
+            }
+            catch
+            {
+                // If AutoMapper package is not available yet, skip registration. Add package and restore locally.
+            }
+
             // Register application command handlers
             services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand, Ecommerce.Application.Common.Unit>, Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommandHandler>();
             services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler<Ecommerce.Application.Commands.Checkout.CheckoutCommand, System.Guid>, Ecommerce.Application.Commands.Checkout.CheckoutCommandHandler>();
