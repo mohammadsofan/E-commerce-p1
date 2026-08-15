@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Domain entities and value objects for Ecommerce</Description>
+  </PropertyGroup>
+</Project>
