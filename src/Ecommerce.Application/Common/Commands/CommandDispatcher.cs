@@ -25,7 +25,19 @@ namespace Ecommerce.Application.Common.Commands
             var handler = _provider.GetService<ICommandHandler<TCommand, TResult>>();
             if (handler == null) throw new InvalidOperationException($"No handler registered for {typeof(TCommand).FullName}");
 
-            var result = await handler.Handle(command, cancellationToken);
+            // resolve pipeline behaviors
+            var behaviors = (IEnumerable<ICommandBehavior<TCommand, TResult>>)_provider.GetService(typeof(IEnumerable<ICommandBehavior<TCommand, TResult>>))
+                            ?? Array.Empty<ICommandBehavior<TCommand, TResult>>();
+
+            // build pipeline
+            Func<Task<TResult>> handlerDelegate = () => handler.Handle(command, cancellationToken);
+
+            Func<Task<TResult>> pipeline = behaviors.Reverse().Aggregate(handlerDelegate, (next, behavior) =>
+            {
+                return () => behavior.Handle(command, next, cancellationToken);
+            });
+
+            var result = await pipeline();
 
             _logger.LogInformation("Command {CommandType} handled", typeof(TCommand).FullName);
             return result;

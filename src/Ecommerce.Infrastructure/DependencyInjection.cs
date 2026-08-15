@@ -24,6 +24,11 @@ namespace Ecommerce.Infrastructure
 
             // TODO: register repositories, identity services, event dispatchers, etc.
 
+            // Register application command dispatcher and pipeline behaviors
+            services.AddScoped<Ecommerce.Application.Common.Commands.CommandDispatcher>();
+            services.AddScoped(typeof(Ecommerce.Application.Common.Commands.ICommandBehavior<,>), typeof(Ecommerce.Application.Common.Commands.LoggingBehavior<,>));
+            services.AddScoped(typeof(Ecommerce.Application.Common.Commands.ICommandBehavior<,>), typeof(Ecommerce.Application.Common.Commands.ValidationBehavior<,>));
+
             return services;
         }
     }
