@@ -32,6 +32,25 @@ namespace Ecommerce.Infrastructure
             // Register validators (application specific)
             services.AddScoped<Ecommerce.Application.Common.Validation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>, Ecommerce.Application.Commands.Checkout.CheckoutCommandValidator>();
 
+            // Attempt to register FluentValidation validators and adapter if FluentValidation is available
+            try
+            {
+                // Register Fluent validators
+                services.AddTransient<FluentValidation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>, Ecommerce.Application.Validators.CheckoutCommandFluentValidator>();
+                services.AddTransient<FluentValidation.IValidator<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>, Ecommerce.Application.Validators.ReserveInventoryFluentValidator>();
+
+                // Register adapter to expose Fluent validators as the application's IValidator<T>
+                services.AddTransient<Ecommerce.Application.Common.Validation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>>(sp =>
+                    new Ecommerce.Application.Common.Validation.FluentValidationAdapter<Ecommerce.Application.Commands.Checkout.CheckoutCommand>(sp.GetRequiredService<FluentValidation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>>()));
+
+                services.AddTransient<Ecommerce.Application.Common.Validation.IValidator<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>>(sp =>
+                    new Ecommerce.Application.Common.Validation.FluentValidationAdapter<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>(sp.GetRequiredService<FluentValidation.IValidator<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>>()));
+            }
+            catch
+            {
+                // FluentValidation package not installed — DI of Fluent validators skipped.
+            }
+
             // Register AutoMapper profiles (application mappings)
             // Requires AutoMapper & AutoMapper.Extensions.Microsoft.DependencyInjection packages
             try
