@@ -259,3 +259,31 @@ Notes:
 - Create a solution file and add NuGet package dependencies (EF Core provider, EF.Design, MediatR or continue with custom dispatcher, FluentValidation, AutoMapper, Serilog) then update CI to build solution and run tests.
 - Implement authentication/Identity endpoints and secure the API.
 - Add migrations, seed data, and expand EF configurations for all Domain entities.
+
+### 2026-08-16 — Idempotency implemented
+
+- Implemented idempotency persistence and checks:
+  - `src/Ecommerce.Domain/Entities/IdempotencyKey.cs` (entity persisted by EF)
+  - `src/Ecommerce.Application/Interfaces/IIdempotencyService.cs` (application contract)
+  - `src/Ecommerce.Infrastructure/Services/IdempotencyService.cs` (EF-backed implementation)
+  - `src/Ecommerce.Application/Commands/Checkout/CheckoutCommand.cs` now accepts `IdempotencyKey`.
+  - `CheckoutCommandHandler` registers idempotency attempts and stores the response (order id) to ensure retries return the same result.
+  - Added `tests/Ecommerce.Application.Tests/CheckoutIdempotencyTests.cs` to validate idempotent checkout behavior (InMemory DB).
+
+Local steps to verify (run locally):
+
+```bash
+# build and restore (from repo root)
+dotnet restore
+dotnet build
+
+# run tests
+dotnet test --no-build
+
+# create migrations and apply (if using SQL Server provider)
+cd src/Ecommerce.Infrastructure
+dotnet ef migrations add InitialCreate --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
+dotnet ef database update --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
+```
+
+Note: I cannot run the `dotnet` tool here (no SDK). Please run the above locally; tell me if you want a `setup.ps1` or `setup.sh` script added to automate these steps on your machine.
