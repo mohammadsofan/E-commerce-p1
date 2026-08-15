@@ -210,3 +210,37 @@ If you want, I will now (automatically):
 - Continue with Phase 2 and implement domain behaviors for critical entities (e.g., `InventoryItem` concurrency and reservation logic)
 
 I'll proceed with the next step you choose. Update: saving and committing this `PROJECT_PROGRESS.md` now.
+
+## Local setup / handy commands
+
+To finish wiring and run/compile locally you will need the .NET SDK installed. Useful commands to run from the repository root:
+
+```powershell
+dotnet new sln -n Ecommerce
+dotnet sln add src/Ecommerce.Domain/Ecommerce.Domain.csproj
+dotnet sln add src/Ecommerce.Application/Ecommerce.Application.csproj
+dotnet sln add src/Ecommerce.Infrastructure/Ecommerce.Infrastructure.csproj
+dotnet sln add src/Ecommerce.Api/Ecommerce.Api.csproj
+dotnet sln add tests/Ecommerce.Domain.Tests/Ecommerce.Domain.Tests.csproj
+dotnet sln add tests/Ecommerce.Application.Tests/Ecommerce.Application.Tests.csproj
+dotnet sln add tests/Ecommerce.IntegrationTests/Ecommerce.IntegrationTests.csproj
+
+# Add EF provider (example: SQL Server)
+dotnet add src/Ecommerce.Infrastructure/Ecommerce.Infrastructure.csproj package Microsoft.EntityFrameworkCore.SqlServer
+
+# Add EF Tools for migrations
+dotnet add src/Ecommerce.Infrastructure/Ecommerce.Infrastructure.csproj package Microsoft.EntityFrameworkCore.Design
+
+# Restore and build
+dotnet restore
+dotnet build
+
+# Create initial migration (run from Infrastructure project folder)
+cd src/Ecommerce.Infrastructure
+dotnet ef migrations add InitialCreate --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
+dotnet ef database update --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
+```
+
+Notes:
+- The CI workflow assumes a solution and the SDK; create the solution locally or update the workflow accordingly.
+- If you prefer another DB provider (Postgres, Sqlite), change the `UseSqlServer` call in `DependencyInjection.AddInfrastructure` and add the corresponding EF provider package.
