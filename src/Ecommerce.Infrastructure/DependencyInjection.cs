@@ -73,6 +73,9 @@ namespace Ecommerce.Infrastructure
             // Idempotency service
             services.AddScoped<Ecommerce.Application.Interfaces.IIdempotencyService, Ecommerce.Infrastructure.Services.IdempotencyService>();
 
+            // Token service (JWT)
+            services.AddScoped<Ecommerce.Application.Interfaces.ITokenService, Ecommerce.Infrastructure.Auth.JwtTokenService>();
+
             return services;
         }
     }
