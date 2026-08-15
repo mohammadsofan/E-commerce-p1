@@ -6,7 +6,7 @@ using Ecommerce.Domain.Entities;
 
 namespace Ecommerce.Application.Commands.ReserveInventory
 {
-    public class ReserveInventoryCommandHandler
+    public class ReserveInventoryCommandHandler : Ecommerce.Application.Common.Commands.ICommandHandler<ReserveInventoryCommand, Ecommerce.Application.Common.Unit>
     {
         private readonly IApplicationDbContext _db;
 
@@ -14,8 +14,7 @@ namespace Ecommerce.Application.Commands.ReserveInventory
         {
             _db = db;
         }
-
-        public async Task Handle(ReserveInventoryCommand command, CancellationToken cancellationToken = default)
+        public async Task<Ecommerce.Application.Common.Unit> Handle(ReserveInventoryCommand command, CancellationToken cancellationToken = default)
         {
             if (command.Quantity <= 0) throw new InventoryException("Quantity must be positive");
 
@@ -25,6 +24,7 @@ namespace Ecommerce.Application.Commands.ReserveInventory
             item.Reserve(command.Quantity);
 
             await _db.SaveChangesAsync(cancellationToken);
+            return new Ecommerce.Application.Common.Unit();
         }
     }
 }

@@ -8,7 +8,7 @@ using Ecommerce.Domain.Exceptions;
 
 namespace Ecommerce.Application.Commands.Checkout
 {
-    public class CheckoutCommandHandler
+    public class CheckoutCommandHandler : Ecommerce.Application.Common.Commands.ICommandHandler<CheckoutCommand, System.Guid>
     {
         private readonly IApplicationDbContext _db;
 
@@ -17,7 +17,7 @@ namespace Ecommerce.Application.Commands.Checkout
             _db = db;
         }
 
-        public async Task<Guid> Handle(CheckoutCommand command, CancellationToken cancellationToken = default)
+        public async Task<System.Guid> Handle(CheckoutCommand command, CancellationToken cancellationToken = default)
         {
             if (command.Items == null || !command.Items.Any()) throw new DomainException("No items to checkout");
 
