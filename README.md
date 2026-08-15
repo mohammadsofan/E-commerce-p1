@@ -1,22 +1,33 @@
-# p1 — Clean Architecture ASP.NET API scaffold
+ # E-Commerce Backend — Clean Architecture
 
-This repository contains the folder scaffold for an ASP.NET Core Web API using Clean Architecture.
+ This repository scaffolds a production-ready e-commerce backend using Clean Architecture.
 
-Folder layout (empty for now):
+ Implementation Plan (phases):
 
-- src/
-  - Api/           -> Web API project (presentation layer)
-  - Application/   -> Use cases, DTOs, interfaces
-  - Domain/        -> Entities, value objects, domain services
-  - Infrastructure/-> DB, external services, EF Core, identity
-  - SharedKernel/  -> Cross-cutting/shared domain primitives
-- tests/           -> Unit and integration tests
-- docs/            -> Architecture notes and diagrams
+ 1. Architecture (done)
+ 2. Domain: entities, value objects, domain events, exceptions (in progress)
+ 3. Application: interfaces, DTOs, CQRS features, validators
+ 4. Infrastructure: EF Core, Identity, repositories, services, migrations
+ 5. API: controllers, auth, middleware, swagger
+ 6. Catalog, Customer, Inventory, Checkout, Payments, Post-order, Admin
 
-Next steps:
+ Current status:
+ - Architecture docs added in `docs/architecture/`.
+ - Solution and project csproj scaffolding added in `src/` and `tests/` (manual csproj files; run `dotnet new sln` locally if needed).
+ - CI workflow added: `.github/workflows/ci.yml`.
+ - Domain entities skeletons added (Phase 2 started).
 
-1. Run `dotnet new sln` and create projects inside `src/` with `dotnet new webapi`, `dotnet new classlib`, etc.
-2. Add projects to the solution via `dotnet sln add`.
-3. Create initial `csproj` files and minimal code when ready.
+ Next steps:
+ - Continue implementing Domain entities and value objects.
+ - Implement Application interfaces and DTOs.
+ - Implement Infrastructure DbContext and EF configurations.
 
-If you want, I can now create the solution and empty project files (`.csproj`) for each layer — tell me whether to proceed.# E-commerce-p1
+ To run locally (once .NET SDK is installed):
+
+ ```powershell
+ dotnet new sln -n Ecommerce
+ dotnet sln add src/Ecommerce.Api/Ecommerce.Api.csproj src/Ecommerce.Application/Ecommerce.Application.csproj src/Ecommerce.Domain/Ecommerce.Domain.csproj src/Ecommerce.Infrastructure/Ecommerce.Infrastructure.csproj tests/Ecommerce.Domain.Tests/Ecommerce.Domain.Tests.csproj tests/Ecommerce.Application.Tests/Ecommerce.Application.Tests.csproj tests/Ecommerce.IntegrationTests/Ecommerce.IntegrationTests.csproj
+
+ dotnet restore
+ ```
+
