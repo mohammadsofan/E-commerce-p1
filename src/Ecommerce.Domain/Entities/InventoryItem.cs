@@ -1,4 +1,5 @@
 using System;
+using Ecommerce.Domain.Exceptions;
 
 namespace Ecommerce.Domain.Entities
 {
@@ -8,12 +9,61 @@ namespace Ecommerce.Domain.Entities
         public Guid ProductId { get; set; }
         public Guid ProductVariantId { get; set; }
         public Guid WarehouseId { get; set; }
-        public int QuantityOnHand { get; set; }
-        public int QuantityReserved { get; set; }
+        public int QuantityOnHand { get; private set; }
+        public int QuantityReserved { get; private set; }
         public int ReorderLevel { get; set; }
         public int ReorderQuantity { get; set; }
         public bool AllowBackorder { get; set; }
-        public DateTimeOffset UpdatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; private set; }
         public byte[] RowVersion { get; set; }
+
+        public int Available => QuantityOnHand - QuantityReserved;
+
+        public void AddStock(int quantity)
+        {
+            if (quantity <= 0) throw new InventoryException("Quantity to add must be positive");
+            QuantityOnHand += quantity;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        public void Reserve(int quantity)
+        {
+            if (quantity <= 0) throw new InventoryException("Quantity to reserve must be positive");
+
+            if (!AllowBackorder && Available < quantity)
+            {
+                throw new InventoryException("Insufficient stock to reserve the requested quantity");
+            }
+
+            QuantityReserved += quantity;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        public void Release(int quantity)
+        {
+            if (quantity <= 0) throw new InventoryException("Quantity to release must be positive");
+
+            if (quantity > QuantityReserved)
+            {
+                throw new InventoryException("Cannot release more than reserved quantity");
+            }
+
+            QuantityReserved -= quantity;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        public void RemoveStock(int quantity)
+        {
+            if (quantity <= 0) throw new InventoryException("Quantity to remove must be positive");
+
+            if (!AllowBackorder && QuantityOnHand - quantity < 0)
+            {
+                throw new InventoryException("Insufficient stock to remove the requested quantity");
+            }
+
+            QuantityOnHand -= quantity;
+            if (QuantityOnHand < 0) QuantityOnHand = 0;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
     }
 }
