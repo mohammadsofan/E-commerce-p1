@@ -17,6 +17,11 @@ dotnet sln add tests/Ecommerce.IntegrationTests/Ecommerce.IntegrationTests.cspro
 Write-Host "==> Adding EF Core packages to Infrastructure project" -ForegroundColor Cyan
 dotnet add $InfrastructureProject package Microsoft.EntityFrameworkCore.SqlServer
 dotnet add $InfrastructureProject package Microsoft.EntityFrameworkCore.Design
+Write-Host "==> Adding AutoMapper and FluentValidation packages" -ForegroundColor Cyan
+dotnet add src/Ecommerce.Application/Ecommerce.Application.csproj package AutoMapper
+dotnet add src/Ecommerce.Application/Ecommerce.Application.csproj package AutoMapper.Extensions.Microsoft.DependencyInjection
+dotnet add src/Ecommerce.Api/Ecommerce.Api.csproj package FluentValidation.AspNetCore
+dotnet add src/Ecommerce.Application/Ecommerce.Application.csproj package FluentValidation
 
 Write-Host "==> Restoring and building solution" -ForegroundColor Cyan
 dotnet restore

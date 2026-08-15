@@ -19,6 +19,12 @@ echo "==> Adding EF Core packages to Infrastructure project"
 dotnet add "$INFRA_PROJECT" package Microsoft.EntityFrameworkCore.SqlServer
 dotnet add "$INFRA_PROJECT" package Microsoft.EntityFrameworkCore.Design
 
+echo "==> Adding AutoMapper and FluentValidation packages"
+dotnet add src/Ecommerce.Application/Ecommerce.Application.csproj package AutoMapper
+dotnet add src/Ecommerce.Application/Ecommerce.Application.csproj package AutoMapper.Extensions.Microsoft.DependencyInjection
+dotnet add src/Ecommerce.Api/Ecommerce.Api.csproj package FluentValidation.AspNetCore
+dotnet add src/Ecommerce.Application/Ecommerce.Application.csproj package FluentValidation
+
 echo "==> Restoring and building"
 dotnet restore
 dotnet build

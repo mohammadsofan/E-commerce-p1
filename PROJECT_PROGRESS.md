@@ -287,3 +287,11 @@ dotnet ef database update --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Ap
 ```
 
 Note: I cannot run the `dotnet` tool here (no SDK). Please run the above locally; tell me if you want a `setup.ps1` or `setup.sh` script added to automate these steps on your machine.
+
+Added package installs in setup scripts:
+
+- `scripts/setup.ps1` and `scripts/setup.sh` now also add the following packages locally during setup:
+  - `AutoMapper` and `AutoMapper.Extensions.Microsoft.DependencyInjection` (application mapping)
+  - `FluentValidation` and `FluentValidation.AspNetCore` (validation)
+
+After running the setup scripts locally, the solution will have the mapping and validation packages installed and you can then run `dotnet build` and `dotnet test`.
