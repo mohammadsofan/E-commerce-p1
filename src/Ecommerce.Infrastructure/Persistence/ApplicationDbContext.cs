@@ -19,6 +19,8 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<ProductVariant> ProductVariants { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<InventoryItem> InventoryItems { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
