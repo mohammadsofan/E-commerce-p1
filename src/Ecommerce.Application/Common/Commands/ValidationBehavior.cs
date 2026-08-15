@@ -16,12 +16,23 @@ namespace Ecommerce.Application.Common.Commands
 
         public async Task<TResult> Handle(TCommand command, Func<Task<TResult>> next, CancellationToken cancellationToken = default)
         {
-            // If FluentValidation validators are registered, they can be resolved and executed here.
-            // This placeholder ensures the pipeline has a validation hook.
+            // Resolve any registered validators for this command
+            var validators = (System.Collections.Generic.IEnumerable<Ecommerce.Application.Common.Validation.IValidator<TCommand>>)_provider.GetService(typeof(System.Collections.Generic.IEnumerable<Ecommerce.Application.Common.Validation.IValidator<TCommand>>));
 
-            // Example (if using FluentValidation):
-            // var validators = _provider.GetServices<IValidator<TCommand>>();
-            // foreach(var v in validators) { var result = await v.ValidateAsync(command); if (!result.IsValid) throw new ValidationException(result.Errors); }
+            if (validators != null)
+            {
+                var errors = new System.Collections.Generic.List<string>();
+                foreach (var v in validators)
+                {
+                    var res = await v.ValidateAsync(command);
+                    if (!res.IsValid) errors.AddRange(res.Errors);
+                }
+
+                if (errors.Count > 0)
+                {
+                    throw new Ecommerce.Domain.Exceptions.DomainException(string.Join("; ", errors));
+                }
+            }
 
             return await next();
         }
