@@ -1,0 +1,27 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.db
+*.sqlite
+*.log
+*.vspscc
+*.vssscc
+
+# Rider
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# NuGet
+*.nupkg
+packages/
+
+# Ignore generated files
+**/bin/
+**/obj/
+
+# User secrets
+secrets.json
