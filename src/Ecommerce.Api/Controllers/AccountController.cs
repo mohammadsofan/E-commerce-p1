@@ -109,6 +109,40 @@ namespace Ecommerce.Api.Controllers
             return Ok(new { message = "Verification email sent.", emailToken });
         }
 
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest("Email is required.");
+
+            var user = await _userManager.FindByEmailAsync(req.Email);
+            if (user == null) return Ok(new { message = "If the email exists, a password reset link has been sent." });
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            
+            // In production, send email with token via email service
+            // For now, return token in response (development only)
+            return Ok(new { message = "Password reset email sent.", resetToken = token });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Token) || string.IsNullOrWhiteSpace(req.NewPassword))
+                return BadRequest("Email, token, and new password are required.");
+
+            var user = await _userManager.FindByEmailAsync(req.Email);
+            if (user == null) return BadRequest("Invalid request.");
+
+            var result = await _userManager.ResetPasswordAsync(user, req.Token, req.NewPassword);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            // Revoke all refresh tokens for security
+            await _refreshTokenService.RevokeAllAsync(user.Id);
+
+            return Ok(new { message = "Password reset successfully." });
+        }
+
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest req)
         {
@@ -196,5 +230,17 @@ namespace Ecommerce.Api.Controllers
     public class ResendVerificationRequest
     {
         public required string Email { get; set; }
+    }
+
+    public class ForgotPasswordRequest
+    {
+        public required string Email { get; set; }
+    }
+
+    public class ResetPasswordRequest
+    {
+        public required string Email { get; set; }
+        public required string Token { get; set; }
+        public required string NewPassword { get; set; }
     }
 }
