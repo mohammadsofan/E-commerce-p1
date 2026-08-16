@@ -46,7 +46,12 @@ namespace Ecommerce.Api.Controllers
             var res = await _userManager.CreateAsync(user, req.Password);
             if (!res.Succeeded) return BadRequest(res.Errors);
 
-            return Ok(await IssueTokensAsync(user));
+            // Generate email confirmation token
+            var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            
+            // In production, send email with token via email service
+            // For now, return token in response (development only)
+            return Ok(new { message = "Registration successful. Please verify your email.", emailToken });
         }
 
         [HttpPost("login")]
@@ -58,7 +63,50 @@ namespace Ecommerce.Api.Controllers
             var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
             if (!res.Succeeded) return Unauthorized();
 
+            if (!user.IsEmailVerified)
+            {
+                // Don't issue tokens for unverified emails in production
+                // For development, we'll allow it but warn
+                return BadRequest("Email not verified. Please verify your email first.");
+            }
+
             return Ok(await IssueTokensAsync(user));
+        }
+
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Token) || string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest("Token and email are required.");
+
+            var user = await _userManager.FindByEmailAsync(req.Email);
+            if (user == null) return BadRequest("Invalid request.");
+
+            var result = await _userManager.ConfirmEmailAsync(user, req.Token);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            user.IsEmailVerified = true;
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new { message = "Email verified successfully." });
+        }
+
+        [HttpPost("resend-verification")]
+        public async Task<IActionResult> ResendVerificationEmail([FromBody] ResendVerificationRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest("Email is required.");
+
+            var user = await _userManager.FindByEmailAsync(req.Email);
+            if (user == null) return Ok(new { message = "If the email exists, a verification email has been sent." });
+
+            if (user.IsEmailVerified) return BadRequest("Email is already verified.");
+
+            var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            
+            // In production, send email with token via email service
+            // For now, return token in response (development only)
+            return Ok(new { message = "Verification email sent.", emailToken });
         }
 
         [HttpPost("refresh")]
@@ -137,5 +185,16 @@ namespace Ecommerce.Api.Controllers
     public class RefreshRequest
     {
         public required string RefreshToken { get; set; }
+    }
+
+    public class VerifyEmailRequest
+    {
+        public required string Email { get; set; }
+        public required string Token { get; set; }
+    }
+
+    public class ResendVerificationRequest
+    {
+        public required string Email { get; set; }
     }
 }
