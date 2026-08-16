@@ -12,14 +12,14 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.Value).IsRequired().HasMaxLength(200);
 
-            builder.HasOne<ProductVariant>()
-                .WithMany()
-                .HasForeignKey(x => x.ProductVariantId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            builder.HasOne<ProductAttribute>()
+            builder.HasOne(x => x.ProductAttribute)
                 .WithMany()
                 .HasForeignKey(x => x.ProductAttributeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne<ProductVariant>()
+                .WithMany(v => v.VariantAttributes)
+                .HasForeignKey(x => x.ProductVariantId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasIndex(x => new { x.ProductVariantId, x.ProductAttributeId }).IsUnique();

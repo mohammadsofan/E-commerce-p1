@@ -130,6 +130,16 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateProductAttributeCommand, AdminProductAttributeDto>, UpdateProductAttributeCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteProductAttributeCommand, Unit>, DeleteProductAttributeCommandHandler>();
 
+            // Admin coupon command handlers
+            services.AddScoped<ICommandHandler<CreateCouponCommand, AdminCouponDto>, CreateCouponCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateCouponCommand, AdminCouponDto>, UpdateCouponCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteCouponCommand, Unit>, DeleteCouponCommandHandler>();
+
+            // Admin promotion command handlers
+            services.AddScoped<ICommandHandler<CreatePromotionCommand, AdminPromotionDto>, CreatePromotionCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdatePromotionCommand, AdminPromotionDto>, UpdatePromotionCommandHandler>();
+            services.AddScoped<ICommandHandler<DeletePromotionCommand, Unit>, DeletePromotionCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -163,6 +173,19 @@ namespace Ecommerce.Infrastructure
             // Admin product attribute query handlers
             services.AddScoped<IQueryHandler<GetAdminProductAttributesQuery, PagedResult<AdminProductAttributeDto>>, GetAdminProductAttributesQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminProductAttributeByIdQuery, AdminProductAttributeDto>, GetAdminProductAttributeByIdQueryHandler>();
+
+            // Admin coupon query handlers
+            services.AddScoped<IQueryHandler<GetAdminCouponsQuery, PagedResult<AdminCouponDto>>, GetAdminCouponsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminCouponByIdQuery, AdminCouponDto>, GetAdminCouponByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminCouponByCodeQuery, AdminCouponDto>, GetAdminCouponByCodeQueryHandler>();
+
+            // Admin promotion query handlers
+            services.AddScoped<IQueryHandler<GetAdminPromotionsQuery, PagedResult<AdminPromotionDto>>, GetAdminPromotionsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminPromotionByIdQuery, AdminPromotionDto>, GetAdminPromotionByIdQueryHandler>();
+
+            // Discount calculation query handlers
+            services.AddScoped<IQueryHandler<ValidateCouponQuery, ValidateCouponResponse>, ValidateCouponQueryHandler>();
+            services.AddScoped<IQueryHandler<CalculateDiscountsQuery, DiscountCalculationResult>, CalculateDiscountsQueryHandler>();
 
             // Admin dashboard query handler
             services.AddScoped<IQueryHandler<GetAdminDashboardQuery, AdminDashboardDto>, GetAdminDashboardQueryHandler>();

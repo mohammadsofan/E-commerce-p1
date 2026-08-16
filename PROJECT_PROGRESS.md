@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: All planned features implemented and tested
-- Last Completed: Serilog, Health Checks, Prometheus Metrics (Observability)
-- Next Task: Ready for production deployment / feature extensions
+- Current Task: Implementing Discount Engine (Coupons, Promotions)
+- Last Completed: Admin Product Variant/Image/Attribute Management
+- Next Task: Discount Engine (Coupons, Promotions, Stacking Rules)
 - Overall Progress: ~95% (Core features complete, production-ready)
 
 ## Previously Completed Work
@@ -149,9 +149,9 @@ This section documents work that already exists in the repository as of 2026-08-
   - Health Checks: `/health` endpoint with EF Core DB check
   - Prometheus Metrics: `/metrics` endpoint, Kestrel metric server (port 9090), HttpMetrics middleware
 
-- Tests (51 tests passing)
+- Tests (66 tests passing)
   - Domain Tests (24): Order, Cart, InventoryItem behaviors
-  - Application Tests (19): Command/Query handlers, Dispatcher, Idempotency, Cart, Order lifecycle
+  - Application Tests (34): Command/Query handlers, Dispatcher, Idempotency, Cart, Order lifecycle, Admin Product/Inventory/Dashboard
   - Integration Tests (8): Inventory reservation, Refresh token lifecycle, Checkout idempotency, Concurrency (race conditions, idempotency, backorder)
 
 - Other
@@ -177,8 +177,9 @@ This section documents work that already exists in the repository as of 2026-08-
 - ✅ Role-based authorization policies
 - ✅ API Versioning with Swagger/OpenAPI
 - ✅ Serilog, Health Checks, Prometheus Metrics
-- ✅ 51 Tests (24 Domain + 19 Application + 8 Integration)
+- ✅ 66 Tests (24 Domain + 34 Application + 8 Integration)
 - ✅ CI/CD pipeline with GitHub Actions
+- ✅ Admin: Product Variants, Images, Attributes, SEO Management
 
 ## In Progress
 
@@ -281,6 +282,19 @@ This section documents work that already exists in the repository as of 2026-08-
   - ReserveInventory concurrent reservations respect stock limit
   - Backorder allowance for over-reservation
 
+### 2026-08-16 — Admin Product Variant/Image/Attribute Management
+- Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
+- Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
+- Added migration `AddProductImageAttributeEntities` with 3 new tables
+- Implemented DTOs: AdminProductVariantDto, AdminProductImageDto, AdminProductAttributeDto, AdminProductVariantAttributeDto
+- Built CQRS commands: Create/Update/Delete ProductVariant, Create/Update/Delete ProductAttribute
+- Built CQRS queries: Get variants, images, attributes with pagination and filtering
+- Created command/query handlers with full CRUD operations including image/attribute management
+- Added AutoMapper mappings for new DTOs
+- Registered handlers in DependencyInjection
+- Added Unit.Value static property and GetEntry method to IApplicationDbContext for optimistic concurrency
+- All 66 tests passing (24 Domain + 34 Application + 8 Integration)
+
 ### 2026-08-16 — Observability (Serilog, Health Checks, Prometheus)
 - Added Serilog.AspNetCore with console + rolling file output
 - Added Serilog request logging middleware
@@ -357,4 +371,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-16 — All core features complete, 51 tests passing, ready for production deployment.*
+*Last updated: 2026-08-16 — Admin Product Variant/Image/Attribute Management complete, 66 tests passing, ready for production deployment.*

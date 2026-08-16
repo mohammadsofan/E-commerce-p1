@@ -21,6 +21,10 @@ namespace Ecommerce.Application.Interfaces
         DbSet<RefreshToken> RefreshTokens { get; }
         DbSet<Cart> Carts { get; }
         DbSet<CartItem> CartItems { get; }
+        DbSet<Coupon> Coupons { get; }
+        DbSet<CouponUsage> CouponUsages { get; }
+        DbSet<Promotion> Promotions { get; }
+        DbSet<PromotionUsage> PromotionUsages { get; }
         IQueryable<IApplicationUser> Users { get; }
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;

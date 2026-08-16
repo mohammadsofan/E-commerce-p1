@@ -35,6 +35,10 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<Coupon> Coupons { get; set; }
+        public DbSet<CouponUsage> CouponUsages { get; set; }
+        public DbSet<Promotion> Promotions { get; set; }
+        public DbSet<PromotionUsage> PromotionUsages { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 

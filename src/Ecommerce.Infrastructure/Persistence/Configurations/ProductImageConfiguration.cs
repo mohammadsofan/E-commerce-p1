@@ -21,7 +21,7 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne<ProductVariant>()
-                .WithMany()
+                .WithMany(v => v.Images)
                 .HasForeignKey(x => x.ProductVariantId)
                 .OnDelete(DeleteBehavior.SetNull);
 
