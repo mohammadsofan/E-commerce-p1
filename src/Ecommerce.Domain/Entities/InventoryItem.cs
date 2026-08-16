@@ -19,6 +19,11 @@ namespace Ecommerce.Domain.Entities
 
         public int Available => QuantityOnHand - QuantityReserved;
 
+        // Navigation properties
+        public Product? Product { get; set; }
+        public ProductVariant? ProductVariant { get; set; }
+        public Warehouse? Warehouse { get; set; }
+
         public void AddStock(int quantity)
         {
             if (quantity <= 0) throw new InventoryException("Quantity to add must be positive");
@@ -63,6 +68,16 @@ namespace Ecommerce.Domain.Entities
 
             QuantityOnHand -= quantity;
             if (QuantityOnHand < 0) QuantityOnHand = 0;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        public void SetReorderPoint(int reorderLevel, int reorderQuantity)
+        {
+            if (reorderLevel < 0) throw new InventoryException("Reorder level cannot be negative");
+            if (reorderQuantity < 0) throw new InventoryException("Reorder quantity cannot be negative");
+
+            ReorderLevel = reorderLevel;
+            ReorderQuantity = reorderQuantity;
             UpdatedAt = DateTimeOffset.UtcNow;
         }
     }

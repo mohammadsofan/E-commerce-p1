@@ -32,6 +32,12 @@ namespace Ecommerce.Application.Mappings
             CreateMap<ProductVariant, AdminProductVariantDto>();
             CreateMap<ProductImage, AdminProductImageDto>();
 
+            CreateMap<Ecommerce.Domain.Entities.InventoryItem, AdminInventoryDto>()
+                .ForMember(d => d.ProductName, opt => opt.MapFrom(s => s.Product != null ? s.Product.Name : string.Empty))
+                .ForMember(d => d.VariantName, opt => opt.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Name : string.Empty))
+                .ForMember(d => d.Sku, opt => opt.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Sku : (s.Product != null ? s.Product.Sku : string.Empty)))
+                .ForMember(d => d.WarehouseName, opt => opt.MapFrom(s => s.Warehouse != null ? s.Warehouse.Name : string.Empty));
+
             // Cart mappings rely on convention (incl. enum->string for Status
             // and computed getters TotalAmount / LineTotal).
             CreateMap<Cart, CartDto>();

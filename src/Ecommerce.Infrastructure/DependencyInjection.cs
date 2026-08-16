@@ -14,6 +14,7 @@ using Ecommerce.Application.Queries.Products;
 using Ecommerce.Application.Queries.Orders;
 using Ecommerce.Application.Queries.Carts;
 using Ecommerce.Application.Queries.Admin;
+using Ecommerce.Infrastructure.Services;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
@@ -114,6 +115,11 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.ChangePasswordCommand, Unit>, ChangePasswordCommandHandler>();
             services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.SetUserRolesCommand, Unit>, SetUserRolesCommandHandler>();
 
+            // Admin inventory command handlers
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.AdjustInventoryCommand, Unit>, AdjustInventoryCommandHandler>();
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.TransferInventoryCommand, Unit>, TransferInventoryCommandHandler>();
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.SetReorderPointCommand, Unit>, SetReorderPointCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -134,6 +140,10 @@ namespace Ecommerce.Infrastructure
             // Admin user query handlers
             services.AddScoped<IQueryHandler<GetAdminUsersQuery, PagedResult<AdminUserDto>>, GetAdminUsersQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminUserByIdQuery, AdminUserDto>, GetAdminUserByIdQueryHandler>();
+
+            // Admin inventory query handlers
+            services.AddScoped<IQueryHandler<GetAdminInventoryQuery, PagedResult<AdminInventoryDto>>, GetAdminInventoryQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminInventoryByIdQuery, AdminInventoryDto>, GetAdminInventoryByIdQueryHandler>();
 
             // Payment gateway - use Stripe provider (configured via appsettings.json)
             services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
