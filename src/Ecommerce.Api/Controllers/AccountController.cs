@@ -33,7 +33,12 @@ namespace Ecommerce.Api.Controllers
 
             var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email, UserName = user.UserName };
             var token = await _tokenService.CreateTokenAsync(dto);
-            return Ok(new { token });
+
+            // create refresh token
+            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
+            var (refreshToken, expires) = await refreshService.CreateRefreshTokenAsync(user.Id);
+
+            return Ok(new { token, refreshToken, refreshTokenExpires = expires });
         }
 
         [HttpPost("login")]
@@ -47,7 +52,32 @@ namespace Ecommerce.Api.Controllers
 
             var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email, UserName = user.UserName };
             var token = await _tokenService.CreateTokenAsync(dto);
-            return Ok(new { token });
+
+            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
+            var (refreshToken, expires) = await refreshService.CreateRefreshTokenAsync(user.Id);
+
+            return Ok(new { token, refreshToken, refreshTokenExpires = expires });
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.RefreshToken)) return BadRequest();
+            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
+            var (success, accessToken, refreshToken) = await refreshService.RefreshAsync(req.RefreshToken);
+            if (!success) return Unauthorized();
+            return Ok(new { token = accessToken, refreshToken });
+        }
+
+        [Authorize]
+        [HttpPost("revoke")]
+        public async Task<IActionResult> Revoke([FromBody] RefreshRequest req)
+        {
+            if (req == null || string.IsNullOrWhiteSpace(req.RefreshToken)) return BadRequest();
+            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
+            var revoked = await refreshService.RevokeAsync(req.RefreshToken);
+            if (!revoked) return NotFound();
+            return NoContent();
         }
 
         [Authorize]
@@ -77,5 +107,10 @@ namespace Ecommerce.Api.Controllers
     {
         public string Email { get; set; }
         public string Password { get; set; }
+    }
+
+    public class RefreshRequest
+    {
+        public string RefreshToken { get; set; }
     }
 }
