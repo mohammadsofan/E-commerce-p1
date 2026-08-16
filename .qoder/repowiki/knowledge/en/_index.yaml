@@ -1,0 +1,34 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: release/v0.1
+nodes_managed: true
+exported_at: "2026-08-16T15:01:48Z"
+modules:
+    "":
+        dir_name: E-Commerce Backend (Clean Architecture Solution)
+        title: E-Commerce Backend (Clean Architecture Solution)
+        scope:
+            - README.md
+            - PROJECT_PROGRESS.md
+            - Ecommerce.sln
+            - Directory.Build.props
+            - .gitignore
+            - .github/
+            - .tools/
+            - docs/
+            - scripts/
+        source_files: []
+        children:
+            - tests
+        depends_on: []
+        related_to: []
+    tests:
+        dir_name: Ecommerce Test Suite (Domain, Application, Integration)
+        title: Ecommerce Test Suite (Domain, Application, Integration)
+        scope:
+            - tests/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

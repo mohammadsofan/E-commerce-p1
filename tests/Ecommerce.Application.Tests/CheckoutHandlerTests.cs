@@ -34,11 +34,14 @@ namespace Ecommerce.Application.Tests
             await context.SaveChangesAsync();
 
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
-            var handler = new CheckoutCommandHandler(context, idempotency);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
             var command = new CheckoutCommand
             {
                 UserId = Guid.NewGuid(),
+                Currency = "USD",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = "test-key",
                 Items = new List<CheckoutItem>
                 {
                     new CheckoutItem { ProductId = productId, ProductVariantId = variantId, Quantity = 3 }

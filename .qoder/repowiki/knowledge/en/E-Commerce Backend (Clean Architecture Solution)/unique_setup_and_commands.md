@@ -1,0 +1,1 @@
+Run `dotnet restore` from the repo root after ensuring the solution references are present (README documents a `dotnet new sln` + `dotnet sln add ...` bootstrap sequence); use `.tools/dotnet-ef.exe` for EF migrations instead of the global dotnet CLI tool.

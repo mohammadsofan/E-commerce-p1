@@ -1,0 +1,2 @@
+- All projects target net8.0 with `<Nullable>enable</Nullable>` and `<ImplicitUsings>enable</ImplicitUsings>` via the root `Directory.Build.props`.
+- Layered dependency direction is enforced by project structure: Domain has no internal dependencies, Application depends only on Domain, Infrastructure depends on Domain+Application, and Api depends on all three.

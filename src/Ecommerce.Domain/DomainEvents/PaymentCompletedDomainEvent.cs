@@ -2,7 +2,7 @@ using System;
 
 namespace Ecommerce.Domain.DomainEvents
 {
-    public class PaymentCompletedDomainEvent
+    public class PaymentCompletedDomainEvent : IDomainEvent
     {
         public Guid PaymentId { get; }
         public Guid OrderId { get; }

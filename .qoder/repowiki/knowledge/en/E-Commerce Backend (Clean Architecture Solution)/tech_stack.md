@@ -1,0 +1,1 @@
+.NET 8 solution using Clean Architecture layers (Domain → Application → Infrastructure → Api) with Entity Framework Core for persistence and XUnit for tests; global build settings centralized via `Directory.Build.props`.

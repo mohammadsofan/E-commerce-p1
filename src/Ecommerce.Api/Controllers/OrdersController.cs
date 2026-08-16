@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Ecommerce.Application.Commands.Orders;
+using Ecommerce.Application.Common.Commands;
+using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
-using Ecommerce.Infrastructure.Persistence;
+using Ecommerce.Application.Queries.Orders;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Api.Controllers
 {
@@ -14,39 +14,67 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
     {
-        private readonly ApplicationDbContext _db;
-        private readonly IMapper _mapper;
+        private readonly QueryDispatcher _queryDispatcher;
+        private readonly CommandDispatcher _commandDispatcher;
 
-        public OrdersController(ApplicationDbContext db, IMapper mapper)
+        public OrdersController(QueryDispatcher queryDispatcher, CommandDispatcher commandDispatcher)
         {
-            _db = db;
-            _mapper = mapper;
+            _queryDispatcher = queryDispatcher;
+            _commandDispatcher = commandDispatcher;
         }
 
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            page = Math.Max(1, page);
-            pageSize = Math.Clamp(pageSize, 1, 100);
-
-            var items = await _db.Orders
-                .AsNoTracking()
-                .Include(o => o.Items)
-                .OrderByDescending(o => o.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var dto = _mapper.Map<List<OrderDto>>(items);
-            return Ok(dto);
+            var query = new GetOrdersQuery { Page = page, PageSize = pageSize };
+            var result = await _queryDispatcher.Send<GetOrdersQuery, List<OrderDto>>(query);
+            return Ok(result);
         }
 
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var order = await _db.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == id);
-            if (order == null) return NotFound();
-            return Ok(_mapper.Map<OrderDto>(order));
+            var query = new GetOrderByIdQuery { Id = id };
+            var result = await _queryDispatcher.Send<GetOrderByIdQuery, OrderDto>(query);
+            return Ok(result);
         }
+
+        /// <summary>
+        /// Transitions an order from Placed to Paid.
+        /// </summary>
+        [HttpPost("{id:guid}/pay")]
+        public async Task<IActionResult> MarkPaid(Guid id)
+        {
+            var command = new MarkOrderPaidCommand { OrderId = id };
+            var result = await _commandDispatcher.Send<MarkOrderPaidCommand, OrderDto>(command);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Transitions a Paid order to Completed.
+        /// </summary>
+        [HttpPost("{id:guid}/complete")]
+        public async Task<IActionResult> Complete(Guid id)
+        {
+            var command = new CompleteOrderCommand { OrderId = id };
+            var result = await _commandDispatcher.Send<CompleteOrderCommand, OrderDto>(command);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Cancels an order that is not in a terminal state.
+        /// </summary>
+        [HttpPost("{id:guid}/cancel")]
+        public async Task<IActionResult> Cancel(Guid id, [FromBody] CancelOrderRequest? request)
+        {
+            var command = new CancelOrderCommand { OrderId = id, Reason = request?.Reason };
+            var result = await _commandDispatcher.Send<CancelOrderCommand, OrderDto>(command);
+            return Ok(result);
+        }
+    }
+
+    public class CancelOrderRequest
+    {
+        public string? Reason { get; set; }
     }
 }

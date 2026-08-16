@@ -1,0 +1,16 @@
+schema_version: 1
+module_path: ""
+title: E-Commerce Backend (Clean Architecture Solution)
+scope:
+    - README.md
+    - PROJECT_PROGRESS.md
+    - Ecommerce.sln
+    - Directory.Build.props
+    - .gitignore
+    - .github/
+    - .tools/
+    - docs/
+    - scripts/
+source_files: []
+depends_on: []
+related_to: []

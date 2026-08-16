@@ -5,9 +5,9 @@ namespace Ecommerce.Domain.Entities
     public class Coupon
     {
         public Guid Id { get; set; }
-        public string Code { get; set; }
-        public string Description { get; set; }
-        public string Type { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
         public decimal Value { get; set; }
         public DateTimeOffset? StartAt { get; set; }
         public DateTimeOffset? EndAt { get; set; }

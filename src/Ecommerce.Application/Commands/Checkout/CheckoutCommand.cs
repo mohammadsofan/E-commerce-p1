@@ -8,8 +8,8 @@ namespace Ecommerce.Application.Commands.Checkout
         public Guid UserId { get; set; }
         public List<CheckoutItem> Items { get; set; } = new List<CheckoutItem>();
         public string Currency { get; set; } = "USD";
-        public string ShippingAddress { get; set; }
-        public string IdempotencyKey { get; set; }
+        public string ShippingAddress { get; set; } = string.Empty;
+        public string IdempotencyKey { get; set; } = string.Empty;
     }
 
     public class CheckoutItem

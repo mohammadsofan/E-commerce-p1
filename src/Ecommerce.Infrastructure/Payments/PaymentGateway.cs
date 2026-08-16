@@ -15,7 +15,7 @@ namespace Ecommerce.Infrastructure.Payments
             {
                 Success = true,
                 TransactionId = tx,
-                ErrorMessage = null
+                ErrorMessage = string.Empty
             };
 
             return Task.FromResult(result);

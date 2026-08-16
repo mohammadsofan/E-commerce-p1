@@ -2,7 +2,7 @@ using System;
 
 namespace Ecommerce.Domain.DomainEvents
 {
-    public class OrderPlacedDomainEvent
+    public class OrderPlacedDomainEvent : IDomainEvent
     {
         public Guid OrderId { get; }
         public DateTimeOffset OccurredAt { get; } = DateTimeOffset.UtcNow;

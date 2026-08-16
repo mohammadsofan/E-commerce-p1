@@ -1,0 +1,1 @@
+XUnit-based test suite covering domain entities, application command handlers, and end-to-end checkout/idempotency flows using in-memory Entity Framework databases.

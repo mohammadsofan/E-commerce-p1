@@ -25,6 +25,8 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<IdempotencyKey> IdempotencyKeys { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

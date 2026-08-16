@@ -1,0 +1,1 @@
+xUnit 2.9.3 + Microsoft.NET.Test.Sdk 18.9.0 for test discovery/execution; Entity Framework Core 8.0 in-memory provider (`Microsoft.EntityFrameworkCore.InMemory`) to simulate persistence without a real database.

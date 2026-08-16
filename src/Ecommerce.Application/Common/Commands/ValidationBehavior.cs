@@ -17,7 +17,7 @@ namespace Ecommerce.Application.Common.Commands
         public async Task<TResult> Handle(TCommand command, Func<Task<TResult>> next, CancellationToken cancellationToken = default)
         {
             // Resolve any registered validators for this command
-            var validators = (System.Collections.Generic.IEnumerable<Ecommerce.Application.Common.Validation.IValidator<TCommand>>)_provider.GetService(typeof(System.Collections.Generic.IEnumerable<Ecommerce.Application.Common.Validation.IValidator<TCommand>>));
+            var validators = _provider.GetService(typeof(System.Collections.Generic.IEnumerable<Ecommerce.Application.Common.Validation.IValidator<TCommand>>)) as System.Collections.Generic.IEnumerable<Ecommerce.Application.Common.Validation.IValidator<TCommand>>;
 
             if (validators != null)
             {

@@ -33,13 +33,15 @@ namespace Ecommerce.Application.Tests
             await context.SaveChangesAsync();
 
             var idempotency = new IdempotencyService(context);
-            var handler = new CheckoutCommandHandler(context, idempotency);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
             var key = "idem-123";
 
             var command = new CheckoutCommand
             {
                 UserId = Guid.NewGuid(),
+                Currency = "USD",
+                ShippingAddress = "Test Address",
                 IdempotencyKey = key,
                 Items = { new CheckoutItem { ProductId = productId, ProductVariantId = variantId, Quantity = 2 } }
             };

@@ -16,7 +16,7 @@ namespace Ecommerce.Infrastructure.Services
             _db = db;
         }
 
-        public async Task<(bool Found, string Response)> TryGetResponseAsync(string key)
+        public async Task<(bool Found, string? Response)> TryGetResponseAsync(string key)
         {
             var rec = await _db.IdempotencyKeys.FirstOrDefaultAsync(k => k.Key == key);
             if (rec == null) return (false, null);

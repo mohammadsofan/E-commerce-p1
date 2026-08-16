@@ -3,6 +3,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Application.Common.Commands;
+using Ecommerce.Application.Common.Queries;
+using Ecommerce.Application.Commands.Orders;
+using Ecommerce.Application.Commands.Carts;
+using Ecommerce.Application.DTOs;
+using Ecommerce.Application.Queries.Products;
+using Ecommerce.Application.Queries.Orders;
+using Ecommerce.Application.Queries.Carts;
+using System.Collections.Generic;
 
 namespace Ecommerce.Infrastructure
 {
@@ -67,6 +76,26 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler<Ecommerce.Application.Commands.Checkout.CheckoutCommand, System.Guid>, Ecommerce.Application.Commands.Checkout.CheckoutCommandHandler>();
             // Note: CheckoutCommandHandler requires IIdempotencyService; registration done below
 
+            // Order lifecycle command handlers (MarkPaid / Cancel / Complete)
+            services.AddScoped<ICommandHandler<MarkOrderPaidCommand, OrderDto>, MarkOrderPaidCommandHandler>();
+            services.AddScoped<ICommandHandler<CancelOrderCommand, OrderDto>, CancelOrderCommandHandler>();
+            services.AddScoped<ICommandHandler<CompleteOrderCommand, OrderDto>, CompleteOrderCommandHandler>();
+
+            // Cart command handlers
+            services.AddScoped<ICommandHandler<AddToCartCommand, CartDto>, AddToCartCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateCartItemCommand, CartDto>, UpdateCartItemCommandHandler>();
+            services.AddScoped<ICommandHandler<RemoveFromCartCommand, CartDto>, RemoveFromCartCommandHandler>();
+            services.AddScoped<ICommandHandler<ClearCartCommand, CartDto>, ClearCartCommandHandler>();
+
+            // Register query dispatcher and query handlers
+            services.AddScoped<QueryDispatcher>();
+            services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetProductByIdQuery, ProductDto>, GetProductByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetProductBySlugQuery, ProductDto>, GetProductBySlugQueryHandler>();
+            services.AddScoped<IQueryHandler<GetOrdersQuery, List<OrderDto>>, GetOrdersQueryHandler>();
+            services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto>, GetOrderByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetCartQuery, CartDto>, GetCartQueryHandler>();
+
             // Payment gateway (stub) - replace with real provider implementation in production
             services.AddScoped<Ecommerce.Application.Interfaces.IPaymentService, Ecommerce.Infrastructure.Payments.PaymentGateway>();
 
@@ -78,6 +107,13 @@ namespace Ecommerce.Infrastructure
 
             // Token service (JWT)
             services.AddScoped<Ecommerce.Application.Interfaces.ITokenService, Ecommerce.Infrastructure.Auth.JwtTokenService>();
+
+            // Domain event dispatching
+            services.AddScoped<Ecommerce.Application.Common.DomainEvents.IDomainEventDispatcher, Ecommerce.Infrastructure.Services.DomainEventDispatcher>();
+            services.AddScoped<Ecommerce.Application.Common.DomainEvents.IDomainEventHandler<Ecommerce.Domain.DomainEvents.OrderPlacedDomainEvent>, Ecommerce.Infrastructure.Services.OrderPlacedEventHandler>();
+
+            // Hosted cleanup
+            services.AddHostedService<Ecommerce.Infrastructure.Services.RefreshTokenCleanupService>();
 
             return services;
         }

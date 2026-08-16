@@ -24,6 +24,11 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Name, opt => opt.MapFrom(s => s.Name))
                 .ForMember(d => d.BasePrice, opt => opt.MapFrom(s => s.BasePrice))
                 .ForMember(d => d.Slug, opt => opt.MapFrom(s => s.Slug));
+
+            // Cart mappings rely on convention (incl. enum->string for Status
+            // and computed getters TotalAmount / LineTotal).
+            CreateMap<Cart, CartDto>();
+            CreateMap<CartItem, CartItemDto>();
         }
     }
 }

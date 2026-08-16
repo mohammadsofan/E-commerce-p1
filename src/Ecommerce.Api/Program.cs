@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Ecommerce.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Ecommerce.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,10 @@ builder.Services.AddSwaggerGen();
 
 // Add Infrastructure (requires DefaultConnection in config)
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Current user (from JWT claims) for per-user features such as the shopping cart
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService, Ecommerce.Api.Services.CurrentUserService>();
 
 // Configure Identity and JWT authentication (best-effort — requires Identity & JWT packages locally)
 try
@@ -60,9 +65,10 @@ builder.Services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }

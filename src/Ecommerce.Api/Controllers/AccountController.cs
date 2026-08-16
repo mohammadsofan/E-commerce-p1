@@ -1,6 +1,9 @@
+using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Threading.Tasks;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,34 +14,39 @@ namespace Ecommerce.Api.Controllers
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
-        private readonly UserManager<Ecommerce.Infrastructure.Identity.ApplicationUser> _userManager;
-        private readonly SignInManager<Ecommerce.Infrastructure.Identity.ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ITokenService _tokenService;
+        private readonly IRefreshTokenService _refreshTokenService;
 
-        public AccountController(UserManager<Ecommerce.Infrastructure.Identity.ApplicationUser> userManager,
-            SignInManager<Ecommerce.Infrastructure.Identity.ApplicationUser> signInManager,
-            ITokenService tokenService)
+        public AccountController(
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager,
+            ITokenService tokenService,
+            IRefreshTokenService refreshTokenService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenService = tokenService;
+            _refreshTokenService = refreshTokenService;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest req)
         {
-            var user = new Ecommerce.Infrastructure.Identity.ApplicationUser { UserName = req.Email, Email = req.Email };
+            var user = new ApplicationUser
+            {
+                UserName = req.Email,
+                Email = req.Email,
+                FirstName = string.Empty,
+                LastName = string.Empty,
+                DisplayName = string.Empty,
+                ProfileImageUrl = string.Empty
+            };
             var res = await _userManager.CreateAsync(user, req.Password);
             if (!res.Succeeded) return BadRequest(res.Errors);
 
-            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email, UserName = user.UserName };
-            var token = await _tokenService.CreateTokenAsync(dto);
-
-            // create refresh token
-            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
-            var (refreshToken, expires) = await refreshService.CreateRefreshTokenAsync(user.Id);
-
-            return Ok(new { token, refreshToken, refreshTokenExpires = expires });
+            return Ok(await IssueTokensAsync(user));
         }
 
         [HttpPost("login")]
@@ -50,23 +58,18 @@ namespace Ecommerce.Api.Controllers
             var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
             if (!res.Succeeded) return Unauthorized();
 
-            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email, UserName = user.UserName };
-            var token = await _tokenService.CreateTokenAsync(dto);
-
-            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
-            var (refreshToken, expires) = await refreshService.CreateRefreshTokenAsync(user.Id);
-
-            return Ok(new { token, refreshToken, refreshTokenExpires = expires });
+            return Ok(await IssueTokensAsync(user));
         }
 
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest req)
         {
             if (req == null || string.IsNullOrWhiteSpace(req.RefreshToken)) return BadRequest();
-            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
-            var (success, accessToken, refreshToken) = await refreshService.RefreshAsync(req.RefreshToken);
+
+            var (success, accessToken, refreshToken, expires) = await _refreshTokenService.RefreshAsync(req.RefreshToken);
             if (!success) return Unauthorized();
-            return Ok(new { token = accessToken, refreshToken });
+
+            return Ok(new { token = accessToken, refreshToken, refreshTokenExpires = expires });
         }
 
         [Authorize]
@@ -74,9 +77,20 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> Revoke([FromBody] RefreshRequest req)
         {
             if (req == null || string.IsNullOrWhiteSpace(req.RefreshToken)) return BadRequest();
-            var refreshService = HttpContext.RequestServices.GetRequiredService<Ecommerce.Application.Interfaces.IRefreshTokenService>();
-            var revoked = await refreshService.RevokeAsync(req.RefreshToken);
+
+            var revoked = await _refreshTokenService.RevokeAsync(req.RefreshToken);
             if (!revoked) return NotFound();
+
+            return NoContent();
+        }
+
+        [Authorize]
+        [HttpPost("revoke-all")]
+        public async Task<IActionResult> RevokeAll()
+        {
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+
+            await _refreshTokenService.RevokeAllAsync(userId);
             return NoContent();
         }
 
@@ -84,33 +98,44 @@ namespace Ecommerce.Api.Controllers
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
-            var sub = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
-            if (string.IsNullOrEmpty(sub)) return Unauthorized();
-
-            if (!System.Guid.TryParse(sub, out var userId)) return Unauthorized();
+            if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
 
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null) return NotFound();
 
-            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email, UserName = user.UserName };
-            return Ok(dto);
+            return Ok(new ApplicationUserDto { Id = user.Id, Email = user.Email ?? string.Empty, UserName = user.UserName ?? string.Empty });
+        }
+
+        private async Task<object> IssueTokensAsync(ApplicationUser user)
+        {
+            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email ?? string.Empty, UserName = user.UserName ?? string.Empty };
+            var token = await _tokenService.CreateTokenAsync(dto);
+            var (refreshToken, expires) = await _refreshTokenService.CreateRefreshTokenAsync(user.Id);
+            return new { token, refreshToken, refreshTokenExpires = expires };
+        }
+
+        private bool TryGetCurrentUserId(out Guid userId)
+        {
+            userId = default;
+            var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            return !string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out userId);
         }
     }
 
     public class RegisterRequest
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public required string Email { get; set; }
+        public required string Password { get; set; }
     }
 
     public class LoginRequest
     {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public required string Email { get; set; }
+        public required string Password { get; set; }
     }
 
     public class RefreshRequest
     {
-        public string RefreshToken { get; set; }
+        public required string RefreshToken { get; set; }
     }
 }

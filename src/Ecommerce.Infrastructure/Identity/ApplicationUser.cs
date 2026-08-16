@@ -5,10 +5,10 @@ namespace Ecommerce.Infrastructure.Identity
 {
     public class ApplicationUser : IdentityUser<Guid>
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string DisplayName { get; set; }
-        public string ProfileImageUrl { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string ProfileImageUrl { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? LastLoginAt { get; set; }

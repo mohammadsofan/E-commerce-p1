@@ -8,14 +8,14 @@ namespace Ecommerce.Domain.Entities
         public Guid OrderId { get; set; }
         public Guid ProductId { get; set; }
         public Guid ProductVariantId { get; set; }
-        public string ProductName { get; set; }
-        public string VariantName { get; set; }
-        public string Sku { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public string VariantName { get; set; } = string.Empty;
+        public string Sku { get; set; } = string.Empty;
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal TaxAmount { get; set; }
         public decimal TotalAmount { get; set; }
-        public string ProductImageUrl { get; set; }
+        public string ProductImageUrl { get; set; } = string.Empty;
     }
 }

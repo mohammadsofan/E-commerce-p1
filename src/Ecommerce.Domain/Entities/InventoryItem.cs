@@ -15,7 +15,7 @@ namespace Ecommerce.Domain.Entities
         public int ReorderQuantity { get; set; }
         public bool AllowBackorder { get; set; }
         public DateTimeOffset UpdatedAt { get; private set; }
-        public byte[] RowVersion { get; set; }
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
         public int Available => QuantityOnHand - QuantityReserved;
 
