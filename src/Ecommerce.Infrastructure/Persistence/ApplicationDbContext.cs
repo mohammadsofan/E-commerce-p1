@@ -28,6 +28,7 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<Brand> Brands { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<TaxCategory> TaxCategories { get; set; }
+        public DbSet<TaxRate> TaxRates { get; set; }
         public DbSet<InventoryItem> InventoryItems { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
@@ -41,6 +42,10 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<PromotionUsage> PromotionUsages { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Refund> Refunds { get; set; }
+        public DbSet<ShippingZone> ShippingZones { get; set; }
+        public DbSet<ShippingZoneLocation> ShippingZoneLocations { get; set; }
+        public DbSet<ShippingMethod> ShippingMethods { get; set; }
+        public DbSet<ShippingRate> ShippingRates { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 

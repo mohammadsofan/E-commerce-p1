@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Implementing Payment Operations (Refunds, Captures, Voids)
-- Last Completed: Discount Engine (Coupons, Promotions)
-- Next Task: Payment Operations (Refunds, Captures, Voids, Partial Payments)
+- Current Task: Implementing Shipping/Tax Management (Zones, Rates, Tax Calculation)
+- Last Completed: Payment Operations (Refunds, Captures, Voids)
+- Next Task: Shipping/Tax Management (Zones, Rates, Tax Calculation)
 - Overall Progress: ~95% (Core features complete, production-ready)
 
 ## Previously Completed Work
@@ -169,7 +169,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - ✅ Application layer: Full CQRS with pipeline behaviors
 - ✅ FluentValidation + custom adapters
 - ✅ AutoMapper with all DTO mappings
-- ✅ Infrastructure: EF Core DbContext, 12 configurations, 7 migrations
+- ✅ Infrastructure: EF Core DbContext, 13 configurations, 8 migrations
 - ✅ Identity with custom ApplicationUser/ApplicationRole
 - ✅ All infrastructure services (Idempotency, RefreshToken, DomainEvents, Payment, JWT, Seeder)
 - ✅ API Controllers (Account, Products, Cart, Orders, Checkout, Admin)
@@ -181,6 +181,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - ✅ CI/CD pipeline with GitHub Actions
 - ✅ Admin: Product Variants, Images, Attributes, SEO Management
 - ✅ Discount Engine: Coupons, Promotions, Stacking Rules, Validation
+- ✅ Payment Operations: Refunds, Captures, Voids, Partial Payments
 
 ## In Progress
 
@@ -282,6 +283,21 @@ This section documents work that already exists in the repository as of 2026-08-
   - Same idempotency key returns same order
   - ReserveInventory concurrent reservations respect stock limit
   - Backorder allowance for over-reservation
+
+### 2026-08-16 — Payment Operations (Refunds, Captures, Voids)
+- Enhanced Payment entity with refund tracking, captured/voided/refunded status, partial payments
+- Added Refund entity for audit trail
+- Updated IPaymentService interface with CapturePaymentAsync, VoidPaymentAsync, RefundPaymentAsync
+- Enhanced StripePaymentProvider with full payment operations implementation
+- Created PaymentConfiguration and RefundConfiguration EF Core configs
+- Added admin commands: CapturePayment, VoidPayment, RefundPayment with idempotency support
+- Added admin queries: GetPayments, GetPaymentById, GetRefunds, GetRefundById with pagination
+- Added DTOs: AdminPaymentDto, AdminRefundDto, PaymentResultDto, RefundResultDto
+- Created command/query handlers with validation and domain logic
+- Added AutoMapper mappings for new DTOs
+- Registered handlers in DependencyInjection
+- Created migration AddPaymentOperations
+- All 66 tests passing (24 Domain + 34 Application + 8 Integration)
 
 ### 2026-08-16 — Discount Engine (Coupons, Promotions)
 - Enhanced Coupon entity with usage tracking, combining rules, product/category/user targeting, min/max order amounts
@@ -387,4 +403,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-16 — Discount Engine complete, 66 tests passing, ready for production deployment.*
+*Last updated: 2026-08-16 — Payment Operations complete, 66 tests passing, ready for production deployment.*
