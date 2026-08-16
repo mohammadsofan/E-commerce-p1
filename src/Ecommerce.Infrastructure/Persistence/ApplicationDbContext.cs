@@ -46,6 +46,10 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<ShippingZoneLocation> ShippingZoneLocations { get; set; }
         public DbSet<ShippingMethod> ShippingMethods { get; set; }
         public DbSet<ShippingRate> ShippingRates { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
+        public DbSet<NotificationPreference> NotificationPreferences { get; set; }
+        public DbSet<NotificationChannel> NotificationChannels { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 

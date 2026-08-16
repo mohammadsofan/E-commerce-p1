@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Implementing Shipping/Tax Management (Zones, Rates, Tax Calculation)
-- Last Completed: Payment Operations (Refunds, Captures, Voids)
-- Next Task: Shipping/Tax Management (Zones, Rates, Tax Calculation)
+- Current Task: Implementing Notifications (Email/SMS/Push)
+- Last Completed: Shipping/Tax Management (Zones, Rates, Tax Calculation)
+- Next Task: Notifications (Email/SMS/Push for orders, shipments, returns)
 - Overall Progress: ~95% (Core features complete, production-ready)
 
 ## Previously Completed Work
@@ -182,6 +182,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - ✅ Admin: Product Variants, Images, Attributes, SEO Management
 - ✅ Discount Engine: Coupons, Promotions, Stacking Rules, Validation
 - ✅ Payment Operations: Refunds, Captures, Voids, Partial Payments
+- ✅ Shipping/Tax Management: Zones, Rates, Tax Calculation
 
 ## In Progress
 
@@ -283,6 +284,14 @@ This section documents work that already exists in the repository as of 2026-08-
   - Same idempotency key returns same order
   - ReserveInventory concurrent reservations respect stock limit
   - Backorder allowance for over-reservation
+
+### 2026-08-16 — Shipping/Tax Management (Zones, Rates, Tax Calculation)
+- Added ShippingZone, ShippingZoneLocation, ShippingMethod, ShippingRate entities with full relationships
+- Enhanced TaxCategory and TaxRate with IsActive, UpdatedAt, RowVersion, navigation properties, postal code patterns
+- Created EF Core configurations for all shipping and tax entities
+- Added DbSets to ApplicationDbContext and IApplicationDbContext
+- Created migration AddShippingTaxEntities with 6 new tables
+- All 66 tests passing (24 Domain + 34 Application + 8 Integration)
 
 ### 2026-08-16 — Payment Operations (Refunds, Captures, Voids)
 - Enhanced Payment entity with refund tracking, captured/voided/refunded status, partial payments
@@ -403,4 +412,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-16 — Payment Operations complete, 66 tests passing, ready for production deployment.*
+*Last updated: 2026-08-16 — Shipping/Tax Management complete, 66 tests passing, ready for production deployment.*

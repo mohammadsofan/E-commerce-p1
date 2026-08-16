@@ -33,6 +33,10 @@ namespace Ecommerce.Application.Interfaces
         DbSet<ShippingZoneLocation> ShippingZoneLocations { get; }
         DbSet<ShippingMethod> ShippingMethods { get; }
         DbSet<ShippingRate> ShippingRates { get; }
+        DbSet<Notification> Notifications { get; }
+        DbSet<NotificationTemplate> NotificationTemplates { get; }
+        DbSet<NotificationPreference> NotificationPreferences { get; }
+        DbSet<NotificationChannel> NotificationChannels { get; }
         IQueryable<IApplicationUser> Users { get; }
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;
