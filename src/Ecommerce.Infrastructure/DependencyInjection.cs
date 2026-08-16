@@ -18,6 +18,9 @@ using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using Ecommerce.Infrastructure.Payments;
+using Microsoft.AspNetCore.Identity;
+using Ecommerce.Infrastructure.Identity;
+using Ecommerce.Infrastructure.Services;
 
 namespace Ecommerce.Infrastructure
 {
@@ -104,6 +107,13 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<ProcessOrderRefundCommand, Unit>, ProcessOrderRefundCommandHandler>();
             services.AddScoped<ICommandHandler<ProcessOrderReturnCommand, Unit>, ProcessOrderReturnCommandHandler>();
 
+            // Admin user command handlers
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.CreateUserCommand, AdminUserDto>, CreateUserCommandHandler>();
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.UpdateUserCommand, AdminUserDto>, UpdateUserCommandHandler>();
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.DeleteUserCommand, Unit>, DeleteUserCommandHandler>();
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.ChangePasswordCommand, Unit>, ChangePasswordCommandHandler>();
+            services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.SetUserRolesCommand, Unit>, SetUserRolesCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -120,6 +130,10 @@ namespace Ecommerce.Infrastructure
             // Admin order query handlers
             services.AddScoped<IQueryHandler<GetAdminOrdersQuery, PagedResult<OrderDto>>, GetAdminOrdersQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminOrderByIdQuery, OrderDto>, GetAdminOrderByIdQueryHandler>();
+
+            // Admin user query handlers
+            services.AddScoped<IQueryHandler<GetAdminUsersQuery, PagedResult<AdminUserDto>>, GetAdminUsersQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminUserByIdQuery, AdminUserDto>, GetAdminUserByIdQueryHandler>();
 
             // Payment gateway - use Stripe provider (configured via appsettings.json)
             services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
@@ -143,6 +157,9 @@ namespace Ecommerce.Infrastructure
 
             // Register database seeder
             services.AddTransient<Ecommerce.Infrastructure.Persistence.DbSeeder>();
+
+            // Register user management service
+            services.AddScoped<Ecommerce.Application.Interfaces.IUserManagementService, Ecommerce.Infrastructure.Services.UserManagementService>();
 
             // Register EF configurations for new entities
             // (Applied automatically via ApplyConfigurationsFromAssembly)

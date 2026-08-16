@@ -11,6 +11,7 @@ namespace Ecommerce.Infrastructure.Identity
         public string ProfileImageUrl { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
         public DateTimeOffset? LastLoginAt { get; set; }
         public bool IsEmailVerified { get; set; }
         public bool IsPhoneVerified { get; set; }
