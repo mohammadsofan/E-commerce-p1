@@ -25,6 +25,8 @@ namespace Ecommerce.Application.Interfaces
         DbSet<CouponUsage> CouponUsages { get; }
         DbSet<Promotion> Promotions { get; }
         DbSet<PromotionUsage> PromotionUsages { get; }
+        DbSet<Payment> Payments { get; }
+        DbSet<Refund> Refunds { get; }
         IQueryable<IApplicationUser> Users { get; }
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;

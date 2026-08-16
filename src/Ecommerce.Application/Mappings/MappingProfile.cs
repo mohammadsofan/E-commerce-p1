@@ -36,6 +36,9 @@ namespace Ecommerce.Application.Mappings
             CreateMap<Coupon, AdminCouponDto>();
             CreateMap<Promotion, AdminPromotionDto>();
 
+            CreateMap<Payment, AdminPaymentDto>();
+            CreateMap<Refund, AdminRefundDto>();
+
             CreateMap<Ecommerce.Domain.Entities.InventoryItem, AdminInventoryDto>()
                 .ForMember(d => d.ProductName, opt => opt.MapFrom(s => s.Product != null ? s.Product.Name : string.Empty))
                 .ForMember(d => d.VariantName, opt => opt.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Name : string.Empty))

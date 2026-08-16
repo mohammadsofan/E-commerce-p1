@@ -39,6 +39,8 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<CouponUsage> CouponUsages { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<PromotionUsage> PromotionUsages { get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<Refund> Refunds { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 

@@ -140,6 +140,11 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdatePromotionCommand, AdminPromotionDto>, UpdatePromotionCommandHandler>();
             services.AddScoped<ICommandHandler<DeletePromotionCommand, Unit>, DeletePromotionCommandHandler>();
 
+            // Admin payment command handlers
+            services.AddScoped<ICommandHandler<CapturePaymentCommand, PaymentResultDto>, CapturePaymentCommandHandler>();
+            services.AddScoped<ICommandHandler<VoidPaymentCommand, PaymentResultDto>, VoidPaymentCommandHandler>();
+            services.AddScoped<ICommandHandler<RefundPaymentCommand, RefundResultDto>, RefundPaymentCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -187,11 +192,18 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<ValidateCouponQuery, ValidateCouponResponse>, ValidateCouponQueryHandler>();
             services.AddScoped<IQueryHandler<CalculateDiscountsQuery, DiscountCalculationResult>, CalculateDiscountsQueryHandler>();
 
+            // Admin payment query handlers
+            services.AddScoped<IQueryHandler<GetAdminPaymentsQuery, PagedResult<AdminPaymentDto>>, GetAdminPaymentsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminPaymentByIdQuery, AdminPaymentDto>, GetAdminPaymentByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminRefundsQuery, PagedResult<AdminRefundDto>>, GetAdminRefundsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminRefundByIdQuery, AdminRefundDto>, GetAdminRefundByIdQueryHandler>();
+
             // Admin dashboard query handler
             services.AddScoped<IQueryHandler<GetAdminDashboardQuery, AdminDashboardDto>, GetAdminDashboardQueryHandler>();
 
             // Payment gateway - use Stripe provider (configured via appsettings.json)
-            services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
+            services.Configure<Ecommerce.Infrastructure.Payments.StripePaymentProvider.StripeOptions>(configuration.GetSection("Stripe"));
+            services.AddScoped(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Ecommerce.Infrastructure.Payments.StripePaymentProvider.StripeOptions>>().Value);
             services.AddScoped<Ecommerce.Application.Interfaces.IPaymentService, Ecommerce.Infrastructure.Payments.StripePaymentProvider>();
 
             // Idempotency service

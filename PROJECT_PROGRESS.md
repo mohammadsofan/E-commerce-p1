@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Implementing Discount Engine (Coupons, Promotions)
-- Last Completed: Admin Product Variant/Image/Attribute Management
-- Next Task: Discount Engine (Coupons, Promotions, Stacking Rules)
+- Current Task: Implementing Payment Operations (Refunds, Captures, Voids)
+- Last Completed: Discount Engine (Coupons, Promotions)
+- Next Task: Payment Operations (Refunds, Captures, Voids, Partial Payments)
 - Overall Progress: ~95% (Core features complete, production-ready)
 
 ## Previously Completed Work
@@ -169,7 +169,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - ✅ Application layer: Full CQRS with pipeline behaviors
 - ✅ FluentValidation + custom adapters
 - ✅ AutoMapper with all DTO mappings
-- ✅ Infrastructure: EF Core DbContext, 10 configurations, 6 migrations
+- ✅ Infrastructure: EF Core DbContext, 12 configurations, 7 migrations
 - ✅ Identity with custom ApplicationUser/ApplicationRole
 - ✅ All infrastructure services (Idempotency, RefreshToken, DomainEvents, Payment, JWT, Seeder)
 - ✅ API Controllers (Account, Products, Cart, Orders, Checkout, Admin)
@@ -180,6 +180,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - ✅ 66 Tests (24 Domain + 34 Application + 8 Integration)
 - ✅ CI/CD pipeline with GitHub Actions
 - ✅ Admin: Product Variants, Images, Attributes, SEO Management
+- ✅ Discount Engine: Coupons, Promotions, Stacking Rules, Validation
 
 ## In Progress
 
@@ -282,6 +283,21 @@ This section documents work that already exists in the repository as of 2026-08-
   - ReserveInventory concurrent reservations respect stock limit
   - Backorder allowance for over-reservation
 
+### 2026-08-16 — Discount Engine (Coupons, Promotions)
+- Enhanced Coupon entity with usage tracking, combining rules, product/category/user targeting, min/max order amounts
+- Enhanced Promotion entity with priority, rules JSON, usage tracking, targeting, combining rules
+- Added CouponUsage and PromotionUsage entities for audit trail
+- Created EF Core configurations for Coupon, CouponUsage, Promotion, PromotionUsage
+- Added migration `AddDiscountEngineEntities` with 4 new tables
+- Implemented DTOs: AdminCouponDto, AdminPromotionDto, DiscountCalculationResult, ValidateCouponResponse
+- Built CQRS commands: Create/Update/Delete Coupon, Create/Update/Delete Promotion
+- Built CQRS queries: Get coupons/promotions with pagination, ValidateCoupon, CalculateDiscounts
+- Created command/query handlers with full CRUD, validation, and discount calculation logic
+- Added discount calculation service supporting percentage/fixed coupons and promotion rules
+- Added AutoMapper mappings for new DTOs
+- Registered handlers in DependencyInjection
+- All 66 tests passing (24 Domain + 34 Application + 8 Integration)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -371,4 +387,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-16 — Admin Product Variant/Image/Attribute Management complete, 66 tests passing, ready for production deployment.*
+*Last updated: 2026-08-16 — Discount Engine complete, 66 tests passing, ready for production deployment.*

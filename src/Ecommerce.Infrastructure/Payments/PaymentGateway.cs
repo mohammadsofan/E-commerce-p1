@@ -18,10 +18,26 @@ namespace Ecommerce.Infrastructure.Payments
             {
                 Success = true,
                 TransactionId = tx,
-                ErrorMessage = string.Empty
+                ErrorMessage = string.Empty,
+                Status = "captured"
             };
 
             return Task.FromResult(result);
+        }
+
+        public Task<PaymentResult> CapturePaymentAsync(string providerPaymentId, decimal? amount = null)
+        {
+            return Task.FromResult(new PaymentResult { Success = true, TransactionId = providerPaymentId, Status = "captured" });
+        }
+
+        public Task<PaymentResult> VoidPaymentAsync(string providerPaymentId)
+        {
+            return Task.FromResult(new PaymentResult { Success = true, TransactionId = providerPaymentId, Status = "voided" });
+        }
+
+        public Task<RefundResult> RefundPaymentAsync(RefundRequest request)
+        {
+            return Task.FromResult(new RefundResult { Success = true, RefundId = Guid.NewGuid().ToString(), Status = "succeeded" });
         }
     }
 }

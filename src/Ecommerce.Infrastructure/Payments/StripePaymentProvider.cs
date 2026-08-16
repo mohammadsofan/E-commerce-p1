@@ -47,7 +47,7 @@ namespace Ecommerce.Infrastructure.Payments
                 //     Currency = request.Currency.ToLower(),
                 //     PaymentMethod = request.PaymentMethodId,
                 //     ConfirmationMethod = "manual",
-                //     Confirm = true,
+                //     Confirm = request.CaptureImmediately,
                 //     IdempotencyKey = request.IdempotencyKey
                 // });
 
@@ -63,24 +63,124 @@ namespace Ecommerce.Infrastructure.Payments
                 // Success - generate transaction ID like Stripe's pi_ prefix
                 var transactionId = $"pi_{Guid.NewGuid().ToString("N")[..24]}";
 
-                return new PaymentResult { Success = true, TransactionId = transactionId };
+                return new PaymentResult 
+                { 
+                    Success = true, 
+                    TransactionId = transactionId,
+                    Status = request.CaptureImmediately ? "captured" : "authorized"
+                };
             }
             catch (Exception ex)
             {
                 return new PaymentResult { Success = false, ErrorMessage = $"Payment processing failed: {ex.Message}" };
             }
         }
-    }
 
-    /// <summary>
-    /// Configuration options for Stripe payment provider.
-    /// </summary>
-    public class StripeOptions
-    {
-        public string SecretKey { get; set; } = string.Empty;
-        public string PublishableKey { get; set; } = string.Empty;
-        public string WebhookSecret { get; set; } = string.Empty;
-        public string ApiVersion { get; set; } = "2023-10-16";
-        public bool TestMode { get; set; } = true;
+        public async Task<PaymentResult> CapturePaymentAsync(string providerPaymentId, decimal? amount = null)
+        {
+            if (string.IsNullOrWhiteSpace(providerPaymentId))
+                return new PaymentResult { Success = false, ErrorMessage = "Provider payment ID is required" };
+
+            try
+            {
+                // In production, call Stripe API:
+                // var paymentIntent = await _stripeClient.PaymentIntents.CaptureAsync(providerPaymentId, new PaymentIntentCaptureOptions
+                // {
+                //     AmountToCapture = amount.HasValue ? (long?)(amount.Value * 100) : null
+                // });
+
+                await Task.Delay(50);
+
+                return new PaymentResult 
+                { 
+                    Success = true, 
+                    TransactionId = providerPaymentId,
+                    Status = "captured"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new PaymentResult { Success = false, ErrorMessage = $"Capture failed: {ex.Message}" };
+            }
+        }
+
+        public async Task<PaymentResult> VoidPaymentAsync(string providerPaymentId)
+        {
+            if (string.IsNullOrWhiteSpace(providerPaymentId))
+                return new PaymentResult { Success = false, ErrorMessage = "Provider payment ID is required" };
+
+            try
+            {
+                // In production, call Stripe API:
+                // await _stripeClient.PaymentIntents.CancelAsync(providerPaymentId);
+
+                await Task.Delay(50);
+
+                return new PaymentResult 
+                { 
+                    Success = true, 
+                    TransactionId = providerPaymentId,
+                    Status = "voided"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new PaymentResult { Success = false, ErrorMessage = $"Void failed: {ex.Message}" };
+            }
+        }
+
+        public async Task<RefundResult> RefundPaymentAsync(RefundRequest request)
+        {
+            if (request == null)
+                return new RefundResult { Success = false, ErrorMessage = "Refund request is null" };
+
+            if (string.IsNullOrWhiteSpace(request.ProviderPaymentId))
+                return new RefundResult { Success = false, ErrorMessage = "Provider payment ID is required" };
+
+            if (request.Amount <= 0)
+                return new RefundResult { Success = false, ErrorMessage = "Refund amount must be positive" };
+
+            if (string.IsNullOrWhiteSpace(request.IdempotencyKey))
+                return new RefundResult { Success = false, ErrorMessage = "Idempotency key is required for refund processing" };
+
+            try
+            {
+                // In production, call Stripe API:
+                // var refund = await _stripeClient.Refunds.CreateAsync(new RefundCreateOptions
+                // {
+                //     PaymentIntent = request.ProviderPaymentId,
+                //     Amount = (long)(request.Amount * 100),
+                //     Reason = request.Reason,
+                //     IdempotencyKey = request.IdempotencyKey
+                // });
+
+                await Task.Delay(50);
+
+                var refundId = $"re_{Guid.NewGuid().ToString("N")[..24]}";
+
+                return new RefundResult 
+                { 
+                    Success = true, 
+                    RefundId = refundId,
+                    Status = "succeeded"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new RefundResult { Success = false, ErrorMessage = $"Refund failed: {ex.Message}" };
+            }
+        }
+
+        /// <summary>
+        /// Configuration options for Stripe payment provider.
+        /// </summary>
+        public class StripeOptions
+        {
+            public string SecretKey { get; set; } = string.Empty;
+            public string PublishableKey { get; set; } = string.Empty;
+            public string WebhookSecret { get; set; } = string.Empty;
+            public string ApiVersion { get; set; } = "2023-10-16";
+            public bool TestMode { get; set; } = true;
+        }
     }
 }
