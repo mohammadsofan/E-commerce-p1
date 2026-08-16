@@ -65,6 +65,25 @@ builder.Services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler
 
 var app = builder.Build();
 
+// Seed database on startup (development only)
+if (app.Environment.IsDevelopment())
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
+        var seeder = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.DbSeeder>();
+        try
+        {
+            await seeder.SeedAsync(db);
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Ecommerce.Infrastructure.Persistence.DbSeeder>>();
+            logger.LogError(ex, "Database seeding failed");
+        }
+    }
+}
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())

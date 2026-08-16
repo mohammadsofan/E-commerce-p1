@@ -12,6 +12,8 @@ using Ecommerce.Application.Queries.Products;
 using Ecommerce.Application.Queries.Orders;
 using Ecommerce.Application.Queries.Carts;
 using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 namespace Ecommerce.Infrastructure
 {
@@ -114,6 +116,12 @@ namespace Ecommerce.Infrastructure
 
             // Hosted cleanup
             services.AddHostedService<Ecommerce.Infrastructure.Services.RefreshTokenCleanupService>();
+
+            // Register database seeder
+            services.AddTransient<Ecommerce.Infrastructure.Persistence.DbSeeder>();
+
+            // Register EF configurations for new entities
+            // (Applied automatically via ApplyConfigurationsFromAssembly)
 
             return services;
         }
