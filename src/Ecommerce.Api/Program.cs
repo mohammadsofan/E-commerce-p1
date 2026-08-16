@@ -8,9 +8,20 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Ecommerce.Api.Middleware;
+using Serilog;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Serilog
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day));
 
 // Configuration & DI
 builder.Services.AddControllers();
@@ -93,6 +104,16 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService, Ecommerce.Api.Services.CurrentUserService>();
 
+// Health Checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
+
+// Prometheus Metrics
+builder.Services.AddMetricServer(options =>
+{
+    options.Port = 9090;
+});
+
 // Configure Identity and JWT authentication (best-effort — requires Identity & JWT packages locally)
 try
 {
@@ -142,6 +163,9 @@ builder.Services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler
 
 var app = builder.Build();
 
+// Serilog request logging
+app.UseSerilogRequestLogging();
+
 // Seed database on startup (development only)
 if (app.Environment.IsDevelopment())
 {
@@ -163,6 +187,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+// Health Checks
+app.MapHealthChecks("/health");
+
+// Prometheus Metrics
+app.MapMetrics();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -181,6 +211,8 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseHttpMetrics();
 
 app.MapControllers();
 
