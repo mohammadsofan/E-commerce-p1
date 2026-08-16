@@ -31,6 +31,7 @@ namespace Ecommerce.Application.Mappings
 
             CreateMap<ProductVariant, AdminProductVariantDto>();
             CreateMap<ProductImage, AdminProductImageDto>();
+            CreateMap<ProductAttribute, AdminProductAttributeDto>();
 
             CreateMap<Ecommerce.Domain.Entities.InventoryItem, AdminInventoryDto>()
                 .ForMember(d => d.ProductName, opt => opt.MapFrom(s => s.Product != null ? s.Product.Name : string.Empty))

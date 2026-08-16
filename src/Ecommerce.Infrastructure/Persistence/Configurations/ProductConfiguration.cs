@@ -16,6 +16,10 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.BasePrice).HasPrecision(18,2);
             builder.Property(x => x.CostPrice).HasPrecision(18,2);
             builder.Property(x => x.CompareAtPrice).HasPrecision(18,2);
+            builder.Property(x => x.Weight).HasPrecision(18,2);
+            builder.Property(x => x.Length).HasPrecision(18,2);
+            builder.Property(x => x.Width).HasPrecision(18,2);
+            builder.Property(x => x.Height).HasPrecision(18,2);
 
             builder.Property(x => x.RowVersion).IsRowVersion();
         }

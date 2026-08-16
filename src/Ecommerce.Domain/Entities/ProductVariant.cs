@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Ecommerce.Domain.Entities
 {
@@ -23,5 +24,8 @@ namespace Ecommerce.Domain.Entities
         public DateTimeOffset UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
+        public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+        public ICollection<ProductVariantAttribute> VariantAttributes { get; set; } = new List<ProductVariantAttribute>();
     }
 }

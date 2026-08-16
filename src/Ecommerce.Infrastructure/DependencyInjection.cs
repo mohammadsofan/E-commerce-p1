@@ -120,6 +120,16 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.TransferInventoryCommand, Unit>, TransferInventoryCommandHandler>();
             services.AddScoped<ICommandHandler<Ecommerce.Application.Commands.Admin.SetReorderPointCommand, Unit>, SetReorderPointCommandHandler>();
 
+            // Admin product variant command handlers
+            services.AddScoped<ICommandHandler<CreateProductVariantCommand, AdminProductVariantDto>, CreateProductVariantCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateProductVariantCommand, AdminProductVariantDto>, UpdateProductVariantCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteProductVariantCommand, Unit>, DeleteProductVariantCommandHandler>();
+
+            // Admin product attribute command handlers
+            services.AddScoped<ICommandHandler<CreateProductAttributeCommand, AdminProductAttributeDto>, CreateProductAttributeCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateProductAttributeCommand, AdminProductAttributeDto>, UpdateProductAttributeCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteProductAttributeCommand, Unit>, DeleteProductAttributeCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -144,6 +154,15 @@ namespace Ecommerce.Infrastructure
             // Admin inventory query handlers
             services.AddScoped<IQueryHandler<GetAdminInventoryQuery, PagedResult<AdminInventoryDto>>, GetAdminInventoryQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminInventoryByIdQuery, AdminInventoryDto>, GetAdminInventoryByIdQueryHandler>();
+
+            // Admin product variant query handlers
+            services.AddScoped<IQueryHandler<GetAdminProductVariantsQuery, PagedResult<AdminProductVariantDto>>, GetAdminProductVariantsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminProductVariantByIdQuery, AdminProductVariantDto>, GetAdminProductVariantByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminProductImagesQuery, PagedResult<AdminProductImageDto>>, GetAdminProductImagesQueryHandler>();
+
+            // Admin product attribute query handlers
+            services.AddScoped<IQueryHandler<GetAdminProductAttributesQuery, PagedResult<AdminProductAttributeDto>>, GetAdminProductAttributesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminProductAttributeByIdQuery, AdminProductAttributeDto>, GetAdminProductAttributeByIdQueryHandler>();
 
             // Admin dashboard query handler
             services.AddScoped<IQueryHandler<GetAdminDashboardQuery, AdminDashboardDto>, GetAdminDashboardQueryHandler>();

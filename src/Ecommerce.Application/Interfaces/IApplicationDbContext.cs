@@ -10,6 +10,9 @@ namespace Ecommerce.Application.Interfaces
     {
         DbSet<Product> Products { get; }
         DbSet<ProductVariant> ProductVariants { get; }
+        DbSet<ProductImage> ProductImages { get; }
+        DbSet<ProductAttribute> ProductAttributes { get; }
+        DbSet<ProductVariantAttribute> ProductVariantAttributes { get; }
         DbSet<Category> Categories { get; }
         DbSet<InventoryItem> InventoryItems { get; }
         DbSet<Order> Orders { get; }
@@ -19,6 +22,8 @@ namespace Ecommerce.Application.Interfaces
         DbSet<Cart> Carts { get; }
         DbSet<CartItem> CartItems { get; }
         IQueryable<IApplicationUser> Users { get; }
+
+        Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
