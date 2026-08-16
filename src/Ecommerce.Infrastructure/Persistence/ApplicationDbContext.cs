@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+
+        public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {

@@ -145,6 +145,9 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetAdminInventoryQuery, PagedResult<AdminInventoryDto>>, GetAdminInventoryQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminInventoryByIdQuery, AdminInventoryDto>, GetAdminInventoryByIdQueryHandler>();
 
+            // Admin dashboard query handler
+            services.AddScoped<IQueryHandler<GetAdminDashboardQuery, AdminDashboardDto>, GetAdminDashboardQueryHandler>();
+
             // Payment gateway - use Stripe provider (configured via appsettings.json)
             services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
             services.AddScoped<Ecommerce.Application.Interfaces.IPaymentService, Ecommerce.Infrastructure.Payments.StripePaymentProvider>();
