@@ -49,6 +49,22 @@ namespace Ecommerce.Api.Controllers
             var token = await _tokenService.CreateTokenAsync(dto);
             return Ok(new { token });
         }
+
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> Me()
+        {
+            var sub = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+            if (string.IsNullOrEmpty(sub)) return Unauthorized();
+
+            if (!System.Guid.TryParse(sub, out var userId)) return Unauthorized();
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user == null) return NotFound();
+
+            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email, UserName = user.UserName };
+            return Ok(dto);
+        }
     }
 
     public class RegisterRequest
