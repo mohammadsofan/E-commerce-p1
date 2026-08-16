@@ -52,7 +52,12 @@ try
         };
     });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+        options.AddPolicy("CustomerOnly", policy => policy.RequireRole("Customer"));
+        options.AddPolicy("AdminOrCustomer", policy => policy.RequireRole("Admin", "Customer"));
+    });
 }
 catch
 {
