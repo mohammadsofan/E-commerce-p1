@@ -148,5 +148,78 @@ namespace Ecommerce.Domain.Entities
             UpdatedAt = CancelledAt.Value;
             if (!string.IsNullOrWhiteSpace(reason)) Notes = reason;
         }
+
+        /// <summary>
+        /// Marks the order as shipped with tracking information.
+        /// </summary>
+        public void MarkShipped(string trackingNumber, string carrier)
+        {
+            if (Status != OrderStatus.Paid) throw new DomainException("Only paid orders can be shipped");
+            if (FulfillmentStatus == FulfillmentStatus.Shipped || FulfillmentStatus == FulfillmentStatus.Delivered)
+                throw new DomainException("Order is already shipped or delivered");
+
+            FulfillmentStatus = FulfillmentStatus.Shipped;
+            UpdatedAt = DateTimeOffset.UtcNow;
+            // In a real implementation, you'd store tracking info in a Shipment entity
+            Notes = $"Shipped via {carrier} with tracking: {trackingNumber}";
+        }
+
+        /// <summary>
+        /// Marks the order as delivered.
+        /// </summary>
+        public void MarkDelivered()
+        {
+            if (FulfillmentStatus != FulfillmentStatus.Shipped)
+                throw new DomainException("Only shipped orders can be marked as delivered");
+
+            FulfillmentStatus = FulfillmentStatus.Delivered;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        /// <summary>
+        /// Processes a full or partial refund.
+        /// </summary>
+        public void ProcessRefund(decimal amount, string reason)
+        {
+            if (amount <= 0) throw new DomainException("Refund amount must be positive");
+            if (amount > TotalAmount - RefundedAmount)
+                throw new DomainException("Refund amount cannot exceed remaining refundable amount");
+
+            RefundedAmount += amount;
+            UpdatedAt = DateTimeOffset.UtcNow;
+
+            if (RefundedAmount >= TotalAmount)
+            {
+                Status = OrderStatus.Refunded;
+                PaymentStatus = PaymentStatus.Refunded;
+            }
+            else
+            {
+                PaymentStatus = PaymentStatus.PartiallyRefunded;
+            }
+
+            Notes = $"Refund of {amount:C}: {reason}";
+        }
+
+        /// <summary>
+        /// Processes a return request for one or more items.
+        /// </summary>
+        public void ProcessReturn(IEnumerable<Guid> orderItemIds, string reason)
+        {
+            if (orderItemIds == null || !orderItemIds.Any())
+                throw new DomainException("At least one item must be returned");
+
+            var itemsToReturn = Items.Where(i => orderItemIds.Contains(i.Id)).ToList();
+            if (itemsToReturn.Count != orderItemIds.Count())
+                throw new DomainException("One or more order items not found");
+
+            if (itemsToReturn.Any(i => i.Quantity <= 0))
+                throw new DomainException("Cannot return items with zero quantity");
+
+            // In a real implementation, you'd create ReturnRequest/ReturnItem entities
+            // For now, we'll process a refund for the returned items
+            var returnAmount = itemsToReturn.Sum(i => i.TotalAmount);
+            ProcessRefund(returnAmount, $"Return: {reason}");
+        }
     }
 }

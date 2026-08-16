@@ -98,6 +98,12 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateProductCommand, AdminProductDto>, UpdateProductCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteProductCommand, Unit>, DeleteProductCommandHandler>();
 
+            // Admin order command handlers
+            services.AddScoped<ICommandHandler<MarkOrderShippedCommand, Unit>, MarkOrderShippedCommandHandler>();
+            services.AddScoped<ICommandHandler<MarkOrderDeliveredCommand, Unit>, MarkOrderDeliveredCommandHandler>();
+            services.AddScoped<ICommandHandler<ProcessOrderRefundCommand, Unit>, ProcessOrderRefundCommandHandler>();
+            services.AddScoped<ICommandHandler<ProcessOrderReturnCommand, Unit>, ProcessOrderReturnCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -110,6 +116,10 @@ namespace Ecommerce.Infrastructure
             // Admin product query handlers
             services.AddScoped<IQueryHandler<GetAdminProductsQuery, PagedResult<AdminProductDto>>, GetAdminProductsQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminProductByIdQuery, AdminProductDto>, GetAdminProductByIdQueryHandler>();
+
+            // Admin order query handlers
+            services.AddScoped<IQueryHandler<GetAdminOrdersQuery, PagedResult<OrderDto>>, GetAdminOrdersQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminOrderByIdQuery, OrderDto>, GetAdminOrderByIdQueryHandler>();
 
             // Payment gateway - use Stripe provider (configured via appsettings.json)
             services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
