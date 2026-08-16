@@ -10,14 +10,8 @@ namespace Ecommerce.Domain.Tests
         [Fact]
         public void Reserve_WithSufficientStock_ReservesQuantity()
         {
-            var item = new InventoryItem
-            {
-                Id = Guid.NewGuid(),
-                QuantityOnHand = 10,
-                QuantityReserved = 0,
-                AllowBackorder = false
-            };
-
+            var item = new InventoryItem { Id = Guid.NewGuid(), AllowBackorder = false };
+            item.AddStock(10);
             item.Reserve(3);
 
             Assert.Equal(3, item.QuantityReserved);
@@ -27,28 +21,17 @@ namespace Ecommerce.Domain.Tests
         [Fact]
         public void Reserve_InsufficientStock_ThrowsInventoryException()
         {
-            var item = new InventoryItem
-            {
-                Id = Guid.NewGuid(),
-                QuantityOnHand = 2,
-                QuantityReserved = 0,
-                AllowBackorder = false
-            };
-
+            var item = new InventoryItem { Id = Guid.NewGuid(), AllowBackorder = false };
+            item.AddStock(2);
             Assert.Throws<InventoryException>(() => item.Reserve(5));
         }
 
         [Fact]
         public void Release_MoreThanReserved_ThrowsInventoryException()
         {
-            var item = new InventoryItem
-            {
-                Id = Guid.NewGuid(),
-                QuantityOnHand = 10,
-                QuantityReserved = 2,
-                AllowBackorder = false
-            };
-
+            var item = new InventoryItem { Id = Guid.NewGuid(), AllowBackorder = false };
+            item.AddStock(10);
+            item.Reserve(2);
             Assert.Throws<InventoryException>(() => item.Release(3));
         }
     }

@@ -14,16 +14,17 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.QuantityOnHand).IsRequired();
             builder.Property(x => x.QuantityReserved).IsRequired();
-            builder.Property(x => x.ReorderLevel).IsRequired(false);
-            builder.Property(x => x.ReorderQuantity).IsRequired(false);
+            builder.Property(x => x.ReorderLevel).IsRequired();
+            builder.Property(x => x.ReorderQuantity).IsRequired();
             builder.Property(x => x.AllowBackorder).IsRequired();
 
             builder.Property(x => x.UpdatedAt).IsRequired();
 
             // RowVersion for optimistic concurrency
-            builder.Property(x => x.RowVersion)
-                   .IsRowVersion()
-                   .IsConcurrencyToken();
+                 builder.Property(x => x.RowVersion)
+                     .IsRequired(false)
+                     .IsRowVersion()
+                     .IsConcurrencyToken();
 
             // Computed / derived property - ignore in EF mapping
             builder.Ignore(x => x.Available);

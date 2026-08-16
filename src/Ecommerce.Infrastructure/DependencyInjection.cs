@@ -36,8 +36,8 @@ namespace Ecommerce.Infrastructure
             try
             {
                 // Register Fluent validators
-                services.AddTransient<FluentValidation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>, Ecommerce.Application.Validators.CheckoutCommandFluentValidator>();
-                services.AddTransient<FluentValidation.IValidator<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>, Ecommerce.Application.Validators.ReserveInventoryFluentValidator>();
+                services.AddTransient<FluentValidation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>, Ecommerce.Application.Commands.Checkout.CheckoutCommandFluentValidator>();
+                services.AddTransient<FluentValidation.IValidator<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>, Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryFluentValidator>();
 
                 // Register adapter to expose Fluent validators as the application's IValidator<T>
                 services.AddTransient<Ecommerce.Application.Common.Validation.IValidator<Ecommerce.Application.Commands.Checkout.CheckoutCommand>>(sp =>

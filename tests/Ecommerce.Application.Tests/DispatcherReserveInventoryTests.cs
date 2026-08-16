@@ -6,6 +6,7 @@ using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Ecommerce.Application.Common;
 using Microsoft.Extensions.Logging;
 using Xunit;
 
@@ -19,6 +20,7 @@ namespace Ecommerce.Application.Tests
             services.AddSingleton<ILoggerFactory, LoggerFactory>();
             services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
             services.AddSingleton(context);
+            services.AddSingleton<Ecommerce.Application.Interfaces.IApplicationDbContext>(context);
             services.AddScoped<ICommandHandler<ReserveInventoryCommand, Unit>, ReserveInventoryCommandHandler>();
             services.AddScoped<CommandDispatcher>();
 
@@ -52,6 +54,5 @@ namespace Ecommerce.Application.Tests
         }
     }
 
-    // Minimal Unit struct to represent void-like result
-    public struct Unit { }
+    
 }

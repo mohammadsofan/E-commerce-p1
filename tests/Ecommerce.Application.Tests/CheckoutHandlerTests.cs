@@ -33,7 +33,8 @@ namespace Ecommerce.Application.Tests
             await context.InventoryItems.AddAsync(inv);
             await context.SaveChangesAsync();
 
-            var handler = new CheckoutCommandHandler(context);
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency);
 
             var command = new CheckoutCommand
             {

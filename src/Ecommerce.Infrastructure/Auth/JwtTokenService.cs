@@ -25,7 +25,7 @@ namespace Ecommerce.Infrastructure.Auth
             var issuer = _config["Jwt:Issuer"] ?? "ecommerce";
 
             var claims = new[] {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id ?? user.UserName),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };

@@ -11,6 +11,6 @@ namespace Ecommerce.Domain.Entities
         public string Status { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? ExpiresAt { get; set; }
-        public string ResponseData { get; set; }
+        public string? ResponseData { get; set; }
     }
 }

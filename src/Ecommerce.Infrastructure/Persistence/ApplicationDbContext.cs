@@ -1,9 +1,11 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Application.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using Ecommerce.Infrastructure.Identity;
 
 namespace Ecommerce.Infrastructure.Persistence
 {

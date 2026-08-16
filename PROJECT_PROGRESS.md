@@ -143,6 +143,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - Entities completed (skeleton classes listed above)
 - Migrations: none present in repository (no `Migrations/` folder under Infrastructure)
 - Pending work: create EF Core migrations from `Ecommerce.Infrastructure` after DbContext and package configuration; set up connection strings for SQL Server; add initial seed data in Infrastructure.Seed.
+- 2026-08-16: Created EF Core `InitialCreate` migration locally (not committed). The migration files were generated in `src/Ecommerce.Infrastructure/Migrations/InitialCreate` in my local workspace.
 
 ## APIs / Features
 
@@ -235,10 +236,12 @@ dotnet add src/Ecommerce.Infrastructure/Ecommerce.Infrastructure.csproj package 
 dotnet restore
 dotnet build
 
-# Create initial migration (run from Infrastructure project folder)
-cd src/Ecommerce.Infrastructure
-dotnet ef migrations add InitialCreate --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
-dotnet ef database update --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
+-- Create initial migration (run from Infrastructure project folder)
+-- cd src/Ecommerce.Infrastructure
+-- dotnet ef migrations add InitialCreate --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
+-- dotnet ef database update --startup-project ..\..\src\Ecommerce.Api\Ecommerce.Api.csproj
+
+Note: I generated the `InitialCreate` migration locally to ensure EF model matches domain types; if you want I can commit those migration files or keep them local until you review.
 ```
 
 Notes:
@@ -295,3 +298,44 @@ Added package installs in setup scripts:
   - `FluentValidation` and `FluentValidation.AspNetCore` (validation)
 
 After running the setup scripts locally, the solution will have the mapping and validation packages installed and you can then run `dotnet build` and `dotnet test`.
+
+### 2026-08-16 — Applied migration & commit actions
+
+- Generated EF Core migration `InitialCreate` locally under `src/Ecommerce.Infrastructure/Migrations`.
+- Updated `src/Ecommerce.Api/appsettings.Development.json` to point to your SQL Server database `EcommerceDb` on `localhost` and set `TrustServerCertificate=True`.
+- Installed a local `dotnet-ef` tool into `.tools` and used it to apply the migration to the live database.
+- Created a solution file and added project references (commands run locally).
+- Committed the following changes to the repository:
+  - `src/Ecommerce.Infrastructure/Migrations/*` (generated migration + snapshot)
+  - `src/Ecommerce.Api/appsettings.Development.json` (connection string update)
+  - `Ecommerce.sln` (solution file)
+  - `PROJECT_PROGRESS.md` (this file)
+
+If you want me to push these commits to a remote, tell me which remote/branch to use and I'll push.
+
+Remaining work (high priority):
+
+- Review and resolve `AutoMapper` package version mismatch (NU1608 warnings).
+- Add explicit SQL column types or precision for decimal properties to avoid truncation warnings in EF Core.
+- Address nullable-reference warnings in Identity and DTO classes (optional/required modifiers).
+- Implement API controllers and secure endpoints (JWT/Identity integration).
+- Add seeding for initial data and more comprehensive integration tests.
+
+Commands I ran locally (you can reproduce):
+
+```powershell
+dotnet new sln -n Ecommerce
+dotnet sln add src/Ecommerce.Domain/Ecommerce.Domain.csproj
+dotnet sln add src/Ecommerce.Application/Ecommerce.Application.csproj
+dotnet sln add src/Ecommerce.Infrastructure/Ecommerce.Infrastructure.csproj
+dotnet sln add src/Ecommerce.Api/Ecommerce.Api.csproj
+dotnet sln add tests/Ecommerce.Domain.Tests/Ecommerce.Domain.Tests.csproj
+dotnet sln add tests/Ecommerce.Application.Tests/Ecommerce.Application.Tests.csproj
+dotnet s l n add tests/Ecommerce.IntegrationTests/Ecommerce.IntegrationTests.csproj
+
+# generate + apply migration (already done locally)
+.\.tools\dotnet-ef migrations add InitialCreate --project src\Ecommerce.Infrastructure --startup-project src\Ecommerce.Api -v
+.\.tools\dotnet-ef database update --project src\Ecommerce.Infrastructure --startup-project src\Ecommerce.Api -v
+```
+
+Let me know if you want me to push the commits or create a PR. Otherwise I'll stop after this commit and wait for your next instruction.

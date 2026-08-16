@@ -12,9 +12,10 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
 
             builder.HasKey(x => x.Id);
 
-            builder.Property(x => x.ProductName).HasMaxLength(256);
-            builder.Property(x => x.VariantName).HasMaxLength(128);
-            builder.Property(x => x.Sku).HasMaxLength(64);
+            builder.Property(x => x.ProductName).HasMaxLength(256).IsRequired();
+            builder.Property(x => x.VariantName).HasMaxLength(128).IsRequired(false);
+            builder.Property(x => x.Sku).HasMaxLength(64).IsRequired(false);
+            builder.Property(x => x.ProductImageUrl).IsRequired(false);
 
             builder.Property(x => x.UnitPrice).HasColumnType("decimal(18,2)");
             builder.Property(x => x.DiscountAmount).HasColumnType("decimal(18,2)");
