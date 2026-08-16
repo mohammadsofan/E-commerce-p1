@@ -312,6 +312,9 @@ After running the setup scripts locally, the solution will have the mapping and 
   - `PROJECT_PROGRESS.md` (this file)
 
 If you want me to push these commits to a remote, tell me which remote/branch to use and I'll push.
+I pushed a release branch `release/v0.1` to `origin` and you can open a PR at:
+
+https://github.com/mohammadsofan/E-commerce-p1/pull/new/release/v0.1
 
 Remaining work (high priority):
 
