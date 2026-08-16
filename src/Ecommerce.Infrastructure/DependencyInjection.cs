@@ -3,14 +3,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Application.Common;
 using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.Commands.Orders;
 using Ecommerce.Application.Commands.Carts;
+using Ecommerce.Application.Commands.Admin;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.Products;
 using Ecommerce.Application.Queries.Orders;
 using Ecommerce.Application.Queries.Carts;
+using Ecommerce.Application.Queries.Admin;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
@@ -90,6 +93,11 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<RemoveFromCartCommand, CartDto>, RemoveFromCartCommandHandler>();
             services.AddScoped<ICommandHandler<ClearCartCommand, CartDto>, ClearCartCommandHandler>();
 
+            // Admin product command handlers
+            services.AddScoped<ICommandHandler<CreateProductCommand, AdminProductDto>, CreateProductCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateProductCommand, AdminProductDto>, UpdateProductCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteProductCommand, Unit>, DeleteProductCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -98,6 +106,10 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetOrdersQuery, List<OrderDto>>, GetOrdersQueryHandler>();
             services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto>, GetOrderByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetCartQuery, CartDto>, GetCartQueryHandler>();
+
+            // Admin product query handlers
+            services.AddScoped<IQueryHandler<GetAdminProductsQuery, PagedResult<AdminProductDto>>, GetAdminProductsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminProductByIdQuery, AdminProductDto>, GetAdminProductByIdQueryHandler>();
 
             // Payment gateway - use Stripe provider (configured via appsettings.json)
             services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
