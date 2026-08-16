@@ -53,7 +53,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Gets all carts (admin view)</summary>
         [HttpGet("carts")]
-        public async Task<IActionResult> GetCarts([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        public IActionResult GetCarts([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
             // This would need a new GetCartsQuery for admin (get all carts, not just current user's)
             // For now, return not implemented

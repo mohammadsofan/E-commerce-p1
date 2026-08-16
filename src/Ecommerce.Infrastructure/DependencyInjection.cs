@@ -14,6 +14,7 @@ using Ecommerce.Application.Queries.Carts;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
+using Ecommerce.Infrastructure.Payments;
 
 namespace Ecommerce.Infrastructure
 {
@@ -98,8 +99,9 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto>, GetOrderByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetCartQuery, CartDto>, GetCartQueryHandler>();
 
-            // Payment gateway (stub) - replace with real provider implementation in production
-            services.AddScoped<Ecommerce.Application.Interfaces.IPaymentService, Ecommerce.Infrastructure.Payments.PaymentGateway>();
+            // Payment gateway - use Stripe provider (configured via appsettings.json)
+            services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
+            services.AddScoped<Ecommerce.Application.Interfaces.IPaymentService, Ecommerce.Infrastructure.Payments.StripePaymentProvider>();
 
             // Idempotency service
             services.AddScoped<Ecommerce.Application.Interfaces.IIdempotencyService, Ecommerce.Infrastructure.Services.IdempotencyService>();

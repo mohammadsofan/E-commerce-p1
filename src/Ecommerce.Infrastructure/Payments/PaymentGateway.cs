@@ -4,12 +4,15 @@ using Ecommerce.Application.Interfaces;
 
 namespace Ecommerce.Infrastructure.Payments
 {
-    // Simple stub payment gateway for development/testing.
+    /// <summary>
+    /// Legacy payment gateway stub - kept for backward compatibility.
+    /// Use StripePaymentProvider for new implementations.
+    /// </summary>
+    [Obsolete("Use StripePaymentProvider instead. This will be removed in a future version.")]
     public class PaymentGateway : IPaymentService
     {
         public Task<PaymentResult> ProcessPaymentAsync(PaymentRequest request)
         {
-            // In production, integrate with a real payment provider (Stripe, PayPal, Adyen, etc.)
             var tx = Guid.NewGuid().ToString();
             var result = new PaymentResult
             {
