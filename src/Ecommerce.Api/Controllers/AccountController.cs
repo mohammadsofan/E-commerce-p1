@@ -19,17 +19,20 @@ namespace Ecommerce.Api.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ITokenService _tokenService;
         private readonly IRefreshTokenService _refreshTokenService;
+        private readonly IEmailService _emailService;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             ITokenService tokenService,
-            IRefreshTokenService refreshTokenService)
+            IRefreshTokenService refreshTokenService,
+            IEmailService emailService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenService = tokenService;
             _refreshTokenService = refreshTokenService;
+            _emailService = emailService;
         }
 
         [HttpPost("register")]
@@ -47,12 +50,20 @@ namespace Ecommerce.Api.Controllers
             var res = await _userManager.CreateAsync(user, req.Password);
             if (!res.Succeeded) return BadRequest(res.Errors);
 
-            // Generate email confirmation token
             var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             
-            // In production, send email with token via email service
-            // For now, return token in response (development only)
-            return Ok(new { message = "Registration successful. Please verify your email.", emailToken });
+            // Send verification email
+            var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email)}";
+            var message = new EmailMessage
+            {
+                To = user.Email,
+                Subject = "Verify your email address",
+                Body = $"<p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">{verifyUrl}</a></p><p>This link will expire in 24 hours.</p>",
+                IsHtml = true
+            };
+            await _emailService.SendAsync(message);
+
+            return Ok(new { message = "Registration successful. Verification email sent." });
         }
 
 [HttpPost("login")]
@@ -98,9 +109,17 @@ namespace Ecommerce.Api.Controllers
 
             var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             
-            // In production, send email with token via email service
-            // For now, return token in response (development only)
-            return Ok(new { message = "Verification email sent.", emailToken });
+            var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email)}";
+            var message = new EmailMessage
+            {
+                To = user.Email,
+                Subject = "Verify your email address",
+                Body = $"<p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">{verifyUrl}</a></p><p>This link will expire in 24 hours.</p>",
+                IsHtml = true
+            };
+            await _emailService.SendAsync(message);
+
+            return Ok(new { message = "Verification email sent." });
         }
 
         [HttpPost("forgot-password")]
@@ -114,9 +133,17 @@ namespace Ecommerce.Api.Controllers
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             
-            // In production, send email with token via email service
-            // For now, return token in response (development only)
-            return Ok(new { message = "Password reset email sent.", resetToken = token });
+            var resetUrl = $"{Request.Scheme}://{Request.Host}/api/account/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+            var message = new EmailMessage
+            {
+                To = user.Email,
+                Subject = "Reset your password",
+                Body = $"<p>Click the link below to reset your password:</p><p><a href=\"{resetUrl}\">{resetUrl}</a></p><p>This link will expire in 1 hour.</p>",
+                IsHtml = true
+            };
+            await _emailService.SendAsync(message);
+
+            return Ok(new { message = "Password reset email sent." });
         }
 
         [HttpPost("reset-password")]
