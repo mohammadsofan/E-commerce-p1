@@ -72,6 +72,9 @@ namespace Ecommerce.Api.Controllers
             var user = await _userManager.FindByEmailAsync(req.Email);
             if (user == null) return Unauthorized();
 
+            if (!user.IsEmailVerified)
+                return Unauthorized("Email not verified. Please verify your email before logging in.");
+
             var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
             if (!res.Succeeded) return Unauthorized();
 
@@ -94,6 +97,24 @@ namespace Ecommerce.Api.Controllers
             await _userManager.UpdateAsync(user);
 
             return Ok(new { message = "Email verified successfully." });
+        }
+
+        [HttpGet("verify-email")]
+        public async Task<IActionResult> VerifyEmailGet([FromQuery] string token, [FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(email))
+                return BadRequest("Token and email are required.");
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return BadRequest("Invalid request.");
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            user.IsEmailVerified = true;
+            await _userManager.UpdateAsync(user);
+
+            return Content("<html><body><h2>Email verified successfully!</h2><p>You can now log in to your account.</p></body></html>", "text/html");
         }
 
         [HttpPost("resend-verification")]
