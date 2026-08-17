@@ -4,8 +4,8 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Email service implementation
-- Last Completed: Shipping/Tax/Notification/Report admin CQRS endpoints
+- Current Task: Integration test fixes (JWT auth + test isolation)
+- Last Completed: Email service implementation
 - Next Task: Real Stripe SDK integration, rate limiting, security headers
 - Overall Progress: ~100% (All core features complete, production-ready)
 
@@ -392,6 +392,14 @@ This section documents work that already exists in the repository as of 2026-08-
 - Added Email config to appsettings.Development.json
 - 3 new email service tests
 - All 96 application tests passing
+
+### 2026-08-17 — Integration Test Fixes (JWT Auth + Test Isolation)
+- Added `List<string> Roles` to ApplicationUserDto and populated it in AccountController.IssueTokensAsync via UserManager.GetRolesAsync
+- JwtTokenService now emits a ClaimTypes.Role claim per role so the `AdminOnly` policy (`RequireRole("Admin")`) works
+- Aligned JWT fallback signing key between JwtTokenService and Program.cs; added `appsettings.Test.json` with matching Jwt config
+- Fixed integration tests: LoginResponse.AccessToken -> Token (matches login response shape)
+- Made admin integration tests use unique product slugs/SKUs and unique attribute codes per test so tests are independent in the shared InMemory DB; attribute paged test uses `search` filter
+- All tests green: 24 Domain + 96 Application + 16 Integration = 136 passing
 
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties

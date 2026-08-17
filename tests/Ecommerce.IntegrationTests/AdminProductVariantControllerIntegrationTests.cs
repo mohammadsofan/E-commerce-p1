@@ -89,7 +89,7 @@ private async Task<string> GetAdminTokenAsync()
             });
 
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-            return loginResult!.AccessToken;
+            return loginResult!.Token;
         }
 
         [Fact]
@@ -101,9 +101,9 @@ private async Task<string> GetAdminTokenAsync()
             // Create product first
             var productResponse = await _client.PostAsJsonAsync("/api/admin/products", new
             {
-                Name = "Test Product",
-                Slug = "test-product",
-                Sku = "TEST-001",
+                Name = "Test Product Create",
+                Slug = "test-product-create",
+                Sku = "TEST-CREATE-001",
                 BasePrice = 100m,
                 Status = "Active",
                 IsActive = true
@@ -116,7 +116,7 @@ private async Task<string> GetAdminTokenAsync()
             var variantResponse = await _client.PostAsJsonAsync($"/api/admin/products/{product.Id}/variants", new
             {
                 ProductId = product.Id,
-                Sku = "TEST-001-RED",
+                Sku = "TEST-CREATE-001-RED",
                 Name = "Red Variant",
                 Price = 99.99m,
                 CostPrice = 50m,
@@ -129,7 +129,7 @@ private async Task<string> GetAdminTokenAsync()
 
             var variant = await variantResponse.Content.ReadFromJsonAsync<AdminProductVariantDto>();
             Assert.NotNull(variant);
-            Assert.Equal("TEST-001-RED", variant.Sku);
+            Assert.Equal("TEST-CREATE-001-RED", variant.Sku);
             Assert.Equal("Red Variant", variant.Name);
             Assert.Equal(99.99m, variant.Price);
         }
@@ -143,9 +143,9 @@ private async Task<string> GetAdminTokenAsync()
             // Create product
             var productResponse = await _client.PostAsJsonAsync("/api/admin/products", new
             {
-                Name = "Test Product",
-                Slug = "test-product",
-                Sku = "TEST-001",
+                Name = "Test Product Get",
+                Slug = "test-product-get",
+                Sku = "TEST-GET-001",
                 BasePrice = 100m,
                 Status = "Active",
                 IsActive = true
@@ -157,7 +157,7 @@ private async Task<string> GetAdminTokenAsync()
             await _client.PostAsJsonAsync($"/api/admin/products/{product.Id}/variants", new
             {
                 ProductId = product.Id,
-                Sku = "TEST-001-RED",
+                Sku = "TEST-GET-001-RED",
                 Name = "Red Variant",
                 Price = 99.99m,
                 IsActive = true
@@ -166,7 +166,7 @@ private async Task<string> GetAdminTokenAsync()
             await _client.PostAsJsonAsync($"/api/admin/products/{product.Id}/variants", new
             {
                 ProductId = product.Id,
-                Sku = "TEST-001-BLUE",
+                Sku = "TEST-GET-001-BLUE",
                 Name = "Blue Variant",
                 Price = 89.99m,
                 IsActive = true
@@ -191,9 +191,9 @@ private async Task<string> GetAdminTokenAsync()
             // Create product and variant
             var productResponse = await _client.PostAsJsonAsync("/api/admin/products", new
             {
-                Name = "Test Product",
-                Slug = "test-product",
-                Sku = "TEST-001",
+                Name = "Test Product Update",
+                Slug = "test-product-update",
+                Sku = "TEST-UPDATE-001",
                 BasePrice = 100m,
                 Status = "Active",
                 IsActive = true
@@ -204,7 +204,7 @@ private async Task<string> GetAdminTokenAsync()
             var variantResponse = await _client.PostAsJsonAsync($"/api/admin/products/{product.Id}/variants", new
             {
                 ProductId = product.Id,
-                Sku = "TEST-001-RED",
+                Sku = "TEST-UPDATE-001-RED",
                 Name = "Red Variant",
                 Price = 99.99m,
                 IsActive = true
@@ -217,7 +217,7 @@ private async Task<string> GetAdminTokenAsync()
             {
                 Id = variant.Id,
                 ProductId = product.Id,
-                Sku = "TEST-001-RED-UPD",
+                Sku = "TEST-UPDATE-001-RED-UPD",
                 Name = "Red Variant Updated",
                 Price = 109.99m,
                 IsActive = true
@@ -239,9 +239,9 @@ private async Task<string> GetAdminTokenAsync()
             // Create product and variant
             var productResponse = await _client.PostAsJsonAsync("/api/admin/products", new
             {
-                Name = "Test Product",
-                Slug = "test-product",
-                Sku = "TEST-001",
+                Name = "Test Product Delete",
+                Slug = "test-product-delete",
+                Sku = "TEST-DELETE-001",
                 BasePrice = 100m,
                 Status = "Active",
                 IsActive = true
@@ -252,7 +252,7 @@ private async Task<string> GetAdminTokenAsync()
             var variantResponse = await _client.PostAsJsonAsync($"/api/admin/products/{product.Id}/variants", new
             {
                 ProductId = product.Id,
-                Sku = "TEST-001-RED",
+                Sku = "TEST-DELETE-001-RED",
                 Name = "Red Variant",
                 Price = 99.99m,
                 IsActive = true
@@ -341,7 +341,7 @@ private async Task<string> GetAdminTokenAsync()
             });
 
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-            return loginResult!.AccessToken;
+            return loginResult!.Token;
         }
 
         // AdminProductAttributeControllerIntegrationTests GetAdminTokenAsync (updated)
@@ -390,7 +390,7 @@ private async Task<string> GetAdminTokenAsync()
             });
 
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-            return loginResult!.AccessToken;
+            return loginResult!.Token;
         }
 
         [Fact]
@@ -401,8 +401,8 @@ private async Task<string> GetAdminTokenAsync()
 
             var response = await _client.PostAsJsonAsync("/api/admin/attributes", new
             {
-                Name = "Color",
-                Code = "color",
+                Name = "Color Create",
+                Code = "color-create",
                 DisplayType = "color",
                 IsFilterable = true,
                 IsVariant = true,
@@ -413,8 +413,8 @@ private async Task<string> GetAdminTokenAsync()
 
             var attribute = await response.Content.ReadFromJsonAsync<AdminProductAttributeDto>();
             Assert.NotNull(attribute);
-            Assert.Equal("Color", attribute.Name);
-            Assert.Equal("color", attribute.Code);
+            Assert.Equal("Color Create", attribute.Name);
+            Assert.Equal("color-create", attribute.Code);
         }
 
         [Fact]
@@ -425,8 +425,8 @@ private async Task<string> GetAdminTokenAsync()
 
             await _client.PostAsJsonAsync("/api/admin/attributes", new
             {
-                Name = "Color",
-                Code = "color",
+                Name = "Color Paged",
+                Code = "color-paged",
                 DisplayType = "color",
                 IsFilterable = true,
                 IsVariant = true
@@ -434,14 +434,14 @@ private async Task<string> GetAdminTokenAsync()
 
             await _client.PostAsJsonAsync("/api/admin/attributes", new
             {
-                Name = "Size",
-                Code = "size",
+                Name = "Size Paged",
+                Code = "size-paged",
                 DisplayType = "text",
                 IsFilterable = true,
                 IsVariant = true
             });
 
-            var response = await _client.GetAsync("/api/admin/attributes?page=1&pageSize=10");
+            var response = await _client.GetAsync("/api/admin/attributes?page=1&pageSize=10&search=paged");
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
 
             var result = await response.Content.ReadFromJsonAsync<PagedResult<AdminProductAttributeDto>>();
@@ -458,8 +458,8 @@ private async Task<string> GetAdminTokenAsync()
 
             var createResponse = await _client.PostAsJsonAsync("/api/admin/attributes", new
             {
-                Name = "Color",
-                Code = "color",
+                Name = "Color Update",
+                Code = "color-update",
                 DisplayType = "color",
                 IsFilterable = true,
                 IsVariant = true
@@ -471,7 +471,7 @@ private async Task<string> GetAdminTokenAsync()
             {
                 Id = attribute.Id,
                 Name = "Color Updated",
-                Code = "color-updated",
+                Code = "color-update-upd",
                 DisplayType = "color",
                 IsFilterable = true,
                 IsVariant = true
@@ -481,7 +481,7 @@ private async Task<string> GetAdminTokenAsync()
 
             var updated = await updateResponse.Content.ReadFromJsonAsync<AdminProductAttributeDto>();
             Assert.Equal("Color Updated", updated.Name);
-            Assert.Equal("color-updated", updated.Code);
+            Assert.Equal("color-update-upd", updated.Code);
         }
 
         [Fact]
@@ -492,8 +492,8 @@ private async Task<string> GetAdminTokenAsync()
 
             var createResponse = await _client.PostAsJsonAsync("/api/admin/attributes", new
             {
-                Name = "Color",
-                Code = "color",
+                Name = "Color Delete",
+                Code = "color-delete",
                 DisplayType = "color",
                 IsFilterable = true,
                 IsVariant = true
@@ -509,7 +509,7 @@ private async Task<string> GetAdminTokenAsync()
     // DTOs for testing
     public class LoginResponse
     {
-        public string AccessToken { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
     }
 

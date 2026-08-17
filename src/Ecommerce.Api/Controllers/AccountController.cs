@@ -1,5 +1,6 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Threading.Tasks;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
@@ -183,7 +184,14 @@ namespace Ecommerce.Api.Controllers
 
         private async Task<object> IssueTokensAsync(ApplicationUser user)
         {
-            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email ?? string.Empty, UserName = user.UserName ?? string.Empty };
+            var roles = (await _userManager.GetRolesAsync(user)).ToList();
+            var dto = new ApplicationUserDto
+            {
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                UserName = user.UserName ?? string.Empty,
+                Roles = roles
+            };
             var token = await _tokenService.CreateTokenAsync(dto);
             var (refreshToken, expires) = await _refreshTokenService.CreateRefreshTokenAsync(user.Id);
             return new { token, refreshToken, refreshTokenExpires = expires };
