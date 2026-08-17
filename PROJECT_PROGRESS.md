@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Architecture tests (NetArchTest)
-- Last Completed: Deployment (Docker/docker-compose, Kubernetes manifests)
-- Next Task: Contract tests, load testing (k6), mutation testing, CI/CD enhancements
+- Current Task: Order notifications via email
+- Last Completed: Architecture tests (NetArchTest)
+- Next Task: Contract tests, load testing (k6), mutation testing, OpenTelemetry tracing
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -434,6 +434,14 @@ This section documents work that already exists in the repository as of 2026-08-
 - Convention tests: entities in Domain.Entities; command handlers implement ICommandHandler<,>; query handlers implement IQueryHandler<,>; interfaces in Application layer; DTOs in Application layer
 - All tests green: 24 Domain + 117 Application + 19 Integration + 14 Architecture = 174 passing
 
+### 2026-08-17 — Order Notifications via Email
+- Enhanced `OrderPlacedEventHandler` to send an HTML order-confirmation email to the customer (order number, items, subtotal/discount/shipping/tax/total) and persist a `Notification` record (type OrderPlaced, channel email) with sent/failed status
+- Respects user `NotificationPreference` for OrderPlaced+email (defaults to enabled when no preference set)
+- Skips gracefully when no customer email is available (anonymous checkout); records failed status if SMTP send throws
+- Fixed `CheckoutCommandHandler` to set `order.UserId` from the command so order emails can be addressed to the customer
+- 4 new application tests for the notification handler
+- All tests green: 24 Domain + 121 Application + 19 Integration + 14 Architecture = 178 passing
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -464,7 +472,7 @@ This section documents work that already exists in the repository as of 2026-08-
 
 2. **Advanced Features**
    - Product search and filtering (Elasticsearch/PostgreSQL full-text)
-   - Order notifications (email, SMS, push)
+   - Order notifications (email, SMS, push) (email notifications done)
    - Inventory management UI (admin)
    - Multi-currency and exchange rate handling
    - Discount/coupon engine with promotion rules

@@ -53,7 +53,8 @@ namespace Ecommerce.Application.Commands.Checkout
                 Id = Guid.NewGuid(),
                 OrderNumber = $"ORD-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString().Substring(0,6)}",
                 CurrencyCode = command.Currency,
-                ShippingAmount = 0m
+                ShippingAmount = 0m,
+                UserId = command.UserId
             };
 
             foreach (var it in command.Items)
