@@ -198,6 +198,13 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetAdminRefundsQuery, PagedResult<AdminRefundDto>>, GetAdminRefundsQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminRefundByIdQuery, AdminRefundDto>, GetAdminRefundByIdQueryHandler>();
 
+            // Admin report query handlers
+            services.AddScoped<IQueryHandler<GetSalesReportQuery, SalesReportDto>, GetSalesReportQueryHandler>();
+            services.AddScoped<IQueryHandler<GetRevenueReportQuery, RevenueReportDto>, GetRevenueReportQueryHandler>();
+            services.AddScoped<IQueryHandler<GetInventoryReportQuery, InventoryReportDto>, GetInventoryReportQueryHandler>();
+            services.AddScoped<IQueryHandler<GetCustomerReportQuery, CustomerReportDto>, GetCustomerReportQueryHandler>();
+            services.AddScoped<IQueryHandler<ExportReportQuery, ExportResult>, ExportReportQueryHandler>();
+
             // Admin dashboard query handler
             services.AddScoped<IQueryHandler<GetAdminDashboardQuery, AdminDashboardDto>, GetAdminDashboardQueryHandler>();
 
