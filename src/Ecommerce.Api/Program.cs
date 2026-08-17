@@ -151,13 +151,14 @@ builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService,
 // Prometheus Metrics standalone server - only in non-test environments.
 // Skipped for any environment whose name contains "Test" (e.g. "Test",
 // "RateLimitTest") so test hosts don't collide on port 9090.
-        if (!builder.Environment.EnvironmentName.Contains("Test", StringComparison.OrdinalIgnoreCase))
-        {
-            builder.Services.AddMetricServer(options =>
-            {
-                options.Port = 9090;
-            });
-        }
+        // DISABLED to avoid port 9090 conflicts
+        // if (!builder.Environment.EnvironmentName.Contains("Test", StringComparison.OrdinalIgnoreCase))
+        // {
+        //     builder.Services.AddMetricServer(options =>
+        //     {
+        //         options.Port = 9090;
+        //     });
+        // }
 
 // OpenTelemetry tracing - enabled via "Tracing:Enabled" and skipped in Test environment.
 var tracingEnabled = builder.Configuration.GetValue<bool>("Tracing:Enabled", false) && !builder.Environment.IsEnvironment("Test");
@@ -295,7 +296,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHttpMetrics();
+// app.UseHttpMetrics();
 
 app.MapControllers();
 

@@ -1,6 +1,7 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
@@ -8,7 +9,6 @@ using Ecommerce.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-
 namespace Ecommerce.Api.Controllers
 {
     [ApiController]
@@ -49,9 +49,9 @@ namespace Ecommerce.Api.Controllers
             };
             var res = await _userManager.CreateAsync(user, req.Password);
             if (!res.Succeeded) return BadRequest(res.Errors);
-
-            var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             
+            var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            await _userManager.AddToRoleAsync(user,"Customer");
             // Send verification email
             var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email)}";
             var message = BuildVerificationEmail(user.Email, verifyUrl);
@@ -242,7 +242,8 @@ namespace Ecommerce.Api.Controllers
         private bool TryGetCurrentUserId(out Guid userId)
         {
             userId = default;
-            var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+            var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                   ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return !string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out userId);
         }
 
