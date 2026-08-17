@@ -266,6 +266,7 @@ namespace Ecommerce.Infrastructure
             services.Configure<Ecommerce.Infrastructure.Payments.StripePaymentProvider.StripeOptions>(configuration.GetSection("Stripe"));
             services.AddScoped(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Ecommerce.Infrastructure.Payments.StripePaymentProvider.StripeOptions>>().Value);
             services.AddScoped<Ecommerce.Application.Interfaces.IPaymentService, Ecommerce.Infrastructure.Payments.StripePaymentProvider>();
+            services.AddScoped<Ecommerce.Application.Interfaces.IStripeWebhookService, Ecommerce.Infrastructure.Payments.StripeWebhookService>();
 
             // Idempotency service
             services.AddScoped<Ecommerce.Application.Interfaces.IIdempotencyService, Ecommerce.Infrastructure.Services.IdempotencyService>();

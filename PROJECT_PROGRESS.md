@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Integration test fixes (JWT auth + test isolation)
-- Last Completed: Email service implementation
-- Next Task: Real Stripe SDK integration, rate limiting, security headers
+- Current Task: Real Stripe SDK integration
+- Last Completed: Integration test fixes (JWT auth + test isolation)
+- Next Task: Rate limiting, HTTPS/security headers, deployment (Docker/K8s)
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -400,6 +400,17 @@ This section documents work that already exists in the repository as of 2026-08-
 - Fixed integration tests: LoginResponse.AccessToken -> Token (matches login response shape)
 - Made admin integration tests use unique product slugs/SKUs and unique attribute codes per test so tests are independent in the shared InMemory DB; attribute paged test uses `search` filter
 - All tests green: 24 Domain + 96 Application + 16 Integration = 136 passing
+
+### 2026-08-17 — Real Stripe SDK Integration
+- Added Stripe.net 52.1.1 to Infrastructure
+- Rewrote `StripePaymentProvider` to use the official SDK: create PaymentIntent (ProcessPaymentAsync), capture (CapturePaymentAsync), cancel/void (VoidPaymentAsync), create Refund (RefundPaymentAsync)
+- Amount conversion to minor units with zero-decimal currency handling; payment method mapping; idempotency keys forwarded to Stripe
+- Graceful test-mode fallback: with placeholder/dummy keys (sk_test_dummy), operations are simulated locally so dev/tests work without real credentials
+- Added `IStripeWebhookService` + `StripeWebhookService`: verifies webhook signatures via `EventUtility.ConstructEvent` and reconciles local Payment/Refund state (payment_intent.succeeded, payment_intent.payment_failed, payment_intent.canceled, charge.refunded)
+- Added `StripeWebhookController` (POST /api/stripe/webhook, AllowAnonymous) reading raw body + Stripe-Signature header
+- Registered IStripeWebhookService in DI
+- 21 new application tests (14 provider + 7 webhook)
+- All tests green: 24 Domain + 117 Application + 16 Integration = 157 passing
 
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
