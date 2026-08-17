@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Advanced features (SMS/push notifications, search index)
-- Last Completed: Advanced features (search, multi-currency, coupon apply)
-- Next Task: OpenTelemetry tracing, correlation IDs, contract tests, load testing (k6), mutation testing
+- Current Task: Observability (OpenTelemetry tracing + correlation IDs)
+- Last Completed: Advanced features (SMS/push notifications, search index)
+- Next Task: Contract tests, load testing (k6), mutation testing, CI/CD enhancements, zero-downtime migrations
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -457,6 +457,12 @@ This section documents work that already exists in the repository as of 2026-08-
 - 16 new application tests (6 SMS/push notification, 10 search index)
 - All tests green: 24 Domain + 162 Application + 19 Integration + 14 Architecture = 219 passing
 
+### 2026-08-17 — Observability: OpenTelemetry Tracing + Correlation IDs
+- `CorrelationIdMiddleware`: reads incoming `X-Correlation-Id` (or generates a Guid), echoes it on the response, sets `HttpContext.TraceIdentifier`, and enriches all Serilog log events with `CorrelationId` via `LogContext`
+- OpenTelemetry tracing: `OpenTelemetry.Extensions.Hosting` / `Instrumentation.AspNetCore` / `Instrumentation.Http` / `Exporter.OpenTelemetryProtocol` 1.17.0 added; `WithTracing` configured with ASP.NET Core + HTTP client instrumentation and OTLP exporter; gated behind `Tracing:Enabled` config and disabled in Test environment; `Tracing` section added to appsettings.Development (enabled, localhost:4317) and appsettings.Test (disabled); exporter upgraded to 1.17.0 to clear GHSA-4625-4j76-fww9
+- 4 new integration tests: generated correlation id returned, incoming id echoed, unique per request, present on error responses
+- All tests green: 24 Domain + 162 Application + 23 Integration + 14 Architecture = 223 passing
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -493,8 +499,8 @@ This section documents work that already exists in the repository as of 2026-08-
    - Inventory management UI (deferred - API-only project, no frontend yet)
 
 3. **Observability Enhancements**
-   - Distributed tracing (OpenTelemetry + Jaeger/Zipkin)
-   - Structured logging correlation IDs
+   - Distributed tracing (OpenTelemetry + Jaeger/Zipkin) (done; OTLP exporter, config-gated)
+   - Structured logging correlation IDs (done)
    - Custom business metrics (orders/day, conversion rate, etc.)
    - Alerting rules (Prometheus Alertmanager)
 

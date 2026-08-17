@@ -12,6 +12,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Ecommerce.Api.Middleware;
 using Serilog;
 using Prometheus;
+using OpenTelemetry;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -145,7 +148,7 @@ builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService,
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
 
-        // Prometheus Metrics - only in non-test environments
+// Prometheus Metrics - only in non-test environments
         if (!builder.Environment.IsEnvironment("Test"))
         {
             builder.Services.AddMetricServer(options =>
@@ -153,6 +156,25 @@ builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService,
                 options.Port = 9090;
             });
         }
+
+// OpenTelemetry tracing - enabled via "Tracing:Enabled" and skipped in Test environment.
+var tracingEnabled = builder.Configuration.GetValue<bool>("Tracing:Enabled", false) && !builder.Environment.IsEnvironment("Test");
+if (tracingEnabled)
+{
+    var otlpEndpoint = builder.Configuration["Tracing:OtlpEndpoint"] ?? "http://localhost:4317";
+    var serviceName = builder.Configuration["Tracing:ServiceName"] ?? "Ecommerce.Api";
+
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracing =>
+        {
+            tracing
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName))
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+        });
+}
+
 
 // Configure Identity and JWT authentication (best-effort — requires Identity & JWT packages locally)
 try
@@ -202,6 +224,9 @@ builder.Services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler
 builder.Services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler<Ecommerce.Application.Commands.Checkout.CheckoutCommand, System.Guid>, Ecommerce.Application.Commands.Checkout.CheckoutCommandHandler>();
 
 var app = builder.Build();
+
+// Correlation ID propagation (must run early so logs/metrics/traces share it)
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 // Serilog request logging
 app.UseSerilogRequestLogging();
