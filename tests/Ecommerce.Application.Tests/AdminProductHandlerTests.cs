@@ -366,6 +366,8 @@ namespace Ecommerce.Application.Tests
             CreateMap<Ecommerce.Domain.Entities.Product, Ecommerce.Application.DTOs.AdminProductDto>();
             CreateMap<Ecommerce.Domain.Entities.ProductVariant, Ecommerce.Application.DTOs.AdminProductVariantDto>();
             CreateMap<Ecommerce.Domain.Entities.ProductImage, Ecommerce.Application.DTOs.AdminProductImageDto>();
+            CreateMap<Ecommerce.Domain.Entities.Coupon, Ecommerce.Application.DTOs.AdminCouponDto>();
+            CreateMap<Ecommerce.Domain.Entities.Promotion, Ecommerce.Application.DTOs.AdminPromotionDto>();
         }
     }
 }

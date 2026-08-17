@@ -25,8 +25,9 @@ namespace Ecommerce.Application.Commands.Admin
 
         public async Task<AdminCouponDto> Handle(CreateCouponCommand command, CancellationToken cancellationToken = default)
         {
+            var upperCode = command.Code.ToUpperInvariant();
             var existingCoupon = await _db.Coupons
-                .FirstOrDefaultAsync(c => c.Code == command.Code, cancellationToken);
+                .FirstOrDefaultAsync(c => c.Code == upperCode, cancellationToken);
 
             if (existingCoupon != null)
                 throw new Domain.Exceptions.DomainException("Coupon code already exists");
@@ -87,10 +88,11 @@ namespace Ecommerce.Application.Commands.Admin
             }
 
             // Check for code uniqueness if changed
-            if (!string.Equals(coupon.Code, command.Code, StringComparison.OrdinalIgnoreCase))
+            var upperCode = command.Code.ToUpperInvariant();
+            if (!string.Equals(coupon.Code, upperCode, StringComparison.OrdinalIgnoreCase))
             {
                 var existingCoupon = await _db.Coupons
-                    .FirstOrDefaultAsync(c => c.Code == command.Code, cancellationToken);
+                    .FirstOrDefaultAsync(c => c.Code == upperCode, cancellationToken);
 
                 if (existingCoupon != null)
                     throw new Domain.Exceptions.DomainException("Coupon code already exists");
