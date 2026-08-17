@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Rate limiting + HTTPS/security headers
-- Last Completed: Real Stripe SDK integration
-- Next Task: Deployment (Docker/docker-compose, Kubernetes manifests)
+- Current Task: Deployment (Docker/docker-compose, Kubernetes manifests)
+- Last Completed: Rate limiting + HTTPS/security headers
+- Next Task: Advanced features (search, notifications, multi-currency, promotions)
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -420,6 +420,14 @@ This section documents work that already exists in the repository as of 2026-08-
 - 3 new integration tests (security headers present; rate limiting returns 429 after limit; rate limiting disabled in Test env)
 - All tests green: 24 Domain + 117 Application + 19 Integration = 160 passing
 
+### 2026-08-17 — Deployment (Docker + Kubernetes)
+- Added multi-stage `Dockerfile` (sdk:8.0 build → aspnet:8.0 runtime, runs as non-root `appuser`, exposes 8080/9090)
+- Added `.dockerignore`
+- Added `docker-compose.yml` with SQL Server 2022 + API services, healthchecks, and env-driven configuration
+- Added Kubernetes manifests under `deploy/k8s/`: namespace, configmap, secret, deployment (2 replicas, probes, resource limits), service, ingress (nginx, TLS), and a bundled sqlserver manifest (PVC + deployment + service)
+- Added `deploy/README.md` with Docker/K8s usage and secret-management guidance
+- (YAML files validated; Docker not available locally so no image build was run)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -468,8 +476,8 @@ This section documents work that already exists in the repository as of 2026-08-
    - Architecture tests (NetArchTest)
 
 5. **Deployment**
-   - Dockerfile and docker-compose
-   - Kubernetes manifests (Deployment, Service, Ingress, ConfigMap, Secret)
+   - Dockerfile and docker-compose (done)
+   - Kubernetes manifests (Deployment, Service, Ingress, ConfigMap, Secret) (done)
    - CI/CD pipeline enhancements (staging, production environments)
    - Database migration strategy for zero-downtime deployments
 
