@@ -383,6 +383,26 @@ namespace Ecommerce.Application.Tests
             CreateMap<Ecommerce.Domain.Entities.NotificationTemplate, Ecommerce.Application.DTOs.AdminNotificationTemplateDto>();
             CreateMap<Ecommerce.Domain.Entities.NotificationPreference, Ecommerce.Application.DTOs.AdminNotificationPreferenceDto>();
             CreateMap<Ecommerce.Domain.Entities.NotificationChannel, Ecommerce.Application.DTOs.AdminNotificationChannelDto>();
+            CreateMap<Ecommerce.Domain.Entities.Category, Ecommerce.Application.DTOs.CategoryDto>();
+            CreateMap<Ecommerce.Domain.Entities.Brand, Ecommerce.Application.DTOs.BrandDto>();
+            CreateMap<Ecommerce.Domain.Entities.Warehouse, Ecommerce.Application.DTOs.WarehouseDto>();
+            CreateMap<Ecommerce.Domain.Entities.ProductReview, Ecommerce.Application.DTOs.ProductReviewDto>()
+                .ForMember(d => d.UserDisplayName, opt => opt.Ignore());
+            CreateMap<Ecommerce.Domain.Entities.Shipment, Ecommerce.Application.DTOs.ShipmentDto>()
+                .ForMember(d => d.WarehouseName, opt => opt.Ignore())
+                .ForMember(d => d.Items, opt => opt.MapFrom(s => s.Items));
+            CreateMap<Ecommerce.Domain.Entities.ShipmentItem, Ecommerce.Application.DTOs.ShipmentItemDto>();
+            CreateMap<Ecommerce.Domain.Entities.SupportTicket, Ecommerce.Application.DTOs.SupportTicketDto>()
+                .ForMember(d => d.Messages, opt => opt.MapFrom(s => s.Messages));
+            CreateMap<Ecommerce.Domain.Entities.SupportTicketMessage, Ecommerce.Application.DTOs.SupportTicketMessageDto>();
+            CreateMap<Ecommerce.Domain.Entities.Tag, Ecommerce.Application.DTOs.TagDto>();
+            CreateMap<Ecommerce.Domain.Entities.Vendor, Ecommerce.Application.DTOs.VendorDto>();
+            CreateMap<Ecommerce.Domain.Entities.VendorProduct, Ecommerce.Application.DTOs.VendorProductDto>()
+                .ForMember(d => d.VendorName, opt => opt.Ignore())
+                .ForMember(d => d.ProductName, opt => opt.Ignore());
+            CreateMap<Ecommerce.Domain.Entities.Address, Ecommerce.Application.DTOs.AddressDto>();
+            CreateMap<Ecommerce.Domain.Entities.UserProfile, Ecommerce.Application.DTOs.UserProfileDto>();
+            CreateMap<Ecommerce.Domain.Entities.AuditLog, Ecommerce.Application.DTOs.AuditLogDto>();
         }
     }
 }

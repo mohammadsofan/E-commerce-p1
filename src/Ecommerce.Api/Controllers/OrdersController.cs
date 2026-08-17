@@ -5,6 +5,7 @@ using Ecommerce.Application.Commands.Orders;
 using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
+using Ecommerce.Application.Queries.Admin;
 using Ecommerce.Application.Queries.Orders;
 using Microsoft.AspNetCore.Mvc;
 
@@ -69,6 +70,17 @@ namespace Ecommerce.Api.Controllers
         {
             var command = new CancelOrderCommand { OrderId = id, Reason = request?.Reason };
             var result = await _commandDispatcher.Send<CancelOrderCommand, OrderDto>(command);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Gets the latest shipment for an order (customer order tracking).
+        /// </summary>
+        [HttpGet("{id:guid}/shipment")]
+        public async Task<IActionResult> GetShipment(Guid id)
+        {
+            var query = new GetOrderShipmentQuery { OrderId = id };
+            var result = await _queryDispatcher.Send<GetOrderShipmentQuery, ShipmentDto>(query);
             return Ok(result);
         }
     }

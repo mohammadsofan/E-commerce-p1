@@ -67,6 +67,33 @@ namespace Ecommerce.Application.Mappings
             // and computed getters TotalAmount / LineTotal).
             CreateMap<Cart, CartDto>();
             CreateMap<CartItem, CartItemDto>();
-        }
+
+            CreateMap<Category, CategoryDto>();
+            CreateMap<Brand, BrandDto>();
+            CreateMap<Warehouse, WarehouseDto>();
+
+            CreateMap<ProductReview, ProductReviewDto>()
+                .ForMember(d => d.UserDisplayName, opt => opt.Ignore());
+
+            CreateMap<Shipment, ShipmentDto>()
+                .ForMember(d => d.WarehouseName, opt => opt.Ignore())
+                .ForMember(d => d.Items, opt => opt.MapFrom(s => s.Items));
+            CreateMap<ShipmentItem, ShipmentItemDto>();
+
+            CreateMap<SupportTicket, SupportTicketDto>()
+                .ForMember(d => d.Messages, opt => opt.MapFrom(s => s.Messages));
+            CreateMap<SupportTicketMessage, SupportTicketMessageDto>();
+
+            CreateMap<Tag, TagDto>();
+            CreateMap<Vendor, VendorDto>();
+
+            CreateMap<VendorProduct, VendorProductDto>()
+                .ForMember(d => d.VendorName, opt => opt.Ignore())
+                .ForMember(d => d.ProductName, opt => opt.Ignore());
+
+            CreateMap<Address, AddressDto>();
+            CreateMap<UserProfile, UserProfileDto>();
+            CreateMap<AuditLog, AuditLogDto>();
+    }
     }
 }

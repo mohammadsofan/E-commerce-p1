@@ -52,6 +52,17 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<NotificationPreference> NotificationPreferences { get; set; }
         public DbSet<NotificationChannel> NotificationChannels { get; set; }
         public DbSet<ProductSearchDocument> ProductSearchDocuments { get; set; }
+        public DbSet<ProductReview> ProductReviews { get; set; }
+        public DbSet<Shipment> Shipments { get; set; }
+        public DbSet<ShipmentItem> ShipmentItems { get; set; }
+        public DbSet<SupportTicket> SupportTickets { get; set; }
+        public DbSet<SupportTicketMessage> SupportTicketMessages { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<Vendor> Vendors { get; set; }
+        public DbSet<VendorProduct> VendorProducts { get; set; }
+        public DbSet<Address> Addresses { get; set; }
+        public DbSet<UserProfile> UserProfiles { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 

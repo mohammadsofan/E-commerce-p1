@@ -279,6 +279,74 @@ namespace Ecommerce.Infrastructure
             // Admin dashboard query handler
             services.AddScoped<IQueryHandler<GetAdminDashboardQuery, AdminDashboardDto>, GetAdminDashboardQueryHandler>();
 
+            // Catalog query handlers (categories / brands)
+            services.AddScoped<IQueryHandler<GetCategoriesQuery, List<CategoryDto>>, GetCategoriesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetCategoryBySlugQuery, CategoryDto>, GetCategoryBySlugQueryHandler>();
+            services.AddScoped<IQueryHandler<GetBrandsQuery, List<BrandDto>>, GetBrandsQueryHandler>();
+
+            // Warehouse query + command handlers
+            services.AddScoped<IQueryHandler<GetAdminWarehousesQuery, PagedResult<WarehouseDto>>, GetAdminWarehousesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminWarehouseByIdQuery, WarehouseDto>, GetAdminWarehouseByIdQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateWarehouseCommand, WarehouseDto>, CreateWarehouseCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateWarehouseCommand, WarehouseDto>, UpdateWarehouseCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteWarehouseCommand, Unit>, DeleteWarehouseCommandHandler>();
+
+            // Review query + command handlers
+            services.AddScoped<IQueryHandler<GetProductReviewsQuery, List<ProductReviewDto>>, GetProductReviewsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminReviewsQuery, PagedResult<ProductReviewDto>>, GetAdminReviewsQueryHandler>();
+            services.AddScoped<ICommandHandler<SubmitProductReviewCommand, ProductReviewDto>, SubmitProductReviewCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateReviewStatusCommand, Unit>, UpdateReviewStatusCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteReviewCommand, Unit>, DeleteReviewCommandHandler>();
+
+            // Shipment query + command handlers
+            services.AddScoped<IQueryHandler<GetAdminShipmentsQuery, PagedResult<ShipmentDto>>, GetAdminShipmentsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminShipmentByIdQuery, ShipmentDto>, GetAdminShipmentByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetOrderShipmentQuery, ShipmentDto>, GetOrderShipmentQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateShipmentCommand, ShipmentDto>, CreateShipmentCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateShipmentStatusCommand, Unit>, UpdateShipmentStatusCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateShipmentTrackingCommand, Unit>, UpdateShipmentTrackingCommandHandler>();
+
+            // Support ticket query + command handlers
+            services.AddScoped<IQueryHandler<GetMySupportTicketsQuery, List<SupportTicketDto>>, GetMySupportTicketsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetSupportTicketByIdQuery, SupportTicketDto>, GetSupportTicketByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminSupportTicketsQuery, PagedResult<SupportTicketDto>>, GetAdminSupportTicketsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminSupportTicketByIdQuery, SupportTicketDto>, GetAdminSupportTicketByIdQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateSupportTicketCommand, SupportTicketDto>, CreateSupportTicketCommandHandler>();
+            services.AddScoped<ICommandHandler<ReplySupportTicketCommand, Unit>, ReplySupportTicketCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateSupportTicketCommand, Unit>, UpdateSupportTicketCommandHandler>();
+
+            // Tag query + command handlers
+            services.AddScoped<IQueryHandler<GetTagsQuery, List<TagDto>>, GetTagsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminTagsQuery, PagedResult<TagDto>>, GetAdminTagsQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateTagCommand, TagDto>, CreateTagCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateTagCommand, TagDto>, UpdateTagCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteTagCommand, Unit>, DeleteTagCommandHandler>();
+
+            // Vendor query + command handlers
+            services.AddScoped<IQueryHandler<GetAdminVendorsQuery, PagedResult<VendorDto>>, GetAdminVendorsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminVendorByIdQuery, VendorDto>, GetAdminVendorByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetVendorProductsQuery, List<VendorProductDto>>, GetVendorProductsQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateVendorCommand, VendorDto>, CreateVendorCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateVendorCommand, VendorDto>, UpdateVendorCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteVendorCommand, Unit>, DeleteVendorCommandHandler>();
+            services.AddScoped<ICommandHandler<CreateVendorProductCommand, VendorProductDto>, CreateVendorProductCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteVendorProductCommand, Unit>, DeleteVendorProductCommandHandler>();
+
+            // Address query + command handlers
+            services.AddScoped<IQueryHandler<GetMyAddressesQuery, List<AddressDto>>, GetMyAddressesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAddressByIdQuery, AddressDto>, GetAddressByIdQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateAddressCommand, AddressDto>, CreateAddressCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateAddressCommand, AddressDto>, UpdateAddressCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteAddressCommand, Unit>, DeleteAddressCommandHandler>();
+
+            // Profile query + command handlers
+            services.AddScoped<IQueryHandler<GetMyProfileQuery, UserProfileDto>, GetMyProfileQueryHandler>();
+            services.AddScoped<ICommandHandler<UpdateProfileCommand, UserProfileDto>, UpdateProfileCommandHandler>();
+
+            // Audit log query handlers
+            services.AddScoped<IQueryHandler<GetAdminAuditLogsQuery, PagedResult<AuditLogDto>>, GetAdminAuditLogsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminAuditLogByIdQuery, AuditLogDto>, GetAdminAuditLogByIdQueryHandler>();
+
             // Payment gateway - use Stripe provider (configured via appsettings.json)
             services.Configure<Ecommerce.Infrastructure.Payments.StripePaymentProvider.StripeOptions>(configuration.GetSection("Stripe"));
             services.AddScoped(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<Ecommerce.Infrastructure.Payments.StripePaymentProvider.StripeOptions>>().Value);

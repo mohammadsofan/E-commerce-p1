@@ -16,6 +16,8 @@ namespace Ecommerce.Application.Interfaces
         DbSet<Category> Categories { get; }
         DbSet<Currency> Currencies { get; }
         DbSet<ExchangeRate> ExchangeRates { get; }
+        DbSet<Brand> Brands { get; }
+        DbSet<Warehouse> Warehouses { get; }
         DbSet<InventoryItem> InventoryItems { get; }
         DbSet<Order> Orders { get; }
         DbSet<OrderItem> OrderItems { get; }
@@ -40,6 +42,17 @@ namespace Ecommerce.Application.Interfaces
         DbSet<NotificationPreference> NotificationPreferences { get; }
         DbSet<NotificationChannel> NotificationChannels { get; }
         DbSet<ProductSearchDocument> ProductSearchDocuments { get; }
+        DbSet<ProductReview> ProductReviews { get; }
+        DbSet<Shipment> Shipments { get; }
+        DbSet<ShipmentItem> ShipmentItems { get; }
+        DbSet<SupportTicket> SupportTickets { get; }
+        DbSet<SupportTicketMessage> SupportTicketMessages { get; }
+        DbSet<Tag> Tags { get; }
+        DbSet<Vendor> Vendors { get; }
+        DbSet<VendorProduct> VendorProducts { get; }
+        DbSet<Address> Addresses { get; }
+        DbSet<UserProfile> UserProfiles { get; }
+        DbSet<AuditLog> AuditLogs { get; }
         IQueryable<IApplicationUser> Users { get; }
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;
