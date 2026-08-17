@@ -311,6 +311,17 @@ namespace Ecommerce.Infrastructure
             services.Configure<Ecommerce.Infrastructure.Services.EmailOptions>(configuration.GetSection("Email"));
             services.AddScoped<Ecommerce.Application.Interfaces.IEmailService, Ecommerce.Infrastructure.Services.EmailService>();
 
+            // SMS service
+            services.Configure<Ecommerce.Infrastructure.Services.SmsOptions>(configuration.GetSection("Sms"));
+            services.AddScoped<Ecommerce.Application.Interfaces.ISmsService, Ecommerce.Infrastructure.Services.SmsService>();
+
+            // Push notification service
+            services.Configure<Ecommerce.Infrastructure.Services.PushOptions>(configuration.GetSection("Push"));
+            services.AddScoped<Ecommerce.Application.Interfaces.IPushNotificationService, Ecommerce.Infrastructure.Services.PushNotificationService>();
+
+            // Product search index service
+            services.AddScoped<Ecommerce.Application.Interfaces.IProductSearchService, Ecommerce.Infrastructure.Services.ProductSearchService>();
+
             // Register EF configurations for new entities
             // (Applied automatically via ApplyConfigurationsFromAssembly)
 

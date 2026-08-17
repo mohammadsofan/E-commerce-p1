@@ -4,8 +4,8 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Advanced features (search, multi-currency, coupon apply)
-- Last Completed: Order notifications via email
+- Current Task: Advanced features (SMS/push notifications, search index)
+- Last Completed: Advanced features (search, multi-currency, coupon apply)
 - Next Task: OpenTelemetry tracing, correlation IDs, contract tests, load testing (k6), mutation testing
 - Overall Progress: ~100% (All core features complete, production-ready)
 
@@ -449,6 +449,14 @@ This section documents work that already exists in the repository as of 2026-08-
 - 25 new application tests (8 product search, 11 currency, 6 coupon checkout)
 - All tests green: 24 Domain + 146 Application + 19 Integration + 14 Architecture = 203 passing
 
+### 2026-08-17 — Advanced Features: SMS/Push Notifications + Product Search Index
+- SMS notifications: `ISmsService` + `SmsService` (Twilio-style provider placeholder; no-op/log-skip when disabled or unconfigured); `Sms` config section added to appsettings
+- Push notifications: `IPushNotificationService` + `PushNotificationService` (FCM-style provider placeholder; no-op when disabled or unconfigured); `Push` config section added
+- `OrderPlacedEventHandler` now fans out email, SMS, and push notifications on order placed, each gated by the customer's `NotificationPreference` (default enabled), each persisted as a `Notification` record (sent/failed); skips cleanly when the user has no email/phone or no push channel is configured; SMS/push failures recorded without crashing
+- Product search index: new `ProductSearchDocument` denormalized entity + `IProductSearchService` with relevance-ranked search (exact name > name prefix > name contains > slug > SKU > description), `IndexProductAsync`/`RemoveFromIndexAsync`/`RebuildIndexAsync`; wired into admin product create/update/delete handlers (optional dependency) and exposed via public `GET /api/products/search`; unique index on ProductId, EF configuration added
+- 16 new application tests (6 SMS/push notification, 10 search index)
+- All tests green: 24 Domain + 162 Application + 19 Integration + 14 Architecture = 219 passing
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -478,8 +486,8 @@ This section documents work that already exists in the repository as of 2026-08-
    - Configure HTTPS enforcement and security headers (done)
 
 2. **Advanced Features**
-   - Product search and filtering (API search done; optional Elasticsearch/full-text index for scale)
-   - Order notifications (email done; SMS/push pending)
+   - Product search and filtering (API search + indexed `/products/search` done; optional Elasticsearch behind IProductSearchService for extreme scale)
+   - Order notifications (email, SMS, push done)
    - Multi-currency and exchange rate handling (done)
    - Discount/coupon engine with promotion rules (done)
    - Inventory management UI (deferred - API-only project, no frontend yet)

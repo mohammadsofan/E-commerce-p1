@@ -15,11 +15,13 @@ namespace Ecommerce.Application.Commands.Admin
     {
         private readonly IApplicationDbContext _db;
         private readonly IMapper _mapper;
+        private readonly IProductSearchService? _searchService;
 
-        public UpdateProductCommandHandler(IApplicationDbContext db, IMapper mapper)
+        public UpdateProductCommandHandler(IApplicationDbContext db, IMapper mapper, IProductSearchService? searchService = null)
         {
             _db = db;
             _mapper = mapper;
+            _searchService = searchService;
         }
 
         public async Task<AdminProductDto> Handle(UpdateProductCommand command, CancellationToken cancellationToken = default)
@@ -71,6 +73,9 @@ namespace Ecommerce.Application.Commands.Admin
             product.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _db.SaveChangesAsync(cancellationToken);
+
+            if (_searchService != null)
+                await _searchService.IndexProductAsync(product.Id, cancellationToken);
 
             return _mapper.Map<AdminProductDto>(product);
         }

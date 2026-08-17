@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
+using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.Queries.Products;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,10 +14,12 @@ namespace Ecommerce.Api.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly QueryDispatcher _queryDispatcher;
+        private readonly IProductSearchService _searchService;
 
-        public ProductsController(QueryDispatcher queryDispatcher)
+        public ProductsController(QueryDispatcher queryDispatcher, IProductSearchService searchService)
         {
             _queryDispatcher = queryDispatcher;
+            _searchService = searchService;
         }
 
         [HttpGet]
@@ -44,6 +47,17 @@ namespace Ecommerce.Api.Controllers
                 SortBy = sortBy
             };
             var result = await _queryDispatcher.Send<GetProductsQuery, List<ProductDto>>(query);
+            return Ok(result);
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search(
+            [FromQuery] string q,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            if (string.IsNullOrWhiteSpace(q)) return BadRequest("Search term is required");
+            var result = await _searchService.SearchAsync(q, page, pageSize);
             return Ok(result);
         }
 

@@ -51,6 +51,7 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<NotificationTemplate> NotificationTemplates { get; set; }
         public DbSet<NotificationPreference> NotificationPreferences { get; set; }
         public DbSet<NotificationChannel> NotificationChannels { get; set; }
+        public DbSet<ProductSearchDocument> ProductSearchDocuments { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 

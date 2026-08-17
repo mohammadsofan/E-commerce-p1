@@ -40,13 +40,14 @@ namespace Ecommerce.Application.Tests
             return order;
         }
 
-        private static ApplicationUser CreateUser(Guid id, string email = "customer@test.com")
+        private static ApplicationUser CreateUser(Guid id, string email = "customer@test.com", string? phone = null, bool includePhone = true)
         {
             return new ApplicationUser
             {
                 Id = id,
                 UserName = email,
                 Email = email,
+                PhoneNumber = includePhone ? (phone ?? "+15551234567") : string.Empty,
                 DisplayName = "Test Customer",
                 FirstName = "Test",
                 LastName = "Customer",
@@ -71,6 +72,42 @@ namespace Ecommerce.Application.Tests
             }
         }
 
+        private class FakeSmsService : ISmsService
+        {
+            public List<SmsMessage> Sent { get; } = new List<SmsMessage>();
+
+            public Task SendAsync(SmsMessage message, CancellationToken cancellationToken = default)
+            {
+                Sent.Add(message);
+                return Task.CompletedTask;
+            }
+        }
+
+        private class FakePushService : IPushNotificationService
+        {
+            public List<PushMessage> Sent { get; } = new List<PushMessage>();
+
+            public Task SendAsync(PushMessage message, CancellationToken cancellationToken = default)
+            {
+                Sent.Add(message);
+                return Task.CompletedTask;
+            }
+        }
+
+        private static OrderPlacedEventHandler CreateHandler(
+            ApplicationDbContext ctx,
+            IEmailService email,
+            ISmsService? sms = null,
+            IPushNotificationService? push = null)
+        {
+            return new OrderPlacedEventHandler(
+                ctx,
+                email,
+                sms ?? new FakeSmsService(),
+                push ?? new FakePushService(),
+                NullLogger<OrderPlacedEventHandler>.Instance);
+        }
+
         [Fact]
         public async Task Handle_PlacedOrder_SendsEmailAndPersistsNotification()
         {
@@ -83,7 +120,7 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var emailService = new FakeEmailService();
-            var handler = new OrderPlacedEventHandler(ctx, emailService, NullLogger<OrderPlacedEventHandler>.Instance);
+            var handler = CreateHandler(ctx, emailService);
 
             await handler.Handle(new OrderPlacedDomainEvent(order.Id));
 
@@ -94,7 +131,7 @@ namespace Ecommerce.Application.Tests
             Assert.Contains("Test Product", message.Body);
             Assert.Contains(order.TotalAmount.ToString("C"), message.Body);
 
-            var notification = await ctx.Notifications.SingleAsync();
+            var notification = await ctx.Notifications.SingleAsync(n => n.Channel == "email");
             Assert.NotNull(notification);
             Assert.Equal("OrderPlaced", notification.Type);
             Assert.Equal("email", notification.Channel);
@@ -113,7 +150,7 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var emailService = new FakeEmailService();
-            var handler = new OrderPlacedEventHandler(ctx, emailService, NullLogger<OrderPlacedEventHandler>.Instance);
+            var handler = CreateHandler(ctx, emailService);
 
             await handler.Handle(new OrderPlacedDomainEvent(order.Id));
 
@@ -143,12 +180,12 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var emailService = new FakeEmailService();
-            var handler = new OrderPlacedEventHandler(ctx, emailService, NullLogger<OrderPlacedEventHandler>.Instance);
+            var handler = CreateHandler(ctx, emailService);
 
             await handler.Handle(new OrderPlacedDomainEvent(order.Id));
 
             Assert.Empty(emailService.Sent);
-            Assert.Empty(ctx.Notifications);
+            Assert.DoesNotContain(ctx.Notifications, n => n.Channel == "email");
         }
 
         [Fact]
@@ -163,11 +200,11 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var emailService = new ThrowingEmailService();
-            var handler = new OrderPlacedEventHandler(ctx, emailService, NullLogger<OrderPlacedEventHandler>.Instance);
+            var handler = CreateHandler(ctx, emailService);
 
             await handler.Handle(new OrderPlacedDomainEvent(order.Id));
 
-            var notification = await ctx.Notifications.SingleOrDefaultAsync();
+            var notification = await ctx.Notifications.SingleOrDefaultAsync(n => n.Channel == "email");
             Assert.NotNull(notification);
             Assert.Equal("failed", notification.Status);
             Assert.Contains("boom", notification.ErrorMessage);
@@ -183,6 +220,167 @@ namespace Ecommerce.Application.Tests
             public Task SendTemplateAsync(string to, string templateName, Dictionary<string, string> variables, CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("SMTP boom");
+            }
+        }
+
+        [Fact]
+        public async Task Handle_SmsEnabled_SendsSmsAndPersistsNotification()
+        {
+            using var ctx = CreateContext();
+
+            var userId = Guid.NewGuid();
+            ctx.Set<ApplicationUser>().Add(CreateUser(userId));
+            var order = CreateOrder(userId);
+            ctx.Orders.Add(order);
+            await ctx.SaveChangesAsync();
+
+            var sms = new FakeSmsService();
+            var handler = CreateHandler(ctx, new FakeEmailService(), sms: sms);
+
+            await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+
+            var message = Assert.Single(sms.Sent);
+            Assert.Equal("+15551234567", message.To);
+            Assert.Contains(order.OrderNumber, message.Body);
+
+            var notification = await ctx.Notifications.SingleAsync(n => n.Channel == "sms");
+            Assert.Equal("OrderPlaced", notification.Type);
+            Assert.Equal("sms", notification.Channel);
+            Assert.Equal("sent", notification.Status);
+        }
+
+        [Fact]
+        public async Task Handle_NoPhoneNumber_SkipsSms()
+        {
+            using var ctx = CreateContext();
+
+            var userId = Guid.NewGuid();
+            ctx.Set<ApplicationUser>().Add(CreateUser(userId, includePhone: false));
+            var order = CreateOrder(userId);
+            ctx.Orders.Add(order);
+            await ctx.SaveChangesAsync();
+
+            var sms = new FakeSmsService();
+            var handler = CreateHandler(ctx, new FakeEmailService(), sms: sms);
+
+            await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+
+            Assert.Empty(sms.Sent);
+            Assert.DoesNotContain(ctx.Notifications, n => n.Channel == "sms");
+        }
+
+        [Fact]
+        public async Task Handle_UserDisabledSmsPreference_SkipsSms()
+        {
+            using var ctx = CreateContext();
+
+            var userId = Guid.NewGuid();
+            ctx.Set<ApplicationUser>().Add(CreateUser(userId));
+            var order = CreateOrder(userId);
+            ctx.Orders.Add(order);
+            ctx.NotificationPreferences.Add(new NotificationPreference
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                NotificationType = "OrderPlaced",
+                Channel = "sms",
+                IsEnabled = false,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+            await ctx.SaveChangesAsync();
+
+            var sms = new FakeSmsService();
+            var handler = CreateHandler(ctx, new FakeEmailService(), sms: sms);
+
+            await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+
+            Assert.Empty(sms.Sent);
+            Assert.DoesNotContain(ctx.Notifications, n => n.Channel == "sms");
+        }
+
+        [Fact]
+        public async Task Handle_SmsProviderThrows_RecordsFailedNotification()
+        {
+            using var ctx = CreateContext();
+
+            var userId = Guid.NewGuid();
+            ctx.Set<ApplicationUser>().Add(CreateUser(userId));
+            var order = CreateOrder(userId);
+            ctx.Orders.Add(order);
+            await ctx.SaveChangesAsync();
+
+            var sms = new ThrowingSmsService();
+            var handler = CreateHandler(ctx, new FakeEmailService(), sms: sms);
+
+            await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+
+            var notification = await ctx.Notifications.SingleOrDefaultAsync(n => n.Channel == "sms");
+            Assert.NotNull(notification);
+            Assert.Equal("failed", notification.Status);
+            Assert.Contains("sms boom", notification.ErrorMessage);
+        }
+
+        [Fact]
+        public async Task Handle_PushChannelConfigured_SendsPushAndPersistsNotification()
+        {
+            using var ctx = CreateContext();
+
+            var userId = Guid.NewGuid();
+            ctx.Set<ApplicationUser>().Add(CreateUser(userId));
+            var order = CreateOrder(userId);
+            ctx.Orders.Add(order);
+            ctx.NotificationChannels.Add(new NotificationChannel
+            {
+                Id = Guid.NewGuid(),
+                Name = "push",
+                Provider = "fcm",
+                ConfigurationJson = "{}",
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+            await ctx.SaveChangesAsync();
+
+            var push = new FakePushService();
+            var handler = CreateHandler(ctx, new FakeEmailService(), push: push);
+
+            await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+
+            var message = Assert.Single(push.Sent);
+            Assert.Contains(order.OrderNumber, message.Body);
+
+            var notification = await ctx.Notifications.SingleAsync(n => n.Channel == "push");
+            Assert.Equal("OrderPlaced", notification.Type);
+            Assert.Equal("push", notification.Channel);
+            Assert.Equal("sent", notification.Status);
+        }
+
+        [Fact]
+        public async Task Handle_NoPushChannelConfigured_SkipsPush()
+        {
+            using var ctx = CreateContext();
+
+            var userId = Guid.NewGuid();
+            ctx.Set<ApplicationUser>().Add(CreateUser(userId));
+            var order = CreateOrder(userId);
+            ctx.Orders.Add(order);
+            await ctx.SaveChangesAsync();
+
+            var push = new FakePushService();
+            var handler = CreateHandler(ctx, new FakeEmailService(), push: push);
+
+            await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+
+            Assert.Empty(push.Sent);
+            Assert.DoesNotContain(ctx.Notifications, n => n.Channel == "push");
+        }
+
+        private class ThrowingSmsService : ISmsService
+        {
+            public Task SendAsync(SmsMessage message, CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("sms boom");
             }
         }
     }

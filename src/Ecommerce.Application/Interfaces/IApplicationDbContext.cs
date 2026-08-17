@@ -39,6 +39,7 @@ namespace Ecommerce.Application.Interfaces
         DbSet<NotificationTemplate> NotificationTemplates { get; }
         DbSet<NotificationPreference> NotificationPreferences { get; }
         DbSet<NotificationChannel> NotificationChannels { get; }
+        DbSet<ProductSearchDocument> ProductSearchDocuments { get; }
         IQueryable<IApplicationUser> Users { get; }
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;
