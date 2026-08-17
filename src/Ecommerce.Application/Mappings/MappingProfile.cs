@@ -36,6 +36,11 @@ namespace Ecommerce.Application.Mappings
             CreateMap<Coupon, AdminCouponDto>();
             CreateMap<Promotion, AdminPromotionDto>();
 
+            CreateMap<Currency, CurrencyDto>();
+            CreateMap<ExchangeRate, ExchangeRateDto>()
+                .ForMember(d => d.FromCurrencyCode, opt => opt.Ignore())
+                .ForMember(d => d.ToCurrencyCode, opt => opt.Ignore());
+
             CreateMap<Payment, AdminPaymentDto>();
             CreateMap<Refund, AdminRefundDto>();
 

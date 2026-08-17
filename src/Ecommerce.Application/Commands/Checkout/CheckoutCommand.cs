@@ -9,6 +9,7 @@ namespace Ecommerce.Application.Commands.Checkout
         public List<CheckoutItem> Items { get; set; } = new List<CheckoutItem>();
         public string Currency { get; set; } = "USD";
         public string ShippingAddress { get; set; } = string.Empty;
+        public string? CouponCode { get; set; }
         public string IdempotencyKey { get; set; } = string.Empty;
     }
 

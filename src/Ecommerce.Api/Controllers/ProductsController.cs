@@ -20,9 +20,29 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> Get(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? search = null,
+            [FromQuery] Guid? categoryId = null,
+            [FromQuery] Guid? brandId = null,
+            [FromQuery] decimal? minPrice = null,
+            [FromQuery] decimal? maxPrice = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] string? sortBy = null)
         {
-            var query = new GetProductsQuery { Page = page, PageSize = pageSize };
+            var query = new GetProductsQuery
+            {
+                Page = page,
+                PageSize = pageSize,
+                SearchTerm = search,
+                CategoryId = categoryId,
+                BrandId = brandId,
+                MinPrice = minPrice,
+                MaxPrice = maxPrice,
+                IsActive = isActive,
+                SortBy = sortBy
+            };
             var result = await _queryDispatcher.Send<GetProductsQuery, List<ProductDto>>(query);
             return Ok(result);
         }

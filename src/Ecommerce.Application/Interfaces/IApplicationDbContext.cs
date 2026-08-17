@@ -14,6 +14,8 @@ namespace Ecommerce.Application.Interfaces
         DbSet<ProductAttribute> ProductAttributes { get; }
         DbSet<ProductVariantAttribute> ProductVariantAttributes { get; }
         DbSet<Category> Categories { get; }
+        DbSet<Currency> Currencies { get; }
+        DbSet<ExchangeRate> ExchangeRates { get; }
         DbSet<InventoryItem> InventoryItems { get; }
         DbSet<Order> Orders { get; }
         DbSet<OrderItem> OrderItems { get; }

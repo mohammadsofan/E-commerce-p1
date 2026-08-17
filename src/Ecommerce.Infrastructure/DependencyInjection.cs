@@ -135,6 +135,14 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateCouponCommand, AdminCouponDto>, UpdateCouponCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteCouponCommand, Unit>, DeleteCouponCommandHandler>();
 
+            // Admin currency command handlers
+            services.AddScoped<ICommandHandler<CreateCurrencyCommand, CurrencyDto>, CreateCurrencyCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateCurrencyCommand, CurrencyDto>, UpdateCurrencyCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteCurrencyCommand, Unit>, DeleteCurrencyCommandHandler>();
+            services.AddScoped<ICommandHandler<CreateExchangeRateCommand, ExchangeRateDto>, CreateExchangeRateCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateExchangeRateCommand, ExchangeRateDto>, UpdateExchangeRateCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteExchangeRateCommand, Unit>, DeleteExchangeRateCommandHandler>();
+
             // Admin promotion command handlers
             services.AddScoped<ICommandHandler<CreatePromotionCommand, AdminPromotionDto>, CreatePromotionCommandHandler>();
             services.AddScoped<ICommandHandler<UpdatePromotionCommand, AdminPromotionDto>, UpdatePromotionCommandHandler>();
@@ -242,6 +250,15 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetAdminTaxCategoryByIdQuery, AdminTaxCategoryDto>, GetAdminTaxCategoryByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminTaxRatesQuery, PagedResult<AdminTaxRateDto>>, GetAdminTaxRatesQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminTaxRateByIdQuery, AdminTaxRateDto>, GetAdminTaxRateByIdQueryHandler>();
+
+            // Currency & exchange rate query handlers
+            services.AddScoped<IQueryHandler<GetCurrenciesQuery, List<CurrencyDto>>, GetCurrenciesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetExchangeRatesQuery, List<ExchangeRateDto>>, GetExchangeRatesQueryHandler>();
+            services.AddScoped<IQueryHandler<ConvertCurrencyQuery, CurrencyConversionResult>, ConvertCurrencyQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminCurrenciesQuery, PagedResult<CurrencyDto>>, GetAdminCurrenciesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminCurrencyByIdQuery, CurrencyDto>, GetAdminCurrencyByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminExchangeRatesQuery, PagedResult<ExchangeRateDto>>, GetAdminExchangeRatesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminExchangeRateByIdQuery, ExchangeRateDto>, GetAdminExchangeRateByIdQueryHandler>();
 
             // Admin notification query handlers
             services.AddScoped<IQueryHandler<GetAdminNotificationsQuery, PagedResult<AdminNotificationDto>>, GetAdminNotificationsQueryHandler>();

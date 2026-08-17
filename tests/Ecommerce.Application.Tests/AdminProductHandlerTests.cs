@@ -364,6 +364,11 @@ namespace Ecommerce.Application.Tests
         public AutoMapperProfileForTests()
         {
             CreateMap<Ecommerce.Domain.Entities.Product, Ecommerce.Application.DTOs.AdminProductDto>();
+            CreateMap<Ecommerce.Domain.Entities.Product, Ecommerce.Application.DTOs.ProductDto>();
+            CreateMap<Ecommerce.Domain.Entities.Currency, Ecommerce.Application.DTOs.CurrencyDto>();
+            CreateMap<Ecommerce.Domain.Entities.ExchangeRate, Ecommerce.Application.DTOs.ExchangeRateDto>()
+                .ForMember(d => d.FromCurrencyCode, opt => opt.Ignore())
+                .ForMember(d => d.ToCurrencyCode, opt => opt.Ignore());
             CreateMap<Ecommerce.Domain.Entities.ProductVariant, Ecommerce.Application.DTOs.AdminProductVariantDto>();
             CreateMap<Ecommerce.Domain.Entities.ProductImage, Ecommerce.Application.DTOs.AdminProductImageDto>();
             CreateMap<Ecommerce.Domain.Entities.Coupon, Ecommerce.Application.DTOs.AdminCouponDto>();

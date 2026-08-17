@@ -25,6 +25,7 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<ProductVariantAttribute> ProductVariantAttributes { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Currency> Currencies { get; set; }
+        public DbSet<ExchangeRate> ExchangeRates { get; set; }
         public DbSet<Brand> Brands { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<TaxCategory> TaxCategories { get; set; }

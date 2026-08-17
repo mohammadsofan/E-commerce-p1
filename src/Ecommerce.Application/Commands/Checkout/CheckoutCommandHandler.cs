@@ -6,6 +6,7 @@ using Ecommerce.Application.Common.DomainEvents;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Domain.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Commands.Checkout
 {
@@ -76,6 +77,38 @@ namespace Ecommerce.Application.Commands.Checkout
                 }
 
                 inventory.Reserve(it.Quantity);
+            }
+
+            // Apply coupon discount if provided
+            if (!string.IsNullOrWhiteSpace(command.CouponCode))
+            {
+                var coupon = await _db.Coupons
+                    .FirstOrDefaultAsync(c => c.Code == command.CouponCode.Trim().ToUpperInvariant(), cancellationToken);
+                if (coupon == null)
+                    throw new DomainException("Invalid coupon code");
+
+                var now = DateTimeOffset.UtcNow;
+                if (!coupon.IsActive)
+                    throw new DomainException("Coupon is not active");
+                if (coupon.StartAt.HasValue && coupon.StartAt.Value > now)
+                    throw new DomainException("Coupon has not started yet");
+                if (coupon.EndAt.HasValue && coupon.EndAt.Value < now)
+                    throw new DomainException("Coupon has expired");
+                if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
+                    throw new DomainException("Coupon usage limit reached");
+                if (coupon.MinOrderAmount.HasValue && order.Subtotal < coupon.MinOrderAmount.Value)
+                    throw new DomainException($"Minimum order amount for this coupon is {coupon.MinOrderAmount.Value}");
+
+                decimal discount = 0m;
+                if (coupon.Type == "percentage")
+                    discount = order.Subtotal * (coupon.Value / 100m);
+                else if (coupon.Type == "fixed_amount")
+                    discount = coupon.Value;
+
+                if (coupon.MaxDiscountAmount.HasValue && discount > coupon.MaxDiscountAmount.Value)
+                    discount = coupon.MaxDiscountAmount.Value;
+
+                order.ApplyCoupon(coupon.Code, discount);
             }
 
             order.PlaceOrder();

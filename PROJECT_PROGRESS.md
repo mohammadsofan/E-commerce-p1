@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Order notifications via email
-- Last Completed: Architecture tests (NetArchTest)
-- Next Task: Contract tests, load testing (k6), mutation testing, OpenTelemetry tracing
+- Current Task: Advanced features (search, multi-currency, coupon apply)
+- Last Completed: Order notifications via email
+- Next Task: OpenTelemetry tracing, correlation IDs, contract tests, load testing (k6), mutation testing
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -442,6 +442,13 @@ This section documents work that already exists in the repository as of 2026-08-
 - 4 new application tests for the notification handler
 - All tests green: 24 Domain + 121 Application + 19 Integration + 14 Architecture = 178 passing
 
+### 2026-08-17 — Advanced Features: Search, Multi-Currency, Coupon Apply
+- Product search & filtering: `GetProductsQuery` now supports search term (name/SKU/slug/description), category filter, brand filter, min/max price, active-only filter, and sorting (name, price_asc, price_desc, newest, featured); deleted products always excluded; `ProductsController` accepts the new query params
+- Multi-currency: `Currencies`/`ExchangeRates` now exposed on `IApplicationDbContext`; admin CRUD for currencies (single base currency enforced) and exchange rates (positive rate, distinct from/to); public `GET /api/currencies`, `GET /api/currencies/rates`, and `GET /api/currencies/convert` (latest effective rate, inverse fallback, same-currency identity); DTOs carry currency codes
+- Coupon engine: customer-facing `POST /api/coupons/validate` and `POST /api/coupons/calculate`; checkout now accepts `CouponCode`, validates it (active/start/end/usage/min-order/cap) and applies the discount to the order
+- 25 new application tests (8 product search, 11 currency, 6 coupon checkout)
+- All tests green: 24 Domain + 146 Application + 19 Integration + 14 Architecture = 203 passing
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -471,11 +478,11 @@ This section documents work that already exists in the repository as of 2026-08-
    - Configure HTTPS enforcement and security headers (done)
 
 2. **Advanced Features**
-   - Product search and filtering (Elasticsearch/PostgreSQL full-text)
-   - Order notifications (email, SMS, push) (email notifications done)
-   - Inventory management UI (admin)
-   - Multi-currency and exchange rate handling
-   - Discount/coupon engine with promotion rules
+   - Product search and filtering (API search done; optional Elasticsearch/full-text index for scale)
+   - Order notifications (email done; SMS/push pending)
+   - Multi-currency and exchange rate handling (done)
+   - Discount/coupon engine with promotion rules (done)
+   - Inventory management UI (deferred - API-only project, no frontend yet)
 
 3. **Observability Enhancements**
    - Distributed tracing (OpenTelemetry + Jaeger/Zipkin)
