@@ -368,6 +368,16 @@ namespace Ecommerce.Application.Tests
             CreateMap<Ecommerce.Domain.Entities.ProductImage, Ecommerce.Application.DTOs.AdminProductImageDto>();
             CreateMap<Ecommerce.Domain.Entities.Coupon, Ecommerce.Application.DTOs.AdminCouponDto>();
             CreateMap<Ecommerce.Domain.Entities.Promotion, Ecommerce.Application.DTOs.AdminPromotionDto>();
+            CreateMap<Ecommerce.Domain.Entities.ShippingZone, Ecommerce.Application.DTOs.AdminShippingZoneDto>();
+            CreateMap<Ecommerce.Domain.Entities.ShippingZoneLocation, Ecommerce.Application.DTOs.AdminShippingZoneLocationDto>();
+            CreateMap<Ecommerce.Domain.Entities.ShippingMethod, Ecommerce.Application.DTOs.AdminShippingMethodDto>();
+            CreateMap<Ecommerce.Domain.Entities.ShippingRate, Ecommerce.Application.DTOs.AdminShippingRateDto>();
+            CreateMap<Ecommerce.Domain.Entities.TaxCategory, Ecommerce.Application.DTOs.AdminTaxCategoryDto>();
+            CreateMap<Ecommerce.Domain.Entities.TaxRate, Ecommerce.Application.DTOs.AdminTaxRateDto>();
+            CreateMap<Ecommerce.Domain.Entities.Notification, Ecommerce.Application.DTOs.AdminNotificationDto>();
+            CreateMap<Ecommerce.Domain.Entities.NotificationTemplate, Ecommerce.Application.DTOs.AdminNotificationTemplateDto>();
+            CreateMap<Ecommerce.Domain.Entities.NotificationPreference, Ecommerce.Application.DTOs.AdminNotificationPreferenceDto>();
+            CreateMap<Ecommerce.Domain.Entities.NotificationChannel, Ecommerce.Application.DTOs.AdminNotificationChannelDto>();
         }
     }
 }

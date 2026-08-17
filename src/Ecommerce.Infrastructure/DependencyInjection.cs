@@ -145,6 +145,37 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<VoidPaymentCommand, PaymentResultDto>, VoidPaymentCommandHandler>();
             services.AddScoped<ICommandHandler<RefundPaymentCommand, RefundResultDto>, RefundPaymentCommandHandler>();
 
+            // Admin shipping command handlers
+            services.AddScoped<ICommandHandler<CreateShippingZoneCommand, AdminShippingZoneDto>, CreateShippingZoneCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateShippingZoneCommand, AdminShippingZoneDto>, UpdateShippingZoneCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteShippingZoneCommand, Unit>, DeleteShippingZoneCommandHandler>();
+            services.AddScoped<ICommandHandler<CreateShippingMethodCommand, AdminShippingMethodDto>, CreateShippingMethodCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateShippingMethodCommand, AdminShippingMethodDto>, UpdateShippingMethodCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteShippingMethodCommand, Unit>, DeleteShippingMethodCommandHandler>();
+            services.AddScoped<ICommandHandler<CreateShippingRateOnlyCommand, AdminShippingRateDto>, CreateShippingRateOnlyCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateShippingRateOnlyCommand, AdminShippingRateDto>, UpdateShippingRateOnlyCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteShippingRateCommand, Unit>, DeleteShippingRateCommandHandler>();
+
+            // Admin tax command handlers
+            services.AddScoped<ICommandHandler<CreateTaxCategoryCommand, AdminTaxCategoryDto>, CreateTaxCategoryCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateTaxCategoryCommand, AdminTaxCategoryDto>, UpdateTaxCategoryCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteTaxCategoryCommand, Unit>, DeleteTaxCategoryCommandHandler>();
+            services.AddScoped<ICommandHandler<CreateTaxRateOnlyCommand, AdminTaxRateDto>, CreateTaxRateOnlyCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateTaxRateOnlyCommand, AdminTaxRateDto>, UpdateTaxRateOnlyCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteTaxRateCommand, Unit>, DeleteTaxRateCommandHandler>();
+
+            // Admin notification command handlers
+            services.AddScoped<ICommandHandler<CreateNotificationCommand, AdminNotificationDto>, CreateNotificationCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateNotificationCommand, AdminNotificationDto>, UpdateNotificationCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteNotificationCommand, Unit>, DeleteNotificationCommandHandler>();
+            services.AddScoped<ICommandHandler<CreateNotificationTemplateCommand, AdminNotificationTemplateDto>, CreateNotificationTemplateCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateNotificationTemplateCommand, AdminNotificationTemplateDto>, UpdateNotificationTemplateCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteNotificationTemplateCommand, Unit>, DeleteNotificationTemplateCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateNotificationPreferenceCommand, AdminNotificationPreferenceDto>, UpdateNotificationPreferenceCommandHandler>();
+            services.AddScoped<ICommandHandler<CreateNotificationChannelCommand, AdminNotificationChannelDto>, CreateNotificationChannelCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateNotificationChannelCommand, AdminNotificationChannelDto>, UpdateNotificationChannelCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteNotificationChannelCommand, Unit>, DeleteNotificationChannelCommandHandler>();
+
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
@@ -197,6 +228,29 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetAdminPaymentByIdQuery, AdminPaymentDto>, GetAdminPaymentByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminRefundsQuery, PagedResult<AdminRefundDto>>, GetAdminRefundsQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminRefundByIdQuery, AdminRefundDto>, GetAdminRefundByIdQueryHandler>();
+
+            // Admin shipping query handlers
+            services.AddScoped<IQueryHandler<GetAdminShippingZonesQuery, PagedResult<AdminShippingZoneDto>>, GetAdminShippingZonesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminShippingZoneByIdQuery, AdminShippingZoneDto>, GetAdminShippingZoneByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminShippingMethodsQuery, PagedResult<AdminShippingMethodDto>>, GetAdminShippingMethodsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminShippingMethodByIdQuery, AdminShippingMethodDto>, GetAdminShippingMethodByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminShippingRatesQuery, PagedResult<AdminShippingRateDto>>, GetAdminShippingRatesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminShippingRateByIdQuery, AdminShippingRateDto>, GetAdminShippingRateByIdQueryHandler>();
+
+            // Admin tax query handlers
+            services.AddScoped<IQueryHandler<GetAdminTaxCategoriesQuery, PagedResult<AdminTaxCategoryDto>>, GetAdminTaxCategoriesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminTaxCategoryByIdQuery, AdminTaxCategoryDto>, GetAdminTaxCategoryByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminTaxRatesQuery, PagedResult<AdminTaxRateDto>>, GetAdminTaxRatesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminTaxRateByIdQuery, AdminTaxRateDto>, GetAdminTaxRateByIdQueryHandler>();
+
+            // Admin notification query handlers
+            services.AddScoped<IQueryHandler<GetAdminNotificationsQuery, PagedResult<AdminNotificationDto>>, GetAdminNotificationsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminNotificationByIdQuery, AdminNotificationDto>, GetAdminNotificationByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminNotificationTemplatesQuery, PagedResult<AdminNotificationTemplateDto>>, GetAdminNotificationTemplatesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminNotificationTemplateByIdQuery, AdminNotificationTemplateDto>, GetAdminNotificationTemplateByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminNotificationPreferencesQuery, PagedResult<AdminNotificationPreferenceDto>>, GetAdminNotificationPreferencesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminNotificationChannelsQuery, PagedResult<AdminNotificationChannelDto>>, GetAdminNotificationChannelsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminNotificationChannelByIdQuery, AdminNotificationChannelDto>, GetAdminNotificationChannelByIdQueryHandler>();
 
             // Admin report query handlers
             services.AddScoped<IQueryHandler<GetSalesReportQuery, SalesReportDto>, GetSalesReportQueryHandler>();

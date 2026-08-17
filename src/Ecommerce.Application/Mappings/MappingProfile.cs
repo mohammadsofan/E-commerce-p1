@@ -39,6 +39,19 @@ namespace Ecommerce.Application.Mappings
             CreateMap<Payment, AdminPaymentDto>();
             CreateMap<Refund, AdminRefundDto>();
 
+            CreateMap<ShippingZone, AdminShippingZoneDto>();
+            CreateMap<ShippingZoneLocation, AdminShippingZoneLocationDto>();
+            CreateMap<ShippingMethod, AdminShippingMethodDto>();
+            CreateMap<ShippingRate, AdminShippingRateDto>();
+
+            CreateMap<TaxCategory, AdminTaxCategoryDto>();
+            CreateMap<TaxRate, AdminTaxRateDto>();
+
+            CreateMap<Notification, AdminNotificationDto>();
+            CreateMap<NotificationTemplate, AdminNotificationTemplateDto>();
+            CreateMap<NotificationPreference, AdminNotificationPreferenceDto>();
+            CreateMap<NotificationChannel, AdminNotificationChannelDto>();
+
             CreateMap<Ecommerce.Domain.Entities.InventoryItem, AdminInventoryDto>()
                 .ForMember(d => d.ProductName, opt => opt.MapFrom(s => s.Product != null ? s.Product.Name : string.Empty))
                 .ForMember(d => d.VariantName, opt => opt.MapFrom(s => s.ProductVariant != null ? s.ProductVariant.Name : string.Empty))
