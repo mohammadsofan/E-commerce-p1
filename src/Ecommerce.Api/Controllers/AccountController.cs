@@ -54,13 +54,7 @@ namespace Ecommerce.Api.Controllers
             
             // Send verification email
             var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email)}";
-            var message = new EmailMessage
-            {
-                To = user.Email,
-                Subject = "Verify your email address",
-                Body = $"<p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">{verifyUrl}</a></p><p>This link will expire in 24 hours.</p>",
-                IsHtml = true
-            };
+            var message = BuildVerificationEmail(user.Email, verifyUrl);
             await _emailService.SendAsync(message);
 
             return Ok(new { message = "Registration successful. Verification email sent." });
@@ -251,8 +245,148 @@ namespace Ecommerce.Api.Controllers
             var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
             return !string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out userId);
         }
-    }
 
+        private EmailMessage BuildVerificationEmail(string toEmail, string verifyUrl)
+        {
+            return new EmailMessage
+            {
+                To = toEmail,
+                Subject = "Verify your email address",
+                Body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Verify your email</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f5f5f5;'>
+    <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <tr>
+            <td style='background-color: #ffffff; border-radius: 8px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
+                <table role='presentation' width='100%' cellspacing='0' cellpadding='0'>
+                    <tr>
+                        <td style='text-align: center; padding-bottom: 30px; border-bottom: 1px solid #eaeaea;'>
+                            <h1 style='margin: 0; color: #1a1a2e; font-size: 28px; font-weight: 600;'>Welcome to Ecommerce</h1>
+                            <p style='margin: 10px 0 0; color: #6b7280; font-size: 16px;'>Verify your email address</p>
+                        </td>
+                    </tr>
+                </table>
+                <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='margin-top: 30px;'>
+                    <tr>
+                        <td style='color: #374151; font-size: 16px; line-height: 1.6;'>
+                            <p style='margin: 0 0 16px;'>Hi there,</p>
+                            <p style='margin: 0 0 16px;'>Thanks for signing up! Please verify your email address to get started.</p>
+                            <p style='margin: 0 0 24px;'>Click the button below to verify your email address:</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='text-align: center; padding: 24px 0;'>
+                            <a href='{verifyUrl}' style='display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;'>
+                                Verify Email Address
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='color: #6b7280; font-size: 14px; line-height: 1.6; padding-top: 24px; border-top: 1px solid #eaeaea;'>
+                            <p style='margin: 0 0 8px;'>If the button doesn't work, copy and paste this link into your browser:</p>
+                            <p style='margin: 0; word-break: break-all; color: #2563eb;'><a href='{verifyUrl}' style='color: #2563eb;'>{verifyUrl}</a></p>
+                            <p style='margin: 16px 0 0; font-size: 13px; color: #9ca3af;'>This link will expire in 24 hours for security.</p>
+                        </td>
+                    </tr>
+                </table>
+                <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea;'>
+                    <tr>
+                        <td style='color: #9ca3af; font-size: 13px; text-align: center;'>
+                            <p style='margin: 0 0 8px;'>If you didn't create an account, you can safely ignore this email.</p>
+                            <p style='margin: 0;'>&copy; {DateTime.UtcNow.Year} Ecommerce. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>",
+                IsHtml = true
+            };
+        }
+
+        private EmailMessage BuildResetPasswordEmail(string toEmail, string resetUrl)
+        {
+            return new EmailMessage
+            {
+                To = toEmail,
+                Subject = "Reset your password",
+                Body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Reset your password</title>
+</head>
+<body style='margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #f5f5f5;'>
+    <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <tr>
+            <td style='background-color: #ffffff; border-radius: 8px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
+                <table role='presentation' width='100%' cellspacing='0' cellpadding='0'>
+                    <tr>
+                        <td style='text-align: center; padding-bottom: 30px; border-bottom: 1px solid #eaeaea;'>
+                            <h1 style='margin: 0; color: #1a1a2e; font-size: 28px; font-weight: 600;'>Ecommerce</h1>
+                            <p style='margin: 10px 0 0; color: #6b7280; font-size: 16px;'>Reset your password</p>
+                        </td>
+                    </tr>
+                </table>
+                <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='margin-top: 30px;'>
+                    <tr>
+                        <td style='color: #374151; font-size: 16px; line-height: 1.6;'>
+                            <p style='margin: 0 0 16px;'>Hi there,</p>
+                            <p style='margin: 0 0 16px;'>You requested to reset your password. Click the button below to create a new password:</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='text-align: center; padding: 24px 0;'>
+                            <a href='{resetUrl}' style='display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 600; font-size: 16px;'>
+                                Reset Password
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style='color: #6b7280; font-size: 14px; line-height: 1.6; padding-top: 24px; border-top: 1px solid #eaeaea;'>
+                            <p style='margin: 0 0 8px;'>If you didn't request this, you can safely ignore this email.</p>
+                            <p style='margin: 0 0 8px;'>If the button doesn't work, copy and paste this link into your browser:</p>
+                            <p style='margin: 0; word-break: break-all; color: #dc2626;'><a href='{resetUrl}' style='color: #dc2626;'>{resetUrl}</a></p>
+                            <p style='margin: 16px 0 0; font-size: 13px; color: #9ca3af;'>This link will expire in 1 hour for security.</p>
+                        </td>
+                    </tr>
+                </table>
+                <table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea;'>
+                    <tr>
+                        <td style='color: #9ca3af; font-size: 13px; text-align: center;'>
+                            <p style='margin: 0;'>&copy; {DateTime.UtcNow.Year} Ecommerce. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>",
+                IsHtml = true
+            };
+        }
+
+        private EmailMessage BuildResendVerificationEmail(string toEmail, string verifyUrl)
+        {
+            return BuildVerificationEmail(toEmail, verifyUrl);
+        }
+
+        private EmailMessage BuildForgotPasswordEmail(string toEmail, string resetUrl)
+        {
+            return BuildResetPasswordEmail(toEmail, resetUrl);
+}
+}
     public class RegisterRequest
     {
         public required string Email { get; set; }
