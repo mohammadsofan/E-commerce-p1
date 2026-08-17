@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Deployment (Docker/docker-compose, Kubernetes manifests)
-- Last Completed: Rate limiting + HTTPS/security headers
-- Next Task: Advanced features (search, notifications, multi-currency, promotions)
+- Current Task: Architecture tests (NetArchTest)
+- Last Completed: Deployment (Docker/docker-compose, Kubernetes manifests)
+- Next Task: Contract tests, load testing (k6), mutation testing, CI/CD enhancements
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -428,6 +428,12 @@ This section documents work that already exists in the repository as of 2026-08-
 - Added `deploy/README.md` with Docker/K8s usage and secret-management guidance
 - (YAML files validated; Docker not available locally so no image build was run)
 
+### 2026-08-17 — Architecture Tests (NetArchTest)
+- Added `tests/Ecommerce.Architecture.Tests` project with NetArchTest.Rules 1.3.2, added to solution
+- Layer dependency tests: Domain must not depend on Application/Infrastructure/Api or external SDKs (EF Core, ASP.NET Core); Application must not depend on Infrastructure/Api; Infrastructure must not depend on Api; controllers must depend on Application; controllers (except AccountController) must not depend on Infrastructure
+- Convention tests: entities in Domain.Entities; command handlers implement ICommandHandler<,>; query handlers implement IQueryHandler<,>; interfaces in Application layer; DTOs in Application layer
+- All tests green: 24 Domain + 117 Application + 19 Integration + 14 Architecture = 174 passing
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -473,7 +479,7 @@ This section documents work that already exists in the repository as of 2026-08-
    - Contract tests for API consumers
    - Load/stress testing (k6, NBomber)
    - Mutation testing (Stryker.NET)
-   - Architecture tests (NetArchTest)
+   - Architecture tests (NetArchTest) (done)
 
 5. **Deployment**
    - Dockerfile and docker-compose (done)
