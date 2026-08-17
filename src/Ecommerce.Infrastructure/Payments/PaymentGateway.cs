@@ -4,21 +4,40 @@ using Ecommerce.Application.Interfaces;
 
 namespace Ecommerce.Infrastructure.Payments
 {
-    // Simple stub payment gateway for development/testing.
+    /// <summary>
+    /// Legacy payment gateway stub - kept for backward compatibility.
+    /// Use StripePaymentProvider for new implementations.
+    /// </summary>
+    [Obsolete("Use StripePaymentProvider instead. This will be removed in a future version.")]
     public class PaymentGateway : IPaymentService
     {
         public Task<PaymentResult> ProcessPaymentAsync(PaymentRequest request)
         {
-            // In production, integrate with a real payment provider (Stripe, PayPal, Adyen, etc.)
             var tx = Guid.NewGuid().ToString();
             var result = new PaymentResult
             {
                 Success = true,
                 TransactionId = tx,
-                ErrorMessage = null
+                ErrorMessage = string.Empty,
+                Status = "captured"
             };
 
             return Task.FromResult(result);
+        }
+
+        public Task<PaymentResult> CapturePaymentAsync(string providerPaymentId, decimal? amount = null)
+        {
+            return Task.FromResult(new PaymentResult { Success = true, TransactionId = providerPaymentId, Status = "captured" });
+        }
+
+        public Task<PaymentResult> VoidPaymentAsync(string providerPaymentId)
+        {
+            return Task.FromResult(new PaymentResult { Success = true, TransactionId = providerPaymentId, Status = "voided" });
+        }
+
+        public Task<RefundResult> RefundPaymentAsync(RefundRequest request)
+        {
+            return Task.FromResult(new RefundResult { Success = true, RefundId = Guid.NewGuid().ToString(), Status = "succeeded" });
         }
     }
 }

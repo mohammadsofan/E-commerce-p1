@@ -7,7 +7,7 @@ namespace Ecommerce.Domain.Entities
         public Guid Id { get; set; }
         public Guid VendorId { get; set; }
         public Guid ProductId { get; set; }
-        public string VendorSku { get; set; }
+        public string VendorSku { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public bool IsActive { get; set; }
     }

@@ -1,0 +1,83 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using AutoMapper;
+using Ecommerce.Application.Common.Queries;
+using Ecommerce.Application.DTOs;
+using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace Ecommerce.Application.Queries.Products
+{
+    public class GetProductsQueryHandler : IQueryHandler<GetProductsQuery, List<ProductDto>>
+    {
+        private readonly IApplicationDbContext _db;
+        private readonly IMapper _mapper;
+
+        public GetProductsQueryHandler(IApplicationDbContext db, IMapper mapper)
+        {
+            _db = db;
+            _mapper = mapper;
+        }
+
+        public async Task<List<ProductDto>> Handle(GetProductsQuery query, CancellationToken cancellationToken = default)
+        {
+            var page = System.Math.Max(1, query.Page);
+            var pageSize = System.Math.Clamp(query.PageSize, 1, 100);
+
+            var products = _db.Products
+                .AsNoTracking()
+                .Where(p => !p.IsDeleted);
+
+            if (query.IsActive.HasValue)
+                products = products.Where(p => p.IsActive == query.IsActive.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+            {
+                var term = query.SearchTerm.Trim().ToLowerInvariant();
+                products = products.Where(p =>
+                    p.Name.ToLower().Contains(term) ||
+                    p.Sku.ToLower().Contains(term) ||
+                    p.Slug.ToLower().Contains(term) ||
+                    p.ShortDescription.ToLower().Contains(term));
+            }
+
+            if (query.CategoryId.HasValue)
+                products = products.Where(p => p.CategoryId == query.CategoryId.Value);
+
+            if (query.BrandId.HasValue)
+                products = products.Where(p => p.BrandId == query.BrandId.Value);
+
+            if (query.MinPrice.HasValue)
+                products = products.Where(p => p.BasePrice >= query.MinPrice.Value);
+
+            if (query.MaxPrice.HasValue)
+                products = products.Where(p => p.BasePrice <= query.MaxPrice.Value);
+
+            products = ApplySorting(products, query.SortBy);
+
+            var result = await products
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return _mapper.Map<List<ProductDto>>(result);
+        }
+
+        private static IQueryable<Product> ApplySorting(IQueryable<Product> query, string? sortBy)
+        {
+            return sortBy switch
+            {
+                "price_asc" => query.OrderBy(p => p.BasePrice),
+                "price_desc" => query.OrderByDescending(p => p.BasePrice),
+                "newest" => query.OrderByDescending(p => p.CreatedAt),
+                "featured" => query.OrderByDescending(p => p.IsFeatured).ThenBy(p => p.Name),
+                "name" => query.OrderBy(p => p.Name),
+                _ => query.OrderBy(p => p.Name)
+            };
+        }
+    }
+}

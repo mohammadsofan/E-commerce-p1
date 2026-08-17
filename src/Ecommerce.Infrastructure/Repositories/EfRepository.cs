@@ -15,7 +15,7 @@ namespace Ecommerce.Infrastructure.Repositories
             _db = db ?? throw new ArgumentNullException(nameof(db));
         }
 
-        public async Task<T> GetAsync(Guid id)
+        public async Task<T?> GetAsync(Guid id)
         {
             return await _db.Set<T>().FindAsync(id);
         }

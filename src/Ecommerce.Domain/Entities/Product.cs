@@ -7,17 +7,18 @@ namespace Ecommerce.Domain.Entities
     {
         public Guid Id { get; set; }
         public Guid? BrandId { get; set; }
-        public string Name { get; set; }
-        public string Slug { get; set; }
-        public string Sku { get; set; }
-        public string ShortDescription { get; set; }
-        public string Description { get; set; }
-        public string ProductType { get; set; }
-        public string Status { get; set; }
+        public Guid? CategoryId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Slug { get; set; } = string.Empty;
+        public string Sku { get; set; } = string.Empty;
+        public string ShortDescription { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string ProductType { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
         public decimal BasePrice { get; set; }
         public decimal CostPrice { get; set; }
         public decimal CompareAtPrice { get; set; }
-        public string CurrencyCode { get; set; }
+        public string CurrencyCode { get; set; } = "USD";
         public Guid? TaxCategoryId { get; set; }
         public decimal Weight { get; set; }
         public decimal Length { get; set; }
@@ -29,13 +30,13 @@ namespace Ecommerce.Domain.Entities
         public bool RequiresShipping { get; set; }
         public bool TrackInventory { get; set; }
         public bool AllowBackorder { get; set; }
-        public string SeoTitle { get; set; }
-        public string SeoDescription { get; set; }
-        public string SeoKeywords { get; set; }
+        public string SeoTitle { get; set; } = string.Empty;
+        public string SeoDescription { get; set; } = string.Empty;
+        public string SeoKeywords { get; set; } = string.Empty;
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
-        public byte[] RowVersion { get; set; }
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
         public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
         public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();

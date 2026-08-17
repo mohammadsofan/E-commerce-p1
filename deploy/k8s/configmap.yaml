@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecommerce-config
+  namespace: ecommerce
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:8080
+  Jwt__Issuer: ecommerce
+  RateLimiting__Enabled: "true"
+  RateLimiting__PermitLimit: "100"
+  RateLimiting__WindowSeconds: "60"
+  RateLimiting__QueueLimit: "0"
+  Stripe__PublishableKey: pk_test_dummy

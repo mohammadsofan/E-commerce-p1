@@ -8,7 +8,7 @@ namespace Ecommerce.Domain.Entities
         public Guid ReturnRequestId { get; set; }
         public Guid OrderItemId { get; set; }
         public int Quantity { get; set; }
-        public string Condition { get; set; }
+        public string Condition { get; set; } = string.Empty;
         public decimal RefundAmount { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Ecommerce.Domain.Entities
 {
@@ -6,9 +7,9 @@ namespace Ecommerce.Domain.Entities
     {
         public Guid Id { get; set; }
         public Guid ProductId { get; set; }
-        public string Sku { get; set; }
-        public string Barcode { get; set; }
-        public string Name { get; set; }
+        public string Sku { get; set; } = string.Empty;
+        public string Barcode { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
         public decimal CostPrice { get; set; }
         public decimal CompareAtPrice { get; set; }
@@ -22,6 +23,9 @@ namespace Ecommerce.Domain.Entities
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
-        public byte[] RowVersion { get; set; }
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
+        public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
+        public ICollection<ProductVariantAttribute> VariantAttributes { get; set; } = new List<ProductVariantAttribute>();
     }
 }

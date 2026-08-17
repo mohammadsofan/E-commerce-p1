@@ -1,0 +1,1 @@
+Tests run via standard `dotnet test` at the repository root or within any of the three test project directories; no external services are required because all persistence is backed by per-test in-memory EF Core databases created with `DbContextOptionsBuilder.UseInMemoryDatabase(Guid.NewGuid().ToString())`.

@@ -1,0 +1,4 @@
+- Each test class constructs its own `ApplicationDbContext` via a private helper that calls `DbContextOptionsBuilder.UseInMemoryDatabase` with a fresh GUID, ensuring test isolation.
+- Tests are written as async `[Fact]` methods using xUnit's `Assert.Throws<T>` and `Assert.Equal` / `Assert.NotNull` / `Assert.Single` for assertions.
+- Test projects reference only the minimal production layers needed — domain tests reference only `Ecommerce.Domain`, while application and integration tests additionally reference `Ecommerce.Infrastructure` (and `Ecommerce.Api` for integration tests).
+- Seed data for handlers is created by instantiating domain entities directly (e.g., `new InventoryItem { ... }`) and persisting them through the in-memory context before invoking the handler under test.

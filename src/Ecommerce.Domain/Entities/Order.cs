@@ -1,18 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ecommerce.Domain.Common;
+using Ecommerce.Domain.DomainEvents;
+using Ecommerce.Domain.Enums;
 using Ecommerce.Domain.Exceptions;
 
 namespace Ecommerce.Domain.Entities
 {
-    public class Order
+    public class Order : AggregateRoot
     {
         public Guid Id { get; set; }
-        public string OrderNumber { get; set; }
+        public string OrderNumber { get; set; } = string.Empty;
         public Guid? UserId { get; set; }
-        public string Status { get; private set; }
-        public string PaymentStatus { get; private set; }
-        public string FulfillmentStatus { get; private set; }
+        public OrderStatus Status { get; private set; }
+        public PaymentStatus PaymentStatus { get; private set; }
+        public FulfillmentStatus FulfillmentStatus { get; private set; }
         public string CurrencyCode { get; set; } = "USD";
         public decimal Subtotal { get; private set; }
         public decimal DiscountAmount { get; private set; }
@@ -20,16 +23,16 @@ namespace Ecommerce.Domain.Entities
         public decimal TaxAmount { get; private set; }
         public decimal TotalAmount { get; private set; }
         public decimal RefundedAmount { get; set; }
-        public string CouponCode { get; private set; }
-        public string Notes { get; set; }
-        public string CustomerNotes { get; set; }
+        public string CouponCode { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+        public string CustomerNotes { get; set; } = string.Empty;
         public DateTimeOffset? PlacedAt { get; private set; }
         public DateTimeOffset? PaidAt { get; private set; }
         public DateTimeOffset? CancelledAt { get; private set; }
         public DateTimeOffset? CompletedAt { get; private set; }
         public DateTimeOffset CreatedAt { get; private set; }
         public DateTimeOffset UpdatedAt { get; private set; }
-        public byte[] RowVersion { get; set; }
+        public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
         public ICollection<OrderItem> Items { get; private set; } = new List<OrderItem>();
 
@@ -44,10 +47,13 @@ namespace Ecommerce.Domain.Entities
                 ProductId = productId,
                 ProductVariantId = productVariantId,
                 ProductName = productName,
+                VariantName = string.Empty,
+                Sku = string.Empty,
                 UnitPrice = unitPrice,
                 Quantity = quantity,
                 DiscountAmount = discount,
                 TaxAmount = tax,
+                ProductImageUrl = string.Empty
             };
 
             item.TotalAmount = item.UnitPrice * item.Quantity - item.DiscountAmount + item.TaxAmount;
@@ -89,16 +95,131 @@ namespace Ecommerce.Domain.Entities
         public void PlaceOrder()
         {
             if (!Items.Any()) throw new DomainException("Cannot place an empty order");
+            if (Status != OrderStatus.Draft) throw new DomainException("Order has already been placed");
 
-            Status = "Placed";
-            PaymentStatus = "Pending";
-            FulfillmentStatus = "Unfulfilled";
+            Status = OrderStatus.Placed;
+            PaymentStatus = PaymentStatus.Pending;
+            FulfillmentStatus = FulfillmentStatus.Unfulfilled;
             PlacedAt = DateTimeOffset.UtcNow;
             UpdatedAt = PlacedAt.Value;
             if (CreatedAt == default) CreatedAt = PlacedAt.Value;
 
             // Ensure totals are up to date
             RecalculateTotals();
+
+            AddDomainEvent(new OrderPlacedDomainEvent(Id));
+        }
+
+        /// <summary>
+        /// Transitions the order to the Paid state. Only a placed order can be paid.
+        /// </summary>
+        public void MarkPaid()
+        {
+            if (Status != OrderStatus.Placed) throw new DomainException("Only a placed order can be marked as paid");
+
+            Status = OrderStatus.Paid;
+            PaymentStatus = PaymentStatus.Paid;
+            PaidAt = DateTimeOffset.UtcNow;
+            UpdatedAt = PaidAt.Value;
+        }
+
+        /// <summary>
+        /// Marks the order as completed. Only a paid order can be completed.
+        /// </summary>
+        public void Complete()
+        {
+            if (Status != OrderStatus.Paid) throw new DomainException("Only a paid order can be completed");
+
+            Status = OrderStatus.Completed;
+            CompletedAt = DateTimeOffset.UtcNow;
+            UpdatedAt = CompletedAt.Value;
+        }
+
+        /// <summary>
+        /// Cancels the order. An order in a terminal state (cancelled/completed/refunded) cannot be cancelled.
+        /// </summary>
+        public void Cancel(string? reason = null)
+        {
+            if (Status is OrderStatus.Cancelled or OrderStatus.Completed or OrderStatus.Refunded)
+                throw new DomainException("Cannot cancel an order in a terminal state");
+
+            Status = OrderStatus.Cancelled;
+            CancelledAt = DateTimeOffset.UtcNow;
+            UpdatedAt = CancelledAt.Value;
+            if (!string.IsNullOrWhiteSpace(reason)) Notes = reason;
+        }
+
+        /// <summary>
+        /// Marks the order as shipped with tracking information.
+        /// </summary>
+        public void MarkShipped(string trackingNumber, string carrier)
+        {
+            if (Status != OrderStatus.Paid) throw new DomainException("Only paid orders can be shipped");
+            if (FulfillmentStatus == FulfillmentStatus.Shipped || FulfillmentStatus == FulfillmentStatus.Delivered)
+                throw new DomainException("Order is already shipped or delivered");
+
+            FulfillmentStatus = FulfillmentStatus.Shipped;
+            UpdatedAt = DateTimeOffset.UtcNow;
+            // In a real implementation, you'd store tracking info in a Shipment entity
+            Notes = $"Shipped via {carrier} with tracking: {trackingNumber}";
+        }
+
+        /// <summary>
+        /// Marks the order as delivered.
+        /// </summary>
+        public void MarkDelivered()
+        {
+            if (FulfillmentStatus != FulfillmentStatus.Shipped)
+                throw new DomainException("Only shipped orders can be marked as delivered");
+
+            FulfillmentStatus = FulfillmentStatus.Delivered;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        /// <summary>
+        /// Processes a full or partial refund.
+        /// </summary>
+        public void ProcessRefund(decimal amount, string reason)
+        {
+            if (amount <= 0) throw new DomainException("Refund amount must be positive");
+            if (amount > TotalAmount - RefundedAmount)
+                throw new DomainException("Refund amount cannot exceed remaining refundable amount");
+
+            RefundedAmount += amount;
+            UpdatedAt = DateTimeOffset.UtcNow;
+
+            if (RefundedAmount >= TotalAmount)
+            {
+                Status = OrderStatus.Refunded;
+                PaymentStatus = PaymentStatus.Refunded;
+            }
+            else
+            {
+                PaymentStatus = PaymentStatus.PartiallyRefunded;
+            }
+
+            Notes = $"Refund of {amount:C}: {reason}";
+        }
+
+        /// <summary>
+        /// Processes a return request for one or more items.
+        /// </summary>
+        public void ProcessReturn(IEnumerable<Guid> orderItemIds, string reason)
+        {
+            if (orderItemIds == null || !orderItemIds.Any())
+                throw new DomainException("At least one item must be returned");
+
+            var itemsToReturn = Items.Where(i => orderItemIds.Contains(i.Id)).ToList();
+            if (itemsToReturn.Count != orderItemIds.Count())
+                throw new DomainException("One or more order items not found");
+
+            if (itemsToReturn.Any(i => i.Quantity <= 0))
+                throw new DomainException("Cannot return items with zero quantity");
+
+            // In a real implementation, you'd create ReturnRequest/ReturnItem entities
+            // For now, we'll process a refund for the returned items
+            var returnAmount = itemsToReturn.Sum(i => i.TotalAmount);
+            ProcessRefund(returnAmount, $"Return: {reason}");
         }
     }
 }

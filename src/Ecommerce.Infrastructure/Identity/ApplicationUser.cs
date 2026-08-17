@@ -1,18 +1,31 @@
 using System;
 using Microsoft.AspNetCore.Identity;
+using Ecommerce.Application.Interfaces;
 
 namespace Ecommerce.Infrastructure.Identity
 {
-    public class ApplicationUser : IdentityUser<Guid>
+    public class ApplicationUser : IdentityUser<Guid>, IApplicationUser
     {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string DisplayName { get; set; }
-        public string ProfileImageUrl { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string ProfileImageUrl { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
         public DateTimeOffset? LastLoginAt { get; set; }
         public bool IsEmailVerified { get; set; }
         public bool IsPhoneVerified { get; set; }
+
+        // IApplicationUser implementation - explicitly map to the interface
+        string IApplicationUser.FirstName => FirstName;
+        string IApplicationUser.LastName => LastName;
+        string IApplicationUser.DisplayName => DisplayName;
+        string IApplicationUser.PhoneNumber => PhoneNumber;
+        bool IApplicationUser.IsActive => IsActive;
+        DateTimeOffset IApplicationUser.CreatedAt => CreatedAt;
+        DateTimeOffset? IApplicationUser.LastLoginAt => LastLoginAt;
+        bool IApplicationUser.IsEmailVerified => IsEmailVerified;
+        bool IApplicationUser.IsPhoneVerified => IsPhoneVerified;
     }
 }

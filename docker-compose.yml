@@ -1,0 +1,49 @@
+# Build and run the E-Commerce API with a local SQL Server instance.
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ecommerce-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Ecommerce!Dev2026"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Ecommerce!Dev2026' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-api
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=EcommerceDb;User Id=sa;Password=Ecommerce!Dev2026;TrustServerCertificate=True;MultipleActiveResultSets=true"
+      Jwt__Key: "change_this_dev_secret_to_a_long_random_value"
+      Jwt__Issuer: "ecommerce"
+      Stripe__SecretKey: "sk_test_dummy"
+      Stripe__PublishableKey: "pk_test_dummy"
+      Stripe__WebhookSecret: "whsec_dummy"
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  sqlserver-data:

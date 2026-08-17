@@ -12,10 +12,14 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
 
             builder.HasKey(x => x.Id);
 
-            builder.Property(x => x.OrderNumber).HasMaxLength(64);
-            builder.Property(x => x.Status).HasMaxLength(32);
-            builder.Property(x => x.PaymentStatus).HasMaxLength(32);
-            builder.Property(x => x.FulfillmentStatus).HasMaxLength(32);
+            // Domain events are transient and must not be persisted.
+            builder.Ignore(x => x.DomainEvents);
+
+            builder.Property(x => x.OrderNumber).HasMaxLength(64).IsRequired(false);
+            // Status enums are stored as their string name and are required (never null on a real order).
+            builder.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+            builder.Property(x => x.PaymentStatus).HasConversion<string>().HasMaxLength(32);
+            builder.Property(x => x.FulfillmentStatus).HasConversion<string>().HasMaxLength(32);
             builder.Property(x => x.CurrencyCode).HasMaxLength(8).IsRequired();
 
             builder.Property(x => x.Subtotal).HasColumnType("decimal(18,2)");
@@ -28,9 +32,14 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.UpdatedAt).IsRequired();
             builder.Property(x => x.CreatedAt).IsRequired();
 
-            builder.Property(x => x.RowVersion)
-                   .IsRowVersion()
-                   .IsConcurrencyToken();
+                 builder.Property(x => x.RowVersion)
+                     .IsRequired(false)
+                     .IsRowVersion()
+                     .IsConcurrencyToken();
+
+                 builder.Property(x => x.CouponCode).IsRequired(false);
+                 builder.Property(x => x.Notes).IsRequired(false);
+                 builder.Property(x => x.CustomerNotes).IsRequired(false);
 
             builder.HasMany(x => x.Items)
                    .WithOne()

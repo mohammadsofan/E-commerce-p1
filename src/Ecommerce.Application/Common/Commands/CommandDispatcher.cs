@@ -26,7 +26,7 @@ namespace Ecommerce.Application.Common.Commands
             if (handler == null) throw new InvalidOperationException($"No handler registered for {typeof(TCommand).FullName}");
 
             // resolve pipeline behaviors
-            var behaviors = (IEnumerable<ICommandBehavior<TCommand, TResult>>)_provider.GetService(typeof(IEnumerable<ICommandBehavior<TCommand, TResult>>))
+            var behaviors = _provider.GetService(typeof(IEnumerable<ICommandBehavior<TCommand, TResult>>)) as IEnumerable<ICommandBehavior<TCommand, TResult>>
                             ?? Array.Empty<ICommandBehavior<TCommand, TResult>>();
 
             // build pipeline

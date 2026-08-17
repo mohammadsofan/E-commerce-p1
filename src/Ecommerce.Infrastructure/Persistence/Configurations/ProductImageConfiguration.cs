@@ -1,0 +1,32 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Ecommerce.Domain.Entities;
+
+namespace Ecommerce.Infrastructure.Persistence.Configurations
+{
+    public class ProductImageConfiguration : IEntityTypeConfiguration<ProductImage>
+    {
+        public void Configure(EntityTypeBuilder<ProductImage> builder)
+        {
+            builder.ToTable("ProductImages");
+
+            builder.HasKey(x => x.Id);
+
+            builder.Property(x => x.Url).IsRequired().HasMaxLength(500);
+            builder.Property(x => x.AltText).HasMaxLength(250);
+
+            builder.HasOne<Product>()
+                .WithMany(p => p.Images)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne<ProductVariant>()
+                .WithMany(v => v.Images)
+                .HasForeignKey(x => x.ProductVariantId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasIndex(x => x.ProductId);
+            builder.HasIndex(x => x.ProductVariantId);
+        }
+    }
+}

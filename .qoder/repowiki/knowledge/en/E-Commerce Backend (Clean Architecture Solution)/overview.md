@@ -1,0 +1,1 @@
+Root of a .NET 8 Clean Architecture e-commerce solution that wires Domain, Application, Infrastructure, and API projects plus their corresponding test suites under a single Visual Studio solution.

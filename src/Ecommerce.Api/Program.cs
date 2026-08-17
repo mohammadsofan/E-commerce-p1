@@ -3,17 +3,181 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Ecommerce.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Ecommerce.Api.Middleware;
+using Serilog;
+using Prometheus;
+using OpenTelemetry;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Serilog
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day));
 
 // Configuration & DI
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Rate limiting (ASP.NET Core built-in). Configurable via "RateLimiting" section.
+builder.Services.AddRateLimiter(options =>
+{
+    var rlSection = builder.Configuration.GetSection("RateLimiting");
+    var permitLimit = rlSection.GetValue<int>("PermitLimit", 100);
+    var windowSeconds = rlSection.GetValue<int>("WindowSeconds", 60);
+    var queueLimit = rlSection.GetValue<int>("QueueLimit", 0);
+    var enabled = rlSection.GetValue<bool>("Enabled", true) && !builder.Environment.IsEnvironment("Test");
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.Headers["Retry-After"] = windowSeconds.ToString();
+        await context.HttpContext.Response.WriteAsync("{\"error\":\"Too many requests. Please try again later.\"}", cancellationToken);
+    };
+
+    if (enabled)
+    {
+        // Global per-client (IP) fixed-window throttle.
+        options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(
+            context => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = permitLimit,
+                    Window = TimeSpan.FromSeconds(windowSeconds),
+                    QueueLimit = queueLimit,
+                    AutoReplenishment = true
+                }));
+    }
+    else
+    {
+        options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(
+            _ => System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("all"));
+    }
+});
+
+// API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+});
+
+builder.Services.AddVersionedApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
+// Swagger/OpenAPI
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "E-Commerce API",
+        Version = "v1",
+        Description = "E-Commerce Backend API with Clean Architecture",
+        Contact = new OpenApiContact
+        {
+            Name = "E-Commerce Team",
+            Email = "support@ecommerce.com"
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+
+    // Include XML comments if available
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (System.IO.File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+
+    // Add JWT Bearer auth to Swagger
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter JWT token: Bearer {token}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // Add Infrastructure (requires DefaultConnection in config)
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Current user (from JWT claims) for per-user features such as the shopping cart
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService, Ecommerce.Api.Services.CurrentUserService>();
+
+// Health Checks
+        builder.Services.AddHealthChecks()
+            .AddDbContextCheck<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
+
+// Prometheus Metrics standalone server - only in non-test environments.
+// Skipped for any environment whose name contains "Test" (e.g. "Test",
+// "RateLimitTest") so test hosts don't collide on port 9090.
+        // DISABLED to avoid port 9090 conflicts
+        // if (!builder.Environment.EnvironmentName.Contains("Test", StringComparison.OrdinalIgnoreCase))
+        // {
+        //     builder.Services.AddMetricServer(options =>
+        //     {
+        //         options.Port = 9090;
+        //     });
+        // }
+
+// OpenTelemetry tracing - enabled via "Tracing:Enabled" and skipped in Test environment.
+var tracingEnabled = builder.Configuration.GetValue<bool>("Tracing:Enabled", false) && !builder.Environment.IsEnvironment("Test");
+if (tracingEnabled)
+{
+    var otlpEndpoint = builder.Configuration["Tracing:OtlpEndpoint"] ?? "http://localhost:4317";
+    var serviceName = builder.Configuration["Tracing:ServiceName"] ?? "Ecommerce.Api";
+
+    builder.Services.AddOpenTelemetry()
+        .WithTracing(tracing =>
+        {
+            tracing
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(serviceName))
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(options => options.Endpoint = new Uri(otlpEndpoint));
+        });
+}
+
 
 // Configure Identity and JWT authentication (best-effort — requires Identity & JWT packages locally)
 try
@@ -46,7 +210,12 @@ try
         };
     });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+        options.AddPolicy("CustomerOnly", policy => policy.RequireRole("Customer"));
+        options.AddPolicy("AdminOrCustomer", policy => policy.RequireRole("Admin", "Customer"));
+    });
 }
 catch
 {
@@ -59,16 +228,79 @@ builder.Services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler
 
 var app = builder.Build();
 
+// Correlation ID propagation (must run early so logs/metrics/traces share it)
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+// Serilog request logging
+app.UseSerilogRequestLogging();
+
+// Seed database on startup (development only)
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
+        var seeder = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.DbSeeder>();
+        try
+        {
+            await seeder.SeedAsync(db);
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Ecommerce.Infrastructure.Persistence.DbSeeder>>();
+            logger.LogError(ex, "Database seeding failed");
+        }
+    }
+}
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+// Rate limiting middleware (after routing so policies can be attached per-endpoint)
+app.UseRateLimiter();
+
+// HTTPS enforcement
+if (!app.Environment.IsEnvironment("Test"))
+{
+    app.UseHttpsRedirection();
+
+    // HSTS - only in non-development environments
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+    }
+}
+
+// Health Checks
+app.MapHealthChecks("/health");
+
+// Prometheus Metrics
+app.MapMetrics();
+
+if (app.Environment.IsDevelopment())
+{
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+        foreach (var description in provider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
+        }
+        options.RoutePrefix = "swagger";
+        options.DocumentTitle = "E-Commerce API Documentation";
+    });
 }
 
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
+
+// app.UseHttpMetrics();
 
 app.MapControllers();
 
 app.Run();
+
+// Make Program accessible for integration tests
+public partial class Program { }
