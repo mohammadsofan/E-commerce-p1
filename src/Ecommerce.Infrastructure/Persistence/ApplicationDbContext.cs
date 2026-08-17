@@ -67,6 +67,19 @@ namespace Ecommerce.Infrastructure.Persistence
         {
             base.OnModelCreating(modelBuilder);
 
+            // Map custom properties on ApplicationUser
+            modelBuilder.Entity<ApplicationUser>()
+                .Property(u => u.IsEmailVerified)
+                .HasDefaultValue(false);
+            
+            modelBuilder.Entity<ApplicationUser>()
+                .Property(u => u.IsPhoneVerified)
+                .HasDefaultValue(false);
+            
+            modelBuilder.Entity<ApplicationUser>()
+                .Property(u => u.IsActive)
+                .HasDefaultValue(true);
+
             // Apply EF Core configurations from this assembly
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         }

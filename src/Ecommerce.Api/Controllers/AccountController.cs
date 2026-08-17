@@ -54,7 +54,7 @@ namespace Ecommerce.Api.Controllers
             return Ok(new { message = "Registration successful. Please verify your email.", emailToken });
         }
 
-        [HttpPost("login")]
+[HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
             var user = await _userManager.FindByEmailAsync(req.Email);
@@ -62,13 +62,6 @@ namespace Ecommerce.Api.Controllers
 
             var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
             if (!res.Succeeded) return Unauthorized();
-
-            if (!user.IsEmailVerified)
-            {
-                // Don't issue tokens for unverified emails in production
-                // For development, we'll allow it but warn
-                return BadRequest("Email not verified. Please verify your email first.");
-            }
 
             return Ok(await IssueTokensAsync(user));
         }

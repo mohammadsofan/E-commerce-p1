@@ -105,14 +105,17 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService, Ecommerce.Api.Services.CurrentUserService>();
 
 // Health Checks
-builder.Services.AddHealthChecks()
-    .AddDbContextCheck<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
+        builder.Services.AddHealthChecks()
+            .AddDbContextCheck<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
 
-// Prometheus Metrics
-builder.Services.AddMetricServer(options =>
-{
-    options.Port = 9090;
-});
+        // Prometheus Metrics - only in non-test environments
+        if (!builder.Environment.IsEnvironment("Test"))
+        {
+            builder.Services.AddMetricServer(options =>
+            {
+                options.Port = 9090;
+            });
+        }
 
 // Configure Identity and JWT authentication (best-effort — requires Identity & JWT packages locally)
 try
