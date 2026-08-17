@@ -289,6 +289,10 @@ namespace Ecommerce.Infrastructure
             // Register user management service
             services.AddScoped<Ecommerce.Application.Interfaces.IUserManagementService, Ecommerce.Infrastructure.Services.UserManagementService>();
 
+            // Email service (SMTP)
+            services.Configure<Ecommerce.Infrastructure.Services.EmailOptions>(configuration.GetSection("Email"));
+            services.AddScoped<Ecommerce.Application.Interfaces.IEmailService, Ecommerce.Infrastructure.Services.EmailService>();
+
             // Register EF configurations for new entities
             // (Applied automatically via ApplyConfigurationsFromAssembly)
 

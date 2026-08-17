@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Implementing AdminCouponController
-- Last Completed: AdminProductVariantController, AdminProductImageController, AdminProductAttributeController
-- Next Task: AdminCouponController, AdminPromotionController
+- Current Task: Email service implementation
+- Last Completed: Shipping/Tax/Notification/Report admin CQRS endpoints
+- Next Task: Real Stripe SDK integration, rate limiting, security headers
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -367,6 +367,32 @@ This section documents work that already exists in the repository as of 2026-08-
 - Added 16 integration tests for variants and attributes
 - All 92 tests passing (24 Domain + 68 Application + 8 Integration)
 
+### 2026-08-17 — Admin Controllers for Coupons, Promotions, Payments, Shipping, Tax, Notifications, Reports
+- Added AdminCouponController: GET/POST/PUT/DELETE for coupons, validate endpoint
+- Added AdminPromotionController: GET/POST/PUT/DELETE for promotions
+- Added AdminPaymentController: GET/POST for payments, capture/void/refund endpoints, refunds listing
+- AdminShippingController, AdminTaxController, AdminNotificationController, AdminReportController initially added as stubs
+- All 92 core unit tests passing (24 Domain + 68 Application)
+
+### 2026-08-17 — Shipping, Tax, Notification, Report Admin CQRS Endpoints
+- AdminReportController wired to existing report query handlers (sales/revenue/inventory/customers/export via File result)
+- Full shipping CQRS: zones/methods/rates CRUD with nested locations and rates (optimistic concurrency via RowVersion)
+- Full tax CQRS: categories/rates CRUD with region uniqueness validation
+- Full notification CQRS: notifications/templates/preferences/channels CRUD
+- AutoMapper mappings for all new DTOs
+- DI registrations for all new command/query handlers
+- 25 new application tests (shipping/tax/notification command + query handlers)
+- All 93 application tests passing
+
+### 2026-08-17 — Email Service (SMTP)
+- Added IEmailService interface + EmailMessage model in Application/Interfaces
+- Added EmailService (SMTP via SmtpClient) and EmailOptions in Infrastructure/Services
+- SMTP host empty -> emails skipped gracefully with warning log
+- Registered in DI (Email config section)
+- Added Email config to appsettings.Development.json
+- 3 new email service tests
+- All 96 application tests passing
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -456,4 +482,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-17 — Admin Product Variant/Image/Attribute Controllers added, 92 tests passing (24 Domain + 68 Application + 8 Integration), ready for production deployment.*
+*Last updated: 2026-08-17 — Email service (SMTP) added, all admin CQRS endpoints wired, 96 application tests passing (24 Domain + 96 Application + 8 Integration).*
