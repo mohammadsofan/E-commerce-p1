@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: All planned features complete
-- Last Completed: Reporting (Sales, Revenue, Inventory, Customer Reports)
-- Next Task: Ready for production deployment / feature extensions
+- Current Task: Implementing AdminCouponController
+- Last Completed: AdminProductVariantController, AdminProductImageController, AdminProductAttributeController
+- Next Task: AdminCouponController, AdminPromotionController
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -185,6 +185,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - ✅ Shipping/Tax Management: Zones, Rates, Tax Calculation
 - ✅ Notifications: Email/SMS/Push with Templates and Preferences
 - ✅ Reporting: Sales, Revenue, Inventory, Customer Reports with CSV Export
+- ✅ Admin Controllers: Product Variants, Images, Attributes
 
 ## In Progress
 
@@ -357,6 +358,28 @@ This section documents work that already exists in the repository as of 2026-08-
 - Added Unit.Value static property and GetEntry method to IApplicationDbContext for optimistic concurrency
 - All 66 tests passing (24 Domain + 34 Application + 8 Integration)
 
+### 2026-08-17 — Admin Product Variant/Image/Attribute Controllers
+- Added AdminProductVariantController: GET/POST/PUT/DELETE for product variants with nested images and attributes
+- Added AdminProductImageController: GET for product images
+- Added AdminProductAttributeController: GET/POST/PUT/DELETE for product attributes
+- All endpoints under `/api/admin/products/{productId}/variants`, `/api/admin/products/{productId}/images`, `/api/admin/attributes`
+- All endpoints require AdminOnly policy
+- Added 16 integration tests for variants and attributes
+- All 92 tests passing (24 Domain + 68 Application + 8 Integration)
+
+### 2026-08-16 — Admin Product Variant/Image/Attribute Management
+- Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
+- Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
+- Added migration `AddProductImageAttributeEntities` with 3 new tables
+- Implemented DTOs: AdminProductVariantDto, AdminProductImageDto, AdminProductAttributeDto, AdminProductVariantAttributeDto
+- Built CQRS commands: Create/Update/Delete ProductVariant, Create/Update/Delete ProductAttribute
+- Built CQRS queries: Get variants, images, attributes with pagination and filtering
+- Created command/query handlers with full CRUD operations including image/attribute management
+- Added AutoMapper mappings for new DTOs
+- Registered handlers in DependencyInjection
+- Added Unit.Value static property and GetEntry method to IApplicationDbContext for optimistic concurrency
+- All 66 tests passing (24 Domain + 34 Application + 8 Integration)
+
 ### 2026-08-16 — Observability (Serilog, Health Checks, Prometheus)
 - Added Serilog.AspNetCore with console + rolling file output
 - Added Serilog request logging middleware
@@ -433,4 +456,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-17 — All features complete (Admin Dashboard, Product Variants/Attributes, Discount Engine, Payment Operations, Shipping/Tax, Notifications, Reporting), 66 tests passing, ready for production deployment.*
+*Last updated: 2026-08-17 — Admin Product Variant/Image/Attribute Controllers added, 92 tests passing (24 Domain + 68 Application + 8 Integration), ready for production deployment.*
