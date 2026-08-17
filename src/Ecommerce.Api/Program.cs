@@ -27,6 +27,43 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// Rate limiting (ASP.NET Core built-in). Configurable via "RateLimiting" section.
+builder.Services.AddRateLimiter(options =>
+{
+    var rlSection = builder.Configuration.GetSection("RateLimiting");
+    var permitLimit = rlSection.GetValue<int>("PermitLimit", 100);
+    var windowSeconds = rlSection.GetValue<int>("WindowSeconds", 60);
+    var queueLimit = rlSection.GetValue<int>("QueueLimit", 0);
+    var enabled = rlSection.GetValue<bool>("Enabled", true) && !builder.Environment.IsEnvironment("Test");
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.Headers["Retry-After"] = windowSeconds.ToString();
+        await context.HttpContext.Response.WriteAsync("{\"error\":\"Too many requests. Please try again later.\"}", cancellationToken);
+    };
+
+    if (enabled)
+    {
+        // Global per-client (IP) fixed-window throttle.
+        options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(
+            context => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = permitLimit,
+                    Window = TimeSpan.FromSeconds(windowSeconds),
+                    QueueLimit = queueLimit,
+                    AutoReplenishment = true
+                }));
+    }
+    else
+    {
+        options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(
+            _ => System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("all"));
+    }
+});
+
 // API Versioning
 builder.Services.AddApiVersioning(options =>
 {
@@ -189,6 +226,22 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
+// Rate limiting middleware (after routing so policies can be attached per-endpoint)
+app.UseRateLimiter();
+
+// HTTPS enforcement
+if (!app.Environment.IsEnvironment("Test"))
+{
+    app.UseHttpsRedirection();
+
+    // HSTS - only in non-development environments
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+    }
+}
 
 // Health Checks
 app.MapHealthChecks("/health");

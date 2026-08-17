@@ -4,9 +4,9 @@
 
 - Phase: Phase 5 — API, Observability, and Testing (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Real Stripe SDK integration
-- Last Completed: Integration test fixes (JWT auth + test isolation)
-- Next Task: Rate limiting, HTTPS/security headers, deployment (Docker/K8s)
+- Current Task: Rate limiting + HTTPS/security headers
+- Last Completed: Real Stripe SDK integration
+- Next Task: Deployment (Docker/docker-compose, Kubernetes manifests)
 - Overall Progress: ~100% (All core features complete, production-ready)
 
 ## Previously Completed Work
@@ -412,6 +412,14 @@ This section documents work that already exists in the repository as of 2026-08-
 - 21 new application tests (14 provider + 7 webhook)
 - All tests green: 24 Domain + 117 Application + 16 Integration = 157 passing
 
+### 2026-08-17 — Rate Limiting + HTTPS & Security Headers
+- Added ASP.NET Core built-in rate limiting (global per-IP fixed-window limiter) with configurable PermitLimit/WindowSeconds/QueueLimit via `RateLimiting` config section; returns 429 with `Retry-After` header; disabled in Test environment to keep integration tests stable
+- Added `SecurityHeadersMiddleware`: X-Frame-Options (DENY), X-Content-Type-Options (nosniff), Referrer-Policy, Permissions-Policy, X-XSS-Protection, Cross-Origin-Opener/Resource-Policy, and Content-Security-Policy (default-src 'self', frame-ancestors 'none')
+- Added HTTPS enforcement via `UseHttpsRedirection` + `UseHsts` (HSTS only in non-Development, both skipped in Test)
+- Added `RateLimiting` config to appsettings.Development.json (enabled) and appsettings.Test.json (disabled)
+- 3 new integration tests (security headers present; rate limiting returns 429 after limit; rate limiting disabled in Test env)
+- All tests green: 24 Domain + 117 Application + 19 Integration = 160 passing
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -435,10 +443,10 @@ This section documents work that already exists in the repository as of 2026-08-
 ## Next Steps (Post-MVP)
 
 1. **Production Hardening**
-   - Replace StripePaymentProvider stub with real Stripe SDK
-   - Implement email service (SendGrid, Mailgun, etc.)
-   - Add rate limiting and API throttling
-   - Configure HTTPS enforcement and security headers
+   - Replace StripePaymentProvider stub with real Stripe SDK (done)
+   - Implement email service (SendGrid, Mailgun, etc.) (done)
+   - Add rate limiting and API throttling (done)
+   - Configure HTTPS enforcement and security headers (done)
 
 2. **Advanced Features**
    - Product search and filtering (Elasticsearch/PostgreSQL full-text)
