@@ -148,8 +148,10 @@ builder.Services.AddScoped<Ecommerce.Application.Interfaces.ICurrentUserService,
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
 
-// Prometheus Metrics - only in non-test environments
-        if (!builder.Environment.IsEnvironment("Test"))
+// Prometheus Metrics standalone server - only in non-test environments.
+// Skipped for any environment whose name contains "Test" (e.g. "Test",
+// "RateLimitTest") so test hosts don't collide on port 9090.
+        if (!builder.Environment.EnvironmentName.Contains("Test", StringComparison.OrdinalIgnoreCase))
         {
             builder.Services.AddMetricServer(options =>
             {

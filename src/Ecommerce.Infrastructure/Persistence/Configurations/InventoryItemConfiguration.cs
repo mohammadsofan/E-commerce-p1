@@ -29,8 +29,22 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             // Computed / derived property - ignore in EF mapping
             builder.Ignore(x => x.Available);
 
-            // Foreign keys (if navigations exist) can be configured here by name
-            // e.g., builder.HasOne<Product>().WithMany().HasForeignKey(x => x.ProductId);
+            // Foreign keys - Restrict delete to avoid SQL Server "multiple cascade paths"
+            // cycle error between Product/ProductVariant/InventoryItem.
+            builder.HasOne(x => x.Product)
+                .WithMany()
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(x => x.ProductVariant)
+                .WithMany()
+                .HasForeignKey(x => x.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(x => x.Warehouse)
+                .WithMany()
+                .HasForeignKey(x => x.WarehouseId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

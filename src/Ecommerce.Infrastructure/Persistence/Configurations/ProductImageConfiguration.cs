@@ -18,12 +18,12 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.HasOne<Product>()
                 .WithMany(p => p.Images)
                 .HasForeignKey(x => x.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne<ProductVariant>()
                 .WithMany(v => v.Images)
                 .HasForeignKey(x => x.ProductVariantId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasIndex(x => x.ProductId);
             builder.HasIndex(x => x.ProductVariantId);
