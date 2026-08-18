@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Ecommerce.Infrastructure;
+using Ecommerce.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -35,7 +36,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins("http://localhost:3000")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 builder.Services.AddEndpointsApiExplorer();
@@ -251,9 +253,10 @@ if (app.Environment.IsDevelopment())
     {
         var db = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
         var seeder = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.DbSeeder>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
         try
         {
-            await seeder.SeedAsync(db);
+            await seeder.SeedAsync(db, roleManager);
         }
         catch (Exception ex)
         {

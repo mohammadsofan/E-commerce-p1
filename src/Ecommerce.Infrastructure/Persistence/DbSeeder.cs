@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Ecommerce.Domain.Entities;
+using Ecommerce.Infrastructure.Identity;
 using Ecommerce.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -19,12 +21,15 @@ namespace Ecommerce.Infrastructure.Persistence
             _logger = logger;
         }
 
-        public async Task SeedAsync(ApplicationDbContext db)
+        public async Task SeedAsync(ApplicationDbContext db, RoleManager<ApplicationRole>? roleManager = null)
         {
             try
             {
                 // Ensure database is created
                 await db.Database.EnsureCreatedAsync();
+
+                // Seed roles
+                await SeedRolesAsync(roleManager);
 
                 // Seed currencies
                 await SeedCurrenciesAsync(db);
@@ -132,6 +137,21 @@ namespace Ecommerce.Infrastructure.Persistence
             await db.TaxCategories.AddRangeAsync(taxCategories);
             await db.SaveChangesAsync();
             _logger.LogInformation("Seeded {Count} tax categories", taxCategories.Count);
+        }
+
+        private async Task SeedRolesAsync(RoleManager<ApplicationRole>? roleManager)
+        {
+            if (roleManager == null) return;
+
+            string[] roles = { "Admin", "Customer" };
+            foreach (var role in roles)
+            {
+                if (!await roleManager.RoleExistsAsync(role))
+                {
+                    await roleManager.CreateAsync(new ApplicationRole { Name = role, Description = $"{role} role", CreatedAt = DateTimeOffset.UtcNow });
+                    _logger.LogInformation("Seeded role: {Role}", role);
+                }
+            }
         }
     }
 }
