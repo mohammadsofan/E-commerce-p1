@@ -463,6 +463,16 @@ This section documents work that already exists in the repository as of 2026-08-
 - 4 new integration tests: generated correlation id returned, incoming id echoed, unique per request, present on error responses
 - All tests green: 24 Domain + 162 Application + 23 Integration + 14 Architecture = 223 passing
 
+### 2026-08-18 — User Profile Consolidation (ApplicationUser)
+- Removed separate `UserProfile` entity/table (redundant with `ApplicationUser`)
+- Consolidated all profile fields into `ApplicationUser` (AspNetUsers): added `Gender` (nvarchar(32)), `DateOfBirth` (datetimeoffset, nullable)
+- Updated `IApplicationUser` interface with `Gender` and `DateOfBirth`
+- Updated `AdminUserDto` with `Gender` and `DateOfBirth`
+- Removed: `UserProfile` entity, `UserProfileConfiguration`, `UserProfileDto`, Profile commands/queries/handlers, `UserProfiles` DbSet
+- New handlers in Infrastructure: `GetMyProfileQueryHandler`, `UpdateProfileCommandHandler` using `UserManager<ApplicationUser>`
+- Migration `ConsolidateUserProfile`: adds columns to AspNetUsers, drops UserProfiles table
+- All 223 tests passing (24 Domain + 162 Application + 23 Integration + 14 Architecture)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -552,4 +562,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-17 — Email service (SMTP) added, all admin CQRS endpoints wired, 96 application tests passing (24 Domain + 96 Application + 8 Integration).*
+*Last updated: 2026-08-18 — User profile consolidated into ApplicationUser (Gender, DateOfBirth added), UserProfile entity removed, all 223 tests passing.*

@@ -28,6 +28,16 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 
 // Configuration & DI
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.AddEndpointsApiExplorer();
 
 // Rate limiting (ASP.NET Core built-in). Configurable via "RateLimiting" section.
@@ -293,6 +303,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

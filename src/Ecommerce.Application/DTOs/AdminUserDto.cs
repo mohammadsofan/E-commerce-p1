@@ -12,6 +12,8 @@ namespace Ecommerce.Application.DTOs
         public string LastName { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
         public string ProfileImageUrl { get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
+        public DateTimeOffset? DateOfBirth { get; set; }
         public string PhoneNumber { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public bool IsEmailVerified { get; set; }

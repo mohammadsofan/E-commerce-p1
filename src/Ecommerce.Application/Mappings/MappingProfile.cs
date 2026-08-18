@@ -92,7 +92,6 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.ProductName, opt => opt.Ignore());
 
             CreateMap<Address, AddressDto>();
-            CreateMap<UserProfile, UserProfileDto>();
             CreateMap<AuditLog, AuditLogDto>();
     }
     }

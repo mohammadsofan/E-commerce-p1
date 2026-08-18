@@ -344,7 +344,7 @@ namespace Ecommerce.Infrastructure.Migrations
                 column: "ProductVariantId",
                 principalTable: "ProductVariants",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_InventoryItems_Products_ProductId",
@@ -352,31 +352,9 @@ namespace Ecommerce.Infrastructure.Migrations
                 column: "ProductId",
                 principalTable: "Products",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_InventoryItems_Warehouses_WarehouseId",
-                table: "InventoryItems",
-                column: "WarehouseId",
-                principalTable: "Warehouses",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_ProductImages_ProductVariants_ProductVariantId",
-                table: "ProductImages",
-                column: "ProductVariantId",
-                principalTable: "ProductVariants",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_ProductImages_Products_ProductId",
-                table: "ProductImages",
-                column: "ProductId",
-                principalTable: "Products",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
@@ -385,18 +363,6 @@ namespace Ecommerce.Infrastructure.Migrations
             migrationBuilder.DropForeignKey(
                 name: "FK_Categories_Categories_ParentCategoryId",
                 table: "Categories");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_InventoryItems_ProductVariants_ProductVariantId",
-                table: "InventoryItems");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_InventoryItems_Products_ProductId",
-                table: "InventoryItems");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_InventoryItems_Warehouses_WarehouseId",
-                table: "InventoryItems");
 
             migrationBuilder.DropForeignKey(
                 name: "FK_ProductImages_ProductVariants_ProductVariantId",

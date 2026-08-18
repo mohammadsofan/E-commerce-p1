@@ -10,6 +10,8 @@ namespace Ecommerce.Infrastructure.Identity
         public string LastName { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
         public string ProfileImageUrl { get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
+        public DateTimeOffset? DateOfBirth { get; set; }
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
@@ -21,6 +23,8 @@ namespace Ecommerce.Infrastructure.Identity
         string IApplicationUser.FirstName => FirstName;
         string IApplicationUser.LastName => LastName;
         string IApplicationUser.DisplayName => DisplayName;
+        string IApplicationUser.Gender => Gender;
+        DateTimeOffset? IApplicationUser.DateOfBirth => DateOfBirth;
         string IApplicationUser.PhoneNumber => PhoneNumber;
         bool IApplicationUser.IsActive => IsActive;
         DateTimeOffset IApplicationUser.CreatedAt => CreatedAt;

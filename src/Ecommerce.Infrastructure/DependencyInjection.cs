@@ -340,8 +340,8 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<DeleteAddressCommand, Unit>, DeleteAddressCommandHandler>();
 
             // Profile query + command handlers
-            services.AddScoped<IQueryHandler<GetMyProfileQuery, UserProfileDto>, GetMyProfileQueryHandler>();
-            services.AddScoped<ICommandHandler<UpdateProfileCommand, UserProfileDto>, UpdateProfileCommandHandler>();
+            services.AddScoped<IQueryHandler<GetMyProfileQuery, AdminUserDto>, Ecommerce.Infrastructure.Services.Profile.GetMyProfileQueryHandler>();
+            services.AddScoped<ICommandHandler<UpdateProfileCommand, AdminUserDto>, Ecommerce.Infrastructure.Services.Profile.UpdateProfileCommandHandler>();
 
             // Audit log query handlers
             services.AddScoped<IQueryHandler<GetAdminAuditLogsQuery, PagedResult<AuditLogDto>>, GetAdminAuditLogsQueryHandler>();

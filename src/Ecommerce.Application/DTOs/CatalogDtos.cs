@@ -142,18 +142,6 @@ namespace Ecommerce.Application.DTOs
         public bool IsDefaultBilling { get; set; }
     }
 
-    public class UserProfileDto
-    {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
-        public string Gender { get; set; } = string.Empty;
-        public DateTimeOffset? DateOfBirth { get; set; }
-        public string ProfileImageUrl { get; set; } = string.Empty;
-    }
-
     public class AuditLogDto
     {
         public Guid Id { get; set; }

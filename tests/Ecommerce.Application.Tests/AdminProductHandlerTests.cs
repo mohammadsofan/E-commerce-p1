@@ -401,7 +401,6 @@ namespace Ecommerce.Application.Tests
                 .ForMember(d => d.VendorName, opt => opt.Ignore())
                 .ForMember(d => d.ProductName, opt => opt.Ignore());
             CreateMap<Ecommerce.Domain.Entities.Address, Ecommerce.Application.DTOs.AddressDto>();
-            CreateMap<Ecommerce.Domain.Entities.UserProfile, Ecommerce.Application.DTOs.UserProfileDto>();
             CreateMap<Ecommerce.Domain.Entities.AuditLog, Ecommerce.Application.DTOs.AuditLogDto>();
         }
     }

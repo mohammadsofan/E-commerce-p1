@@ -51,7 +51,6 @@ namespace Ecommerce.Application.Interfaces
         DbSet<Vendor> Vendors { get; }
         DbSet<VendorProduct> VendorProducts { get; }
         DbSet<Address> Addresses { get; }
-        DbSet<UserProfile> UserProfiles { get; }
         DbSet<AuditLog> AuditLogs { get; }
         IQueryable<IApplicationUser> Users { get; }
 

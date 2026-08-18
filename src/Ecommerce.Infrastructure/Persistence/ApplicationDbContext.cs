@@ -61,7 +61,6 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<Vendor> Vendors { get; set; }
         public DbSet<VendorProduct> VendorProducts { get; set; }
         public DbSet<Address> Addresses { get; set; }
-        public DbSet<UserProfile> UserProfiles { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();

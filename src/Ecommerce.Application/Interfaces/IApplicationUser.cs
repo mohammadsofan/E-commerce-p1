@@ -10,6 +10,8 @@ namespace Ecommerce.Application.Interfaces
         string FirstName { get; }
         string LastName { get; }
         string DisplayName { get; }
+        string Gender { get; }
+        DateTimeOffset? DateOfBirth { get; }
         string PhoneNumber { get; }
         bool IsActive { get; }
         DateTimeOffset CreatedAt { get; }

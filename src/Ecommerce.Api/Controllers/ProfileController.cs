@@ -27,15 +27,15 @@ namespace Ecommerce.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMine()
         {
-            var result = await _queryDispatcher.Send<GetMyProfileQuery, UserProfileDto>(new GetMyProfileQuery());
+            var result = await _queryDispatcher.Send<GetMyProfileQuery, AdminUserDto>(new GetMyProfileQuery());
             return Ok(result);
         }
 
-        /// <summary>Creates or updates the current user's profile</summary>
+        /// <summary>Updates the current user's profile</summary>
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] UpdateProfileCommand command)
         {
-            var result = await _commandDispatcher.Send<UpdateProfileCommand, UserProfileDto>(command);
+            var result = await _commandDispatcher.Send<UpdateProfileCommand, AdminUserDto>(command);
             return Ok(result);
         }
     }
