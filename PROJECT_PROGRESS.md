@@ -473,6 +473,13 @@ This section documents work that already exists in the repository as of 2026-08-
 - Migration `ConsolidateUserProfile`: adds columns to AspNetUsers, drops UserProfiles table
 - All 223 tests passing (24 Domain + 162 Application + 23 Integration + 14 Architecture)
 
+### 2026-08-19 — CORS Fix & Register Role Assignment
+- Added `.AllowCredentials()` to CORS policy for cookie/auth header support with frontend at `http://localhost:3000`
+- Seeded "Admin" and "Customer" roles in `DbSeeder` using `RoleManager<ApplicationRole>`
+- Pass `RoleManager` to `SeedAsync` from `Program.cs` on startup
+- Register endpoint (`POST /api/account/register`) now properly assigns "Customer" role
+- All 219 tests passing (24 Domain + 162 Application + 19 Integration + 14 Architecture)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -562,4 +569,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-18 — User profile consolidated into ApplicationUser (Gender, DateOfBirth added), UserProfile entity removed, all 223 tests passing.*
+*Last updated: 2026-08-19 — CORS fixed (.AllowCredentials), "Customer"/"Admin" roles seeded, register assigns role, all 219 tests passing.*
