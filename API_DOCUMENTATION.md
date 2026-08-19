@@ -234,6 +234,7 @@ Content-Type: `application/json`
     "brandId": "guid",
     "isActive": true,
     "createdAt": "2026-08-18T00:00:00Z",
+    "availableStock": 100,
     "images": [
       {
         "id": "guid",
@@ -275,6 +276,7 @@ Content-Type: `application/json`
     "brandId": "guid",
     "isActive": true,
     "createdAt": "2026-08-18T00:00:00Z",
+    "availableStock": 100,
     "images": [
       {
         "id": "guid",
@@ -313,6 +315,7 @@ Content-Type: `application/json`
   "brandId": "guid",
   "isActive": true,
   "createdAt": "2026-08-18T00:00:00Z",
+  "availableStock": 100,
   "images": [
     {
       "id": "guid",
@@ -350,6 +353,7 @@ Content-Type: `application/json`
   "brandId": "guid",
   "isActive": true,
   "createdAt": "2026-08-18T00:00:00Z",
+  "availableStock": 100,
   "images": [
     {
       "id": "guid",
@@ -1426,7 +1430,9 @@ Content-Type: `application/json`
       "isActive": true,
       "isDeleted": false,
       "createdAt": "2026-08-18T00:00:00Z",
-      "updatedAt": "2026-08-18T00:00:00Z"
+      "updatedAt": "2026-08-18T00:00:00Z",
+      "stock": 100,
+      "availableStock": 95
     }
   ],
   "totalCount": 100,
@@ -1461,7 +1467,11 @@ Content-Type: `application/json`
   "isActive": true,
   "isDeleted": false,
   "createdAt": "2026-08-18T00:00:00Z",
-  "updatedAt": "2026-08-18T00:00:00Z"
+  "updatedAt": "2026-08-18T00:00:00Z",
+  "stock": 100,
+  "availableStock": 95,
+  "variants": [],
+  "images": []
 }
 ```
 
@@ -1481,7 +1491,9 @@ Content-Type: `application/json`
   "price": "decimal (required)",
   "categoryId": "guid (required)",
   "brandId": "guid (required)",
-  "isActive": true
+  "isActive": true,
+  "stock": "int? (optional, initial stock quantity, default: 0)",
+  "warehouseId": "guid? (optional, default warehouse if not provided)"
 }
 ```
 
@@ -1498,7 +1510,9 @@ Content-Type: `application/json`
   "isActive": true,
   "isDeleted": false,
   "createdAt": "2026-08-18T00:00:00Z",
-  "updatedAt": "2026-08-18T00:00:00Z"
+  "updatedAt": "2026-08-18T00:00:00Z",
+  "stock": 100,
+  "availableStock": 95
 }
 ```
 
@@ -1524,7 +1538,9 @@ Content-Type: `application/json`
   "price": "decimal",
   "categoryId": "guid",
   "brandId": "guid",
-  "isActive": true
+  "isActive": true,
+  "stock": "int? (optional, absolute stock quantity)",
+  "warehouseId": "guid? (optional)"
 }
 ```
 
@@ -1541,7 +1557,9 @@ Content-Type: `application/json`
   "isActive": true,
   "isDeleted": false,
   "createdAt": "2026-08-18T00:00:00Z",
-  "updatedAt": "2026-08-18T00:00:00Z"
+  "updatedAt": "2026-08-18T00:00:00Z",
+  "stock": 100,
+  "availableStock": 95
 }
 ```
 
@@ -5980,6 +5998,97 @@ Content-Type: `application/json`
 
 **Errors:**
 - `404` Image not found
+
+---
+
+## Admin: Inventory
+
+**Requires AdminOnly policy.**
+
+### Set Inventory Stock (Absolute)
+**POST** `/api/admin/inventory/set-stock`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Request Body:**
+```json
+{
+  "inventoryItemId": "guid (required)",
+  "quantityOnHand": "int (required, must be >= 0)"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "productId": "guid",
+  "productVariantId": "guid?",
+  "productName": "string",
+  "variantName": "string",
+  "sku": "string",
+  "warehouseId": "guid",
+  "warehouseName": "string",
+  "quantityOnHand": 100,
+  "quantityReserved": 5,
+  "available": 95,
+  "reorderLevel": 10,
+  "reorderQuantity": 20,
+  "allowBackorder": false,
+  "isLowStock": false,
+  "updatedAt": "2026-08-18T00:00:00Z"
+}
+```
+
+**Errors:**
+- `404` Inventory item not found
+- `400` Quantity cannot be negative
+
+---
+
+### Create Inventory Item
+**POST** `/api/admin/inventory`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Request Body:**
+```json
+{
+  "productId": "guid (required)",
+  "productVariantId": "guid? (optional)",
+  "warehouseId": "guid (required)",
+  "quantityOnHand": "int (default: 0)",
+  "reorderLevel": "int (default: 0)",
+  "reorderQuantity": "int (default: 0)",
+  "allowBackorder": "bool (default: false)"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "productId": "guid",
+  "productVariantId": "guid?",
+  "productName": "string",
+  "variantName": "string",
+  "sku": "string",
+  "warehouseId": "guid",
+  "warehouseName": "string",
+  "quantityOnHand": 100,
+  "quantityReserved": 0,
+  "available": 100,
+  "reorderLevel": 10,
+  "reorderQuantity": 20,
+  "allowBackorder": false,
+  "isLowStock": false,
+  "updatedAt": "2026-08-18T00:00:00Z"
+}
+```
+
+**Errors:**
+- `404` Product, variant, or warehouse not found
+- `400` Inventory item already exists for this product/variant/warehouse combination
 
 ---
 

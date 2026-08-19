@@ -516,6 +516,22 @@ This section documents work that already exists in the repository as of 2026-08-
 - Storefront (home page, product listings, product detail) can now display product images without admin-only endpoints
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
 
+### 2026-08-19 — Inventory Stock Features
+- **AdminProductDto** and **ProductDto** now include `Stock` (sum of QuantityOnHand) and `AvailableStock` (sum of Available = QtyOnHand - Reserved)
+- **AdminProductDto** also has `Stock` (int) for total stock
+- Query handlers (`GetProducts`, `GetProductById`, `GetProductBySlug`, `GetAdminProducts`, `GetAdminProductById`) now include `InventoryItems` and compute `Stock` (sum QuantityOnHand) and `AvailableStock` (sum Available)
+- AutoMapper mappings updated to calculate stock from `InventoryItems` collection
+- **CreateProductCommand** and **UpdateProductCommand** now accept optional `Stock` (int?) and `WarehouseId` (Guid?)
+- **CreateProductCommandHandler** auto-creates `InventoryItem` row on product creation (uses first active warehouse as default)
+- **UpdateProductCommandHandler** updates existing inventory stock or creates inventory row if missing when `Stock` provided
+- **SetInventoryStockCommand** + handler (`POST /api/admin/inventory/set-stock`) — absolute stock setting (replaces delta adjust)
+- **CreateInventoryCommand** + handler (`POST /api/admin/inventory`) — per-warehouse inventory creation with reorder levels
+- **AdminInventoryController** with endpoints: `POST /api/admin/inventory/set-stock`, `POST /api/admin/inventory`
+- **InventoryItem** entity: added constructor for proper initialization, added `SetStock(int)` method for absolute stock setting
+- **AutoMapper** mappings updated to compute `Stock` (sum QuantityOnHand) and `AvailableStock` (sum Available) from `InventoryItems`
+- **Product → InventoryItems** relationship: configured cascade delete (InventoryItems deleted when Product deleted)
+- All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -605,4 +621,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Public product API returns product images, product image upload/delete endpoints, Admin Category & Brand CRUD, Login updates LastLoginAt & checks IsActive, all 215 tests passing.*
+*Last updated: 2026-08-19 — Inventory stock features (Stock/AvailableStock on ProductDto/AdminProductDto, auto-create inventory on product create, SetStock/UpdateProduct stock, CreateInventory per-warehouse, SetInventoryStock absolute), AutoMapper stock mapping, cascade delete InventoryItem→Product, all 215 tests passing.*
