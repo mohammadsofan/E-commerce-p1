@@ -32,14 +32,14 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             // Foreign keys - Restrict delete to avoid SQL Server "multiple cascade paths"
             // cycle error between Product/ProductVariant/InventoryItem.
             builder.HasOne(x => x.Product)
-                .WithMany()
+                .WithMany(x => x.InventoryItems)
                 .HasForeignKey(x => x.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(x => x.ProductVariant)
                 .WithMany()
                 .HasForeignKey(x => x.ProductVariantId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(x => x.Warehouse)
                 .WithMany()

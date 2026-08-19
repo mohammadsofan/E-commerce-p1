@@ -6090,6 +6090,8 @@ Content-Type: `application/json`
 - `404` Product, variant, or warehouse not found
 - `400` Inventory item already exists for this product/variant/warehouse combination
 
+**Product-level inventory:** Set `productVariantId` to `null` when the stock belongs directly to the product. Variant-level inventory should provide the variant GUID.
+
 ---
 
 ## Notes

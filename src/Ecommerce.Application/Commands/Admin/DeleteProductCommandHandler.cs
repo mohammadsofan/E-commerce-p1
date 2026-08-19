@@ -31,6 +31,10 @@ namespace Ecommerce.Application.Commands.Admin
 
             if (command.HardDelete)
             {
+                var inventoryItems = await _db.InventoryItems
+                    .Where(i => i.ProductId == product.Id)
+                    .ToListAsync(cancellationToken);
+                _db.InventoryItems.RemoveRange(inventoryItems);
                 _db.Products.Remove(product);
             }
             else

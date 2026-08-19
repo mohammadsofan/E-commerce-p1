@@ -516,7 +516,7 @@ This section documents work that already exists in the repository as of 2026-08-
 - Storefront (home page, product listings, product detail) can now display product images without admin-only endpoints
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
 
-### 2026-08-19 — Inventory Stock Features
+### 2026-08-19 - Inventory Stock Features
 - **AdminProductDto** and **ProductDto** now include `Stock` (sum of QuantityOnHand) and `AvailableStock` (sum of Available = QtyOnHand - Reserved)
 - **AdminProductDto** also has `Stock` (int) for total stock
 - Query handlers (`GetProducts`, `GetProductById`, `GetProductBySlug`, `GetAdminProducts`, `GetAdminProductById`) now include `InventoryItems` and compute `Stock` (sum QuantityOnHand) and `AvailableStock` (sum Available)
@@ -531,6 +531,12 @@ This section documents work that already exists in the repository as of 2026-08-
 - **AutoMapper** mappings updated to compute `Stock` (sum QuantityOnHand) and `AvailableStock` (sum Available) from `InventoryItems`
 - **Product → InventoryItems** relationship: configured cascade delete (InventoryItems deleted when Product deleted)
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
+
+### 2026-08-19 - Inventory Database Migration Fix
+- Added migration `AddInventoryStockFeatures` to make `InventoryItems.ProductVariantId` nullable for product-level stock rows.
+- Fixed the Product/InventoryItem relationship mapping to avoid EF shadow `ProductId1` properties and SQL Server cascade-path conflicts.
+- Hard product deletion now removes related inventory rows explicitly.
+- Recreated `EcommerceDb` and applied all migrations successfully.
 
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
@@ -621,4 +627,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Inventory stock features (Stock/AvailableStock on ProductDto/AdminProductDto, auto-create inventory on product create, SetStock/UpdateProduct stock, CreateInventory per-warehouse, SetInventoryStock absolute), AutoMapper stock mapping, cascade delete InventoryItem→Product, all 215 tests passing.*
+*Last updated: 2026-08-19 — Inventory stock features and `AddInventoryStockFeatures` migration applied; product-level inventory supports nullable `productVariantId`, all 215 tests passing.*
