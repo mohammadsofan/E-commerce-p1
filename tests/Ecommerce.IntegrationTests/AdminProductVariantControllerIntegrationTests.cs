@@ -70,7 +70,8 @@ namespace Ecommerce.IntegrationTests
                         FirstName = "Admin",
                         LastName = "User",
                         EmailConfirmed = true,
-                        IsEmailVerified = true
+                        IsEmailVerified = true,
+                        IsActive = true
                     };
 
                     var result = await userManager.CreateAsync(adminUser, "Test123!");
@@ -81,6 +82,13 @@ namespace Ecommerce.IntegrationTests
 
                     // Add admin role
                     await userManager.AddToRoleAsync(adminUser, "Admin");
+                }
+                else
+                {
+                    // Ensure existing admin user is active and verified
+                    adminUser.IsActive = true;
+                    adminUser.IsEmailVerified = true;
+                    await userManager.UpdateAsync(adminUser);
                 }
 
                 var loginResponse = await _client.PostAsJsonAsync("/api/account/login", new

@@ -273,7 +273,7 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseRateLimiter();
 
 // HTTPS enforcement
-if (!app.Environment.IsEnvironment("Test"))
+if (!app.Environment.IsEnvironment("Test") && !app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 

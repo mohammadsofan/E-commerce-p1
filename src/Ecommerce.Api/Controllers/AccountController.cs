@@ -38,6 +38,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest req)
         {
+            var now = DateTimeOffset.UtcNow;
             var user = new ApplicationUser
             {
                 UserName = req.Email,
@@ -45,7 +46,10 @@ namespace Ecommerce.Api.Controllers
                 FirstName = string.Empty,
                 LastName = string.Empty,
                 DisplayName = string.Empty,
-                ProfileImageUrl = string.Empty
+                ProfileImageUrl = string.Empty,
+                IsActive = true,
+                CreatedAt = now,
+                UpdatedAt = now
             };
             var res = await _userManager.CreateAsync(user, req.Password);
             if (!res.Succeeded) return BadRequest(res.Errors);
@@ -68,6 +72,9 @@ namespace Ecommerce.Api.Controllers
 
             if (!user.IsEmailVerified)
                 return Unauthorized("Email not verified. Please verify your email before logging in.");
+
+            if (!user.IsActive)
+                return Unauthorized("Account is deactivated. Please contact support.");
 
             var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
             if (!res.Succeeded) return Unauthorized();
@@ -221,7 +228,8 @@ namespace Ecommerce.Api.Controllers
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null) return NotFound();
 
-            return Ok(new ApplicationUserDto { Id = user.Id, Email = user.Email ?? string.Empty, UserName = user.UserName ?? string.Empty });
+            var roles = await _userManager.GetRolesAsync(user);
+            return Ok(new ApplicationUserDto { Id = user.Id, Email = user.Email ?? string.Empty, UserName = user.UserName ?? string.Empty, Roles = roles.ToList() });
         }
 
         private async Task<object> IssueTokensAsync(ApplicationUser user)

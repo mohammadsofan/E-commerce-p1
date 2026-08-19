@@ -74,7 +74,7 @@ namespace Ecommerce.Infrastructure
             // Requires AutoMapper & AutoMapper.Extensions.Microsoft.DependencyInjection packages
             try
             {
-                services.AddAutoMapper(typeof(Ecommerce.Application.Mappings.MappingProfile));
+                services.AddAutoMapper(typeof(Ecommerce.Application.Mappings.MappingProfile), typeof(Ecommerce.Infrastructure.Mappings.AdminUserMappingProfile));
             }
             catch
             {
