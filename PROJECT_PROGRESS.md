@@ -502,6 +502,13 @@ This section documents work that already exists in the repository as of 2026-08-
 - Registered all handlers in DependencyInjection
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
 
+### 2026-08-19 — Product Image Upload/Delete Endpoints
+- Added POST/DELETE endpoints to `AdminProductImageController` at `/api/admin/products/{productId}/images`
+- Commands: CreateProductImageCommand, UpdateProductImageCommand, DeleteProductImageCommand
+- Handlers with primary image logic (auto-unset other primary images)
+- Validation: product existence, variant ownership, primary image uniqueness
+- All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -591,4 +598,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Admin Category & Brand controllers added (full CRUD), Login updates LastLoginAt & checks IsActive, all 215 tests passing.*
+*Last updated: 2026-08-19 — Product image upload/delete endpoints added, Admin Category & Brand CRUD, Login updates LastLoginAt & checks IsActive, all 215 tests passing.*

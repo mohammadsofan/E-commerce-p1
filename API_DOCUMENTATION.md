@@ -5829,6 +5829,112 @@ Content-Type: `application/json`
 
 ---
 
+## Admin: Product Images
+
+**Requires AdminOnly policy.**
+
+### Get All Product Images (Admin)
+**GET** `/api/admin/products/{productId:guid}/images`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| productId | guid | Product ID |
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| productVariantId | guid? | No | Filter by variant |
+| page | int | No | Page number (default: 1) |
+| pageSize | int | No | Items per page (default: 20) |
+
+**Response:** `200 OK`
+```json
+{
+  "items": [
+    {
+      "id": "guid",
+      "productId": "guid",
+      "productVariantId": "guid?",
+      "url": "string",
+      "altText": "string",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-08-18T00:00:00Z"
+    }
+  ],
+  "totalCount": 10,
+  "page": 1,
+  "pageSize": 20,
+  "totalPages": 1
+}
+```
+
+---
+
+### Create Product Image
+**POST** `/api/admin/products/{productId:guid}/images`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| productId | guid | Product ID |
+
+**Request Body:**
+```json
+{
+  "productId": "guid (required, must match path)",
+  "productVariantId": "guid? (optional)",
+  "url": "string (required)",
+  "altText": "string",
+  "isPrimary": false,
+  "sortOrder": 0
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "productId": "guid",
+  "productVariantId": "guid?",
+  "url": "string",
+  "altText": "string",
+  "isPrimary": true,
+  "sortOrder": 0,
+  "createdAt": "2026-08-18T00:00:00Z"
+}
+```
+
+**Notes:**
+- If `isPrimary: true`, other primary images for the same product/variant are automatically unset
+- `productId` in body must match the path parameter
+- `productVariantId` is optional (null = product-level image)
+
+---
+
+### Delete Product Image
+**DELETE** `/api/admin/products/{productId:guid}/images/{imageId:guid}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| productId | guid | Product ID |
+| imageId | guid | Image ID |
+
+**Response:** `204 No Content`
+
+**Errors:**
+- `404` Image not found
+
+---
+
 ## Notes
 
 - All authenticated endpoints return `401 Unauthorized` if the token is missing or invalid.
