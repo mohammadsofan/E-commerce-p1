@@ -122,6 +122,26 @@ namespace Ecommerce.Api.Controllers
             var result = await _queryDispatcher.Send<GetAdminProductImagesQuery, PagedResult<AdminProductImageDto>>(query);
             return Ok(result);
         }
+
+        /// <summary>Uploads a new image for a product (or variant)</summary>
+        [HttpPost]
+        public async Task<IActionResult> Create(Guid productId, [FromBody] CreateProductImageCommand command)
+        {
+            if (command.ProductId != productId)
+                return BadRequest("Product ID mismatch");
+
+            var result = await _commandDispatcher.Send<CreateProductImageCommand, AdminProductImageDto>(command);
+            return Ok(result);
+        }
+
+        /// <summary>Deletes a product image</summary>
+        [HttpDelete("{imageId:guid}")]
+        public async Task<IActionResult> Delete(Guid productId, Guid imageId)
+        {
+            var command = new DeleteProductImageCommand { Id = imageId };
+            await _commandDispatcher.Send<DeleteProductImageCommand, Unit>(command);
+            return NoContent();
+        }
     }
 
     [ApiController]

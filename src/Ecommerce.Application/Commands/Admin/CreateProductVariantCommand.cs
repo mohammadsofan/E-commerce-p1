@@ -28,6 +28,8 @@ namespace Ecommerce.Application.Commands.Admin
 
     public class CreateProductImageCommand
     {
+        public Guid ProductId { get; set; }
+        public Guid? ProductVariantId { get; set; }
         public string Url { get; set; } = string.Empty;
         public string AltText { get; set; } = string.Empty;
         public bool IsPrimary { get; set; }
