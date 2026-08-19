@@ -205,6 +205,19 @@ Content-Type: `application/json`
 
 ## Products
 
+All public product responses include these fields:
+```json
+{
+  "description": "string",
+  "isActive": true,
+  "availableStock": 15,
+  "category": { "id": "guid", "name": "string", "slug": "string" },
+  "brand": { "id": "guid", "name": "string", "slug": "string" },
+  "images": []
+}
+```
+`category` and `brand` may be `null` when the product has no associated record.
+
 ### Get Products
 **GET** `/api/products`
 

@@ -516,6 +516,12 @@ This section documents work that already exists in the repository as of 2026-08-
 - Storefront (home page, product listings, product detail) can now display product images without admin-only endpoints
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
 
+### 2026-08-19 — Public Product API Returns Complete Product Data
+- `ProductDto` now includes `IsActive`, `Description`, `Category`, and `Brand` in addition to `AvailableStock` and `Images`.
+- Public product query handlers eagerly load category and brand relationships.
+- Storefront product cards and detail pages can now use the product status, description, category, brand, stock, and images from the API.
+- All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
+
 ### 2026-08-19 - Inventory Stock Features
 - **AdminProductDto** and **ProductDto** now include `Stock` (sum of QuantityOnHand) and `AvailableStock` (sum of Available = QtyOnHand - Reserved)
 - **AdminProductDto** also has `Stock` (int) for total stock
@@ -633,4 +639,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Inventory POST routes exposed, pagination corrected, stock migration applied; all 215 tests passing.*
+*Last updated: 2026-08-19 — Public ProductDto now exposes status, description, category, brand, available stock, and images; all 215 tests passing.*
