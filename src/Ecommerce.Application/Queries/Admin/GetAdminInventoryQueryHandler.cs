@@ -44,10 +44,10 @@ namespace Ecommerce.Application.Queries.Admin
                 q = q.Where(i => i.WarehouseId == query.WarehouseId.Value);
 
             if (query.LowStockOnly == true)
-                q = q.Where(i => i.Available <= i.ReorderLevel && i.ReorderLevel > 0);
+                q = q.Where(i => (i.QuantityOnHand - i.QuantityReserved) <= i.ReorderLevel && i.ReorderLevel > 0);
 
             if (!query.IncludeBackorder)
-                q = q.Where(i => !i.AllowBackorder || i.Available >= 0);
+                q = q.Where(i => !i.AllowBackorder || (i.QuantityOnHand - i.QuantityReserved) >= 0);
 
             var totalCount = await q.CountAsync(cancellationToken);
 
@@ -71,8 +71,8 @@ namespace Ecommerce.Application.Queries.Admin
             return new PagedResult<AdminInventoryDto>
             {
                 Items = itemsDto,
-                TotalCount = itemsDto.Count,
-                Page = 1,
+                TotalCount = totalCount,
+                Page = query.Page,
                 PageSize = query.PageSize
             };
         }

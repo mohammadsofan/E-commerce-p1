@@ -60,6 +60,22 @@ namespace Ecommerce.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>Sets inventory quantity to an absolute value</summary>
+        [HttpPost("set-stock")]
+        public async Task<IActionResult> SetStock([FromBody] SetInventoryStockCommand command)
+        {
+            var result = await _commandDispatcher.Send<SetInventoryStockCommand, AdminInventoryDto>(command);
+            return Ok(result);
+        }
+
+        /// <summary>Creates an inventory item for a product or variant in a warehouse</summary>
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateInventoryCommand command)
+        {
+            var result = await _commandDispatcher.Send<CreateInventoryCommand, AdminInventoryDto>(command);
+            return Ok(result);
+        }
+
         /// <summary>Adjusts inventory quantity (positive to add, negative to remove)</summary>
         [HttpPost("{id:guid}/adjust")]
         public async Task<IActionResult> Adjust(Guid id, [FromBody] AdjustInventoryCommand command)
