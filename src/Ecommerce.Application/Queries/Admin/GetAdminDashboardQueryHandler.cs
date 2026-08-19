@@ -54,7 +54,7 @@ namespace Ecommerce.Application.Queries.Admin
                 .Select(g => new
                 {
                     ProductId = g.Key,
-                    Available = g.Sum(i => i.Available)
+                    Available = g.Sum(i => i.QuantityOnHand - i.QuantityReserved)
                 })
                 .ToListAsync(cancellationToken);
 
