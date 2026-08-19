@@ -8,7 +8,11 @@ namespace Ecommerce.Application.DTOs
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public decimal BasePrice { get; set; }
+        public bool IsActive { get; set; }
+        public CategoryDto? Category { get; set; }
+        public BrandDto? Brand { get; set; }
         public List<AdminProductImageDto> Images { get; set; } = new List<AdminProductImageDto>();
         public int AvailableStock { get; set; }
     }

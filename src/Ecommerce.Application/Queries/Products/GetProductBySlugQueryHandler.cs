@@ -27,6 +27,8 @@ namespace Ecommerce.Application.Queries.Products
                 .AsNoTracking()
                 .Include(p => p.Images)
                 .Include(p => p.InventoryItems)
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
                 .FirstOrDefaultAsync(p => p.Slug == query.Slug, cancellationToken);
 
             if (product == null) throw new NotFoundException("Product", query.Slug);

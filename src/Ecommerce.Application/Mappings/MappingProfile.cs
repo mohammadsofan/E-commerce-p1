@@ -24,6 +24,10 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Name, opt => opt.MapFrom(s => s.Name))
                 .ForMember(d => d.BasePrice, opt => opt.MapFrom(s => s.BasePrice))
                 .ForMember(d => d.Slug, opt => opt.MapFrom(s => s.Slug))
+                .ForMember(d => d.Description, opt => opt.MapFrom(s => s.Description))
+                .ForMember(d => d.IsActive, opt => opt.MapFrom(s => s.IsActive))
+                .ForMember(d => d.Category, opt => opt.MapFrom(s => s.Category))
+                .ForMember(d => d.Brand, opt => opt.MapFrom(s => s.Brand))
                 .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)));
 
             CreateMap<Product, AdminProductDto>()

@@ -32,6 +32,8 @@ namespace Ecommerce.Application.Queries.Products
                 .AsNoTracking()
                 .Include(p => p.Images)
                 .Include(p => p.InventoryItems)
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
                 .Where(p => !p.IsDeleted);
 
             if (query.IsActive.HasValue)

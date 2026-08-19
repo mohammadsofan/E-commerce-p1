@@ -26,6 +26,8 @@ namespace Ecommerce.Application.Queries.Products
                 .AsNoTracking()
                 .Include(p => p.Images)
                 .Include(p => p.InventoryItems)
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
                 .FirstOrDefaultAsync(p => p.Id == query.Id, cancellationToken);
             if (product == null) throw new NotFoundException("Product", query.Id);
             return _mapper.Map<ProductDto>(product);
