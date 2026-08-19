@@ -4378,6 +4378,8 @@ Content-Type: `application/json`
 }
 ```
 
+The response pagination metadata reflects the requested `page` and the full filtered `totalCount`.
+
 ---
 
 ### Get Inventory Item By ID (Admin)

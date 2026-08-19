@@ -527,9 +527,11 @@ This section documents work that already exists in the repository as of 2026-08-
 - **SetInventoryStockCommand** + handler (`POST /api/admin/inventory/set-stock`) — absolute stock setting (replaces delta adjust)
 - **CreateInventoryCommand** + handler (`POST /api/admin/inventory`) — per-warehouse inventory creation with reorder levels
 - **AdminInventoryController** with endpoints: `POST /api/admin/inventory/set-stock`, `POST /api/admin/inventory`
+- Fixed live route exposure for both inventory POST actions in `AdminInventoryController`.
+- Fixed inventory list pagination metadata to return the actual `TotalCount` and requested `Page`.
 - **InventoryItem** entity: added constructor for proper initialization, added `SetStock(int)` method for absolute stock setting
 - **AutoMapper** mappings updated to compute `Stock` (sum QuantityOnHand) and `AvailableStock` (sum Available) from `InventoryItems`
-- **Product → InventoryItems** relationship: configured cascade delete (InventoryItems deleted when Product deleted)
+- **Product → InventoryItems** relationship: uses restricted database deletes; hard product deletion explicitly removes related inventory rows.
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
 
 ### 2026-08-19 - Inventory Database Migration Fix
@@ -537,6 +539,10 @@ This section documents work that already exists in the repository as of 2026-08-
 - Fixed the Product/InventoryItem relationship mapping to avoid EF shadow `ProductId1` properties and SQL Server cascade-path conflicts.
 - Hard product deletion now removes related inventory rows explicitly.
 - Recreated `EcommerceDb` and applied all migrations successfully.
+
+### 2026-08-19 - Inventory Route Exposure Fix
+- `POST /api/admin/inventory/set-stock` and `POST /api/admin/inventory` are now exposed by the controller used by the running API.
+- Inventory list pagination now reports accurate `totalCount` and `page` values.
 
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
@@ -627,4 +633,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Inventory stock features and `AddInventoryStockFeatures` migration applied; product-level inventory supports nullable `productVariantId`, all 215 tests passing.*
+*Last updated: 2026-08-19 — Inventory POST routes exposed, pagination corrected, stock migration applied; all 215 tests passing.*
