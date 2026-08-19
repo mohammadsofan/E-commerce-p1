@@ -322,6 +322,19 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateTagCommand, TagDto>, UpdateTagCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteTagCommand, Unit>, DeleteTagCommandHandler>();
 
+            // Category query + command handlers
+            services.AddScoped<IQueryHandler<GetCategoriesQuery, List<CategoryDto>>, GetCategoriesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetCategoryBySlugQuery, CategoryDto>, GetCategoryBySlugQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateCategoryCommand, CategoryDto>, CreateCategoryCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateCategoryCommand, CategoryDto>, UpdateCategoryCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteCategoryCommand, Unit>, DeleteCategoryCommandHandler>();
+
+            // Brand query + command handlers
+            services.AddScoped<IQueryHandler<GetBrandsQuery, List<BrandDto>>, GetBrandsQueryHandler>();
+            services.AddScoped<ICommandHandler<CreateBrandCommand, BrandDto>, CreateBrandCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateBrandCommand, BrandDto>, UpdateBrandCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteBrandCommand, Unit>, DeleteBrandCommandHandler>();
+
             // Vendor query + command handlers
             services.AddScoped<IQueryHandler<GetAdminVendorsQuery, PagedResult<VendorDto>>, GetAdminVendorsQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminVendorByIdQuery, VendorDto>, GetAdminVendorByIdQueryHandler>();

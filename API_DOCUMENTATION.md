@@ -5560,6 +5560,275 @@ Content-Type: `application/json`
 
 ---
 
+## Admin: Categories
+
+**Requires AdminOnly policy.**
+
+### Get All Categories (Admin)
+**GET** `/api/admin/categories`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "guid",
+    "parentCategoryId": "guid?",
+    "name": "string",
+    "slug": "string",
+    "description": "string",
+    "imageUrl": "string",
+    "displayOrder": 0,
+    "isActive": true,
+    "isFeatured": false,
+    "children": []
+  }
+]
+```
+
+---
+
+### Get Category By Slug
+**GET** `/api/admin/categories/slug/{slug}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| slug | string | Category slug |
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "parentCategoryId": "guid?",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "displayOrder": 0,
+  "isActive": true,
+  "isFeatured": false,
+  "children": []
+}
+```
+
+---
+
+### Create Category
+**POST** `/api/admin/categories`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Request Body:**
+```json
+{
+  "parentCategoryId": "guid? (optional)",
+  "name": "string (required)",
+  "slug": "string (optional, auto-generated from name)",
+  "description": "string",
+  "imageUrl": "string",
+  "displayOrder": 0,
+  "isActive": true,
+  "isFeatured": false,
+  "metaTitle": "string",
+  "metaDescription": "string"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "parentCategoryId": "guid?",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "displayOrder": 0,
+  "isActive": true,
+  "isFeatured": false,
+  "children": []
+}
+```
+
+---
+
+### Update Category
+**PUT** `/api/admin/categories/{id:guid}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | guid | Category ID |
+
+**Request Body:**
+```json
+{
+  "id": "guid (required)",
+  "parentCategoryId": "guid? (optional)",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "displayOrder": 0,
+  "isActive": true,
+  "isFeatured": false,
+  "metaTitle": "string",
+  "metaDescription": "string"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "parentCategoryId": "guid?",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "displayOrder": 0,
+  "isActive": true,
+  "isFeatured": false,
+  "children": []
+}
+```
+
+---
+
+### Delete Category
+**DELETE** `/api/admin/categories/{id:guid}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | guid | Category ID |
+
+**Response:** `204 No Content`
+
+**Errors:**
+- `400` Category has children - delete children first
+- `400` Category has products - reassign products first
+- `404` Category not found
+
+---
+
+## Admin: Brands
+
+**Requires AdminOnly policy.**
+
+### Get All Brands (Admin)
+**GET** `/api/admin/brands`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "guid",
+    "name": "string",
+    "slug": "string",
+    "description": "string",
+    "imageUrl": "string",
+    "isActive": true
+  }
+]
+```
+
+---
+
+### Create Brand
+**POST** `/api/admin/brands`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Request Body:**
+```json
+{
+  "name": "string (required)",
+  "slug": "string (optional, auto-generated from name)",
+  "description": "string",
+  "imageUrl": "string",
+  "isActive": true
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "isActive": true
+}
+```
+
+---
+
+### Update Brand
+**PUT** `/api/admin/brands/{id:guid}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | guid | Brand ID |
+
+**Request Body:**
+```json
+{
+  "id": "guid (required)",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "isActive": true
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "isActive": true
+}
+```
+
+---
+
+### Delete Brand
+**DELETE** `/api/admin/brands/{id:guid}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | guid | Brand ID |
+
+**Response:** `204 No Content`
+
+**Errors:**
+- `400` Brand has products - reassign products first
+- `404` Brand not found
+
+---
+
 ## Notes
 
 - All authenticated endpoints return `401 Unauthorized` if the token is missing or invalid.

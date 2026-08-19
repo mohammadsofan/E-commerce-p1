@@ -492,6 +492,16 @@ This section documents work that already exists in the repository as of 2026-08-
 - Register endpoint sets `IsActive=true`, `CreatedAt`, `UpdatedAt` on new users
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
 
+### 2026-08-19 — Admin Category & Brand Controllers
+- Created full CRUD for Categories: `AdminCategoryController` with GET/POST/PUT/DELETE at `/api/admin/categories`
+- Created full CRUD for Brands: `AdminBrandController` with GET/POST/PUT/DELETE at `/api/admin/brands`
+- Added commands/handlers: Create/Update/Delete for Category and Brand
+- Added queries/handlers: Get all categories/brands, get category by slug
+- Added slug auto-generation from name
+- Soft delete protection: prevents deletion if category has children/products or brand has products
+- Registered all handlers in DependencyInjection
+- All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -581,4 +591,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Login updates LastLoginAt, checks IsActive, register sets timestamps, all 215 tests passing.*
+*Last updated: 2026-08-19 — Admin Category & Brand controllers added (full CRUD), Login updates LastLoginAt & checks IsActive, all 215 tests passing.*
