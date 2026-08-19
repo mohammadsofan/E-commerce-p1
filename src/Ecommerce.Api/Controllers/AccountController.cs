@@ -79,6 +79,9 @@ namespace Ecommerce.Api.Controllers
             var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
             if (!res.Succeeded) return Unauthorized();
 
+            user.LastLoginAt = DateTimeOffset.UtcNow;
+            await _userManager.UpdateAsync(user);
+
             return Ok(await IssueTokensAsync(user));
         }
 

@@ -486,6 +486,12 @@ This section documents work that already exists in the repository as of 2026-08-
 - Frontend can now check `response.data.roles.includes('Admin')` for authorization
 - All 219 tests passing
 
+### 2026-08-19 — Login Updates LastLoginAt & IsActive Check
+- Login endpoint now updates `LastLoginAt` to current timestamp on successful login
+- Login now checks `IsActive` before allowing login - returns 401 "Account is deactivated" if false
+- Register endpoint sets `IsActive=true`, `CreatedAt`, `UpdatedAt` on new users
+- All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -575,4 +581,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — /api/account/me returns roles, CORS fixed, roles seeded, register assigns role, all 219 tests passing.*
+*Last updated: 2026-08-19 — Login updates LastLoginAt, checks IsActive, register sets timestamps, all 215 tests passing.*

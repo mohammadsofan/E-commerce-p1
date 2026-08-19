@@ -26,6 +26,8 @@ Content-Type: `application/json`
 }
 ```
 
+**Side Effect:** Creates user with `IsActive=true`, `CreatedAt=now`, `UpdatedAt=now`. Assigns "Customer" role.
+
 ---
 
 ### Login
@@ -47,6 +49,15 @@ Content-Type: `application/json`
   "refreshTokenExpires": "2026-08-18T00:00:00Z"
 }
 ```
+
+**Error Responses:**
+| Status | Description |
+|--------|-------------|
+| `401` | Invalid credentials |
+| `401` | Email not verified |
+| `401` | Account is deactivated |
+
+**Side Effect:** Updates `LastLoginAt` timestamp on successful login.
 
 ---
 
