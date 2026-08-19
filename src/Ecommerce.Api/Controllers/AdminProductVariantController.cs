@@ -141,10 +141,8 @@ namespace Ecommerce.Api.Controllers
             var command = new DeleteProductImageCommand { Id = imageId };
             await _commandDispatcher.Send<DeleteProductImageCommand, Unit>(command);
             return NoContent();
-        }
-    }
-
-    [ApiController]
+}
+}
     [Route("api/admin/attributes")]
     [Authorize(Policy = "AdminOnly")]
     public class AdminProductAttributeController : ControllerBase

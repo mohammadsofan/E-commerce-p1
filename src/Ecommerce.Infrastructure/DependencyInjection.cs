@@ -327,6 +327,10 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateProductImageCommand, AdminProductImageDto>, UpdateProductImageCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteProductImageCommand, Unit>, DeleteProductImageCommandHandler>();
 
+            // Inventory command handlers
+            services.AddScoped<ICommandHandler<CreateInventoryCommand, AdminInventoryDto>, CreateInventoryCommandHandler>();
+            services.AddScoped<ICommandHandler<SetInventoryStockCommand, AdminInventoryDto>, SetInventoryStockCommandHandler>();
+
             // Category query + command handlers
             services.AddScoped<IQueryHandler<GetCategoriesQuery, List<CategoryDto>>, GetCategoriesQueryHandler>();
             services.AddScoped<IQueryHandler<GetCategoryBySlugQuery, CategoryDto>, GetCategoryBySlugQueryHandler>();

@@ -26,6 +26,7 @@ namespace Ecommerce.Application.Queries.Products
             var product = await _db.Products
                 .AsNoTracking()
                 .Include(p => p.Images)
+                .Include(p => p.InventoryItems)
                 .FirstOrDefaultAsync(p => p.Slug == query.Slug, cancellationToken);
 
             if (product == null) throw new NotFoundException("Product", query.Slug);

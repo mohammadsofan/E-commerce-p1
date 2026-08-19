@@ -35,6 +35,8 @@ namespace Ecommerce.Application.DTOs
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
+        public int Stock { get; set; }
+        public int AvailableStock { get; set; }
         public List<AdminProductVariantDto> Variants { get; set; } = new List<AdminProductVariantDto>();
         public List<AdminProductImageDto> Images { get; set; } = new List<AdminProductImageDto>();
     }

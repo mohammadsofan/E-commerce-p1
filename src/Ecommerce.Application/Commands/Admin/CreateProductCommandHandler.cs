@@ -36,6 +36,18 @@ namespace Ecommerce.Application.Commands.Admin
             if (existingSku)
                 throw new DomainException($"Product with SKU '{command.Sku}' already exists.");
 
+            // Find default warehouse if not specified
+            Guid warehouseId = command.WarehouseId ?? Guid.Empty;
+            if (warehouseId == Guid.Empty)
+            {
+                var defaultWarehouse = await _db.Warehouses
+                    .Where(w => w.IsActive)
+                    .OrderBy(w => w.Name)
+                    .FirstOrDefaultAsync(cancellationToken);
+                if (defaultWarehouse != null)
+                    warehouseId = defaultWarehouse.Id;
+            }
+
             var product = new Product
             {
                 Id = Guid.NewGuid(),
@@ -71,6 +83,19 @@ namespace Ecommerce.Application.Commands.Admin
 
             await _db.Products.AddAsync(product, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
+
+            // Create inventory item for the product if TrackInventory is true
+            if (command.TrackInventory)
+            {
+                int initialStock = command.Stock ?? 0;
+                var inventoryItem = new InventoryItem(product.Id, warehouseId, initialStock)
+                {
+                    AllowBackorder = command.AllowBackorder
+                };
+
+                _db.InventoryItems.Add(inventoryItem);
+                await _db.SaveChangesAsync(cancellationToken);
+            }
 
             if (_searchService != null)
                 await _searchService.IndexProductAsync(product.Id, cancellationToken);

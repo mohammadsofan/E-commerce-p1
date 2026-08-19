@@ -31,5 +31,7 @@ namespace Ecommerce.Application.Commands.Admin
         public string SeoTitle { get; set; } = string.Empty;
         public string SeoDescription { get; set; } = string.Empty;
         public string SeoKeywords { get; set; } = string.Empty;
+        public int? Stock { get; set; }
+        public Guid? WarehouseId { get; set; }
     }
 }

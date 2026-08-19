@@ -72,6 +72,38 @@ namespace Ecommerce.Application.Commands.Admin
             product.SeoKeywords = command.SeoKeywords;
             product.UpdatedAt = DateTimeOffset.UtcNow;
 
+            // Handle stock update if provided
+            if (command.Stock.HasValue)
+            {
+                var inventoryItem = await _db.InventoryItems
+                    .FirstOrDefaultAsync(i => i.ProductId == product.Id && i.ProductVariantId == null, cancellationToken);
+                if (inventoryItem != null)
+                {
+                    inventoryItem.SetStock(command.Stock.Value);
+                }
+                else if (command.TrackInventory)
+                {
+                    // Create inventory item if it doesn't exist and track inventory is true
+                    Guid warehouseId = command.WarehouseId ?? Guid.Empty;
+                    if (warehouseId == Guid.Empty)
+                    {
+                        var defaultWarehouse = await _db.Warehouses
+                            .Where(w => w.IsActive)
+                            .OrderBy(w => w.Name)
+                            .FirstOrDefaultAsync(cancellationToken);
+                        if (defaultWarehouse != null)
+                            warehouseId = defaultWarehouse.Id;
+                    }
+
+                    var newInventoryItem = new InventoryItem(product.Id, warehouseId, command.Stock.Value)
+                    {
+                        AllowBackorder = command.AllowBackorder
+                    };
+
+                    _db.InventoryItems.Add(newInventoryItem);
+                }
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
 
             if (_searchService != null)

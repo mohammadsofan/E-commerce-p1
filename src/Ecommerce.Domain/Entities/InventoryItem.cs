@@ -7,7 +7,7 @@ namespace Ecommerce.Domain.Entities
     {
         public Guid Id { get; set; }
         public Guid ProductId { get; set; }
-        public Guid ProductVariantId { get; set; }
+        public Guid? ProductVariantId { get; set; }
         public Guid WarehouseId { get; set; }
         public int QuantityOnHand { get; private set; }
         public int QuantityReserved { get; private set; }
@@ -18,6 +18,38 @@ namespace Ecommerce.Domain.Entities
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
         public int Available => QuantityOnHand - QuantityReserved;
+
+        public InventoryItem()
+        {
+        }
+
+        public InventoryItem(Guid productId, Guid warehouseId, int quantityOnHand = 0, Guid? productVariantId = null)
+        {
+            Id = Guid.NewGuid();
+            ProductId = productId;
+            WarehouseId = warehouseId;
+            ProductVariantId = productVariantId;
+            QuantityOnHand = quantityOnHand;
+            QuantityReserved = 0;
+            ReorderLevel = 0;
+            ReorderQuantity = 0;
+            AllowBackorder = false;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        public InventoryItem(Guid productId, Guid warehouseId, Guid? productVariantId, int quantityOnHand, int reorderLevel, int reorderQuantity, bool allowBackorder)
+        {
+            Id = Guid.NewGuid();
+            ProductId = productId;
+            WarehouseId = warehouseId;
+            ProductVariantId = productVariantId;
+            QuantityOnHand = quantityOnHand;
+            QuantityReserved = 0;
+            ReorderLevel = reorderLevel;
+            ReorderQuantity = reorderQuantity;
+            AllowBackorder = false;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
 
         // Navigation properties
         public Product? Product { get; set; }
@@ -78,6 +110,13 @@ namespace Ecommerce.Domain.Entities
 
             ReorderLevel = reorderLevel;
             ReorderQuantity = reorderQuantity;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        public void SetStock(int quantity)
+        {
+            if (quantity < 0) throw new InventoryException("Quantity cannot be negative");
+            QuantityOnHand = quantity;
             UpdatedAt = DateTimeOffset.UtcNow;
         }
     }

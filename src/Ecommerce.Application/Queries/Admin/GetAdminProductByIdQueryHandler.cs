@@ -26,6 +26,7 @@ namespace Ecommerce.Application.Queries.Admin
             var product = await _db.Products
                 .Include(p => p.Variants)
                 .Include(p => p.Images)
+                .Include(p => p.InventoryItems)
                 .FirstOrDefaultAsync(p => p.Id == query.Id, cancellationToken);
 
             if (product == null)
