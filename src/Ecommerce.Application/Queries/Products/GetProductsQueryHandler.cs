@@ -30,6 +30,7 @@ namespace Ecommerce.Application.Queries.Products
 
             var products = _db.Products
                 .AsNoTracking()
+                .Include(p => p.Images)
                 .Where(p => !p.IsDeleted);
 
             if (query.IsActive.HasValue)

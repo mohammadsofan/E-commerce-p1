@@ -233,7 +233,19 @@ Content-Type: `application/json`
     "categoryId": "guid",
     "brandId": "guid",
     "isActive": true,
-    "createdAt": "2026-08-18T00:00:00Z"
+    "createdAt": "2026-08-18T00:00:00Z",
+    "images": [
+      {
+        "id": "guid",
+        "productId": "guid",
+        "productVariantId": "guid?",
+        "url": "string",
+        "altText": "string",
+        "isPrimary": true,
+        "sortOrder": 0,
+        "createdAt": "2026-08-18T00:00:00Z"
+      }
+    ]
   }
 ]
 ```
@@ -262,7 +274,19 @@ Content-Type: `application/json`
     "categoryId": "guid",
     "brandId": "guid",
     "isActive": true,
-    "createdAt": "2026-08-18T00:00:00Z"
+    "createdAt": "2026-08-18T00:00:00Z",
+    "images": [
+      {
+        "id": "guid",
+        "productId": "guid",
+        "productVariantId": "guid?",
+        "url": "string",
+        "altText": "string",
+        "isPrimary": true,
+        "sortOrder": 0,
+        "createdAt": "2026-08-18T00:00:00Z"
+      }
+    ]
   }
 ]
 ```
@@ -288,7 +312,19 @@ Content-Type: `application/json`
   "categoryId": "guid",
   "brandId": "guid",
   "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
+  "createdAt": "2026-08-18T00:00:00Z",
+  "images": [
+    {
+      "id": "guid",
+      "productId": "guid",
+      "productVariantId": "guid?",
+      "url": "string",
+      "altText": "string",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-08-18T00:00:00Z"
+    }
+  ]
 }
 ```
 
@@ -313,7 +349,19 @@ Content-Type: `application/json`
   "categoryId": "guid",
   "brandId": "guid",
   "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
+  "createdAt": "2026-08-18T00:00:00Z",
+  "images": [
+    {
+      "id": "guid",
+      "productId": "guid",
+      "productVariantId": "guid?",
+      "url": "string",
+      "altText": "string",
+      "isPrimary": true,
+      "sortOrder": 0,
+      "createdAt": "2026-08-18T00:00:00Z"
+    }
+  ]
 }
 ```
 

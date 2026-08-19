@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Ecommerce.Application.DTOs
 {
@@ -8,5 +9,6 @@ namespace Ecommerce.Application.DTOs
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public decimal BasePrice { get; set; }
+        public List<AdminProductImageDto> Images { get; set; } = new List<AdminProductImageDto>();
     }
 }

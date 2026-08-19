@@ -509,6 +509,13 @@ This section documents work that already exists in the repository as of 2026-08-
 - Validation: product existence, variant ownership, primary image uniqueness
 - All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
 
+### 2026-08-19 — Public Product API Returns Product Images
+- `ProductDto` now includes an `Images` collection (`List<AdminProductImageDto>`), automatically mapped from `Product.Images`
+- `GetProductsQueryHandler`, `GetProductByIdQueryHandler`, and `GetProductBySlugQueryHandler` now load product images via `.Include(p => p.Images)`
+- Public endpoints `GET /api/products`, `GET /api/products/search`, `GET /api/products/{id}`, and `GET /api/products/slug/{slug}` now return each product's images array
+- Storefront (home page, product listings, product detail) can now display product images without admin-only endpoints
+- All 215 tests passing (4 pre-existing failures in AdminProductVariantControllerIntegrationTests)
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -598,4 +605,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Product image upload/delete endpoints added, Admin Category & Brand CRUD, Login updates LastLoginAt & checks IsActive, all 215 tests passing.*
+*Last updated: 2026-08-19 — Public product API returns product images, product image upload/delete endpoints, Admin Category & Brand CRUD, Login updates LastLoginAt & checks IsActive, all 215 tests passing.*

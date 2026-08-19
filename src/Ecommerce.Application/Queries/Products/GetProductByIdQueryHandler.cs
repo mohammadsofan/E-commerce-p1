@@ -5,6 +5,7 @@ using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Queries.Products
 {
@@ -21,7 +22,10 @@ namespace Ecommerce.Application.Queries.Products
 
         public async Task<ProductDto> Handle(GetProductByIdQuery query, CancellationToken cancellationToken = default)
         {
-            var product = await _db.Products.FindAsync(new object[] { query.Id }, cancellationToken);
+            var product = await _db.Products
+                .AsNoTracking()
+                .Include(p => p.Images)
+                .FirstOrDefaultAsync(p => p.Id == query.Id, cancellationToken);
             if (product == null) throw new NotFoundException("Product", query.Id);
             return _mapper.Map<ProductDto>(product);
         }
