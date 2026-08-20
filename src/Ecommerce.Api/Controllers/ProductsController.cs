@@ -77,5 +77,20 @@ namespace Ecommerce.Api.Controllers
             var result = await _queryDispatcher.Send<GetProductBySlugQuery, ProductDto>(query);
             return Ok(result);
         }
+
+        [HttpPost("recommendations")]
+        public async Task<IActionResult> GetRecommendations([FromBody] GetFrequentlyBoughtTogetherQuery query)
+        {
+            var result = await _queryDispatcher.Send<GetFrequentlyBoughtTogetherQuery, List<ProductDto>>(query ?? new GetFrequentlyBoughtTogetherQuery());
+            return Ok(result);
+        }
+
+        [HttpGet("recommendations")]
+        public async Task<IActionResult> GetRecommendationsGet([FromQuery] List<Guid>? productIds, [FromQuery] int limit = 4)
+        {
+            var query = new GetFrequentlyBoughtTogetherQuery(productIds ?? new List<Guid>(), limit);
+            var result = await _queryDispatcher.Send<GetFrequentlyBoughtTogetherQuery, List<ProductDto>>(query);
+            return Ok(result);
+        }
     }
 }

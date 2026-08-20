@@ -705,6 +705,17 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Registered `DbSeeder` execution in `Program.cs` startup pipeline.
 - Verified all 187 application unit tests pass (100% pass rate).
 
+### 2026-08-21 — Frequently Bought Together (Co-occurrence Matrix) Recommendation Engine
+- Implemented intelligent product recommendation engine:
+  - Created `GetFrequentlyBoughtTogetherQuery` & `GetFrequentlyBoughtTogetherQueryHandler` using a Co-occurrence Matrix over historical orders:
+    - Identifies orders containing any of the customer's cart items and counts sibling product frequencies.
+    - Features intelligent fallback layers (Category Affinity followed by Featured / Catalog Top Picks).
+    - Excludes items already present in the customer's cart.
+  - Added endpoints in `ProductsController`: `POST /api/products/recommendations` & `GET /api/products/recommendations`.
+  - Added comprehensive unit test suite in `ProductRecommendationHandlerTests.cs` (4 unit tests, total tests now 191/191 passing at 100%).
+  - Enriched `DbSeeder.cs` with sample completed orders containing realistic complementary product pairs.
+- Integrated frontend `productsService.getRecommendations` with the Cart page "قد يعجبك أيضاً" (You May Also Like) section.
+
 ---
 
-*Last updated: 2026-08-21 — Database seed data cleaned and unified with 8 Arabic categories and 8 brands. Total 187 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Frequently Bought Together Recommendation Engine complete and verified. Total 191 application unit tests passing (100% pass rate).*

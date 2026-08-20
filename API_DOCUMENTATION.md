@@ -390,6 +390,46 @@ All public product responses include these fields:
 
 ---
 
+### Get Product Recommendations (Frequently Bought Together)
+**POST** `/api/products/recommendations`  
+**GET** `/api/products/recommendations?productIds={guid}&limit=4`
+
+Returns intelligent product recommendations based on a Co-occurrence Matrix from order history (products frequently purchased together), with fallback to category affinity and featured catalog items. Products already in `productIds` are automatically excluded.
+
+**Request Body (POST):**
+```json
+{
+  "productIds": ["guid"],
+  "limit": 4
+}
+```
+
+**Query Parameters (GET):**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| productIds | guid[] | No | List of product IDs in cart / reference |
+| limit | int | No | Maximum number of recommendations (default: 4) |
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "guid",
+    "name": "string",
+    "slug": "string",
+    "description": "string",
+    "basePrice": "decimal",
+    "isActive": true,
+    "availableStock": 45,
+    "category": { "id": "guid", "name": "string", "slug": "string" },
+    "brand": { "id": "guid", "name": "string", "slug": "string" },
+    "images": []
+  }
+]
+```
+
+---
+
 ## Cart
 
 **All endpoints require authentication.**

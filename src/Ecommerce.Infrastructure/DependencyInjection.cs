@@ -209,6 +209,7 @@ namespace Ecommerce.Infrastructure
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
             services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetFrequentlyBoughtTogetherQuery, List<ProductDto>>, GetFrequentlyBoughtTogetherQueryHandler>();
             services.AddScoped<IQueryHandler<GetProductByIdQuery, ProductDto>, GetProductByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetProductBySlugQuery, ProductDto>, GetProductBySlugQueryHandler>();
             services.AddScoped<IQueryHandler<GetOrdersQuery, List<OrderDto>>, GetOrdersQueryHandler>();

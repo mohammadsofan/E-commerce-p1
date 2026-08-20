@@ -35,6 +35,7 @@ namespace Ecommerce.Infrastructure.Persistence
                 await SeedCategoriesAsync(db);
                 await SeedBrandsAsync(db);
                 await SeedProductsAsync(db);
+                await SeedSampleOrdersAsync(db);
 
                 _logger.LogInformation("Database seeding completed successfully.");
             }
@@ -1045,6 +1046,79 @@ namespace Ecommerce.Infrastructure.Persistence
             }
 
             _logger.LogInformation("Seeded and synchronized rich products and variants");
+        }
+
+        private async Task SeedSampleOrdersAsync(ApplicationDbContext db)
+        {
+            if (await db.Orders.AnyAsync()) return;
+
+            var iphone = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "iphone-15-pro-max");
+            var appleWatch = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "apple-watch-series-9");
+            var sony = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "sony-wh-1000xm5-headphones");
+            var dell = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "dell-xps-15-oled-laptop");
+            var backpack = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "smart-waterproof-anti-theft-backpack");
+            var nike = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "nike-air-max-plus-sneakers");
+            var adidas = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "adidas-ultraboost-1-sneakers");
+            var dumbbells = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "adjustable-smart-dumbbell-set-24kg");
+            var zara = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "zara-winter-puffer-jacket");
+            var dior = await db.Products.Include(p => p.Variants).FirstOrDefaultAsync(p => p.Slug == "dior-sauvage-edp-perfume");
+
+            var orders = new List<Order>();
+
+            // Order 1: iPhone + Apple Watch + Sony Headphones
+            if (iphone != null && appleWatch != null && sony != null)
+            {
+                var o1 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-2026-001", CurrencyCode = "USD" };
+                o1.AddItem(iphone.Id, iphone.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), iphone.Name, iphone.BasePrice, 1);
+                o1.AddItem(appleWatch.Id, appleWatch.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), appleWatch.Name, appleWatch.BasePrice, 1);
+                o1.AddItem(sony.Id, sony.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), sony.Name, sony.BasePrice, 1);
+                orders.Add(o1);
+            }
+
+            // Order 2: iPhone + Apple Watch
+            if (iphone != null && appleWatch != null)
+            {
+                var o2 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-2026-002", CurrencyCode = "USD" };
+                o2.AddItem(iphone.Id, iphone.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), iphone.Name, iphone.BasePrice, 1);
+                o2.AddItem(appleWatch.Id, appleWatch.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), appleWatch.Name, appleWatch.BasePrice, 1);
+                orders.Add(o2);
+            }
+
+            // Order 3: Dell Laptop + Sony Headphones + Backpack
+            if (dell != null && sony != null && backpack != null)
+            {
+                var o3 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-2026-003", CurrencyCode = "USD" };
+                o3.AddItem(dell.Id, dell.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), dell.Name, dell.BasePrice, 1);
+                o3.AddItem(sony.Id, sony.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), sony.Name, sony.BasePrice, 1);
+                o3.AddItem(backpack.Id, backpack.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), backpack.Name, backpack.BasePrice, 1);
+                orders.Add(o3);
+            }
+
+            // Order 4: Nike Shoes + Adidas Shoes + Dumbbells
+            if (nike != null && adidas != null && dumbbells != null)
+            {
+                var o4 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-2026-004", CurrencyCode = "USD" };
+                o4.AddItem(nike.Id, nike.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), nike.Name, nike.BasePrice, 1);
+                o4.AddItem(adidas.Id, adidas.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), adidas.Name, adidas.BasePrice, 1);
+                o4.AddItem(dumbbells.Id, dumbbells.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), dumbbells.Name, dumbbells.BasePrice, 1);
+                orders.Add(o4);
+            }
+
+            // Order 5: Zara Jacket + Dior Perfume
+            if (zara != null && dior != null)
+            {
+                var o5 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-2026-005", CurrencyCode = "USD" };
+                o5.AddItem(zara.Id, zara.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), zara.Name, zara.BasePrice, 1);
+                o5.AddItem(dior.Id, dior.Variants.FirstOrDefault()?.Id ?? Guid.NewGuid(), dior.Name, dior.BasePrice, 1);
+                orders.Add(o5);
+            }
+
+            if (orders.Count > 0)
+            {
+                await db.Orders.AddRangeAsync(orders);
+                await db.SaveChangesAsync();
+                _logger.LogInformation("Seeded {Count} realistic sample orders for recommendation co-occurrence matrix", orders.Count);
+            }
         }
     }
 }
