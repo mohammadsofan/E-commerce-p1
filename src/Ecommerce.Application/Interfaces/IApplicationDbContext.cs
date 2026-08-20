@@ -56,6 +56,8 @@ namespace Ecommerce.Application.Interfaces
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;
 
+        void ClearChangeTracker();
+
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

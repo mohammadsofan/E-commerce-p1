@@ -70,6 +70,11 @@ namespace Ecommerce.Infrastructure.Persistence
             return Entry(entity);
         }
 
+        public void ClearChangeTracker()
+        {
+            ChangeTracker.Clear();
+        }
+
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             return base.SaveChangesAsync(cancellationToken);

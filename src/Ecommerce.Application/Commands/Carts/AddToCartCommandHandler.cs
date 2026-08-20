@@ -44,11 +44,29 @@ namespace Ecommerce.Application.Commands.Carts
                 productName = string.IsNullOrWhiteSpace(variant.Name) ? product.Name : variant.Name;
             }
 
-            var cart = await GetOrCreateCartAsync(cancellationToken);
-            cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity);
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var cart = await GetOrCreateCartAsync(cancellationToken);
+                cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity);
 
-            await Db.SaveChangesAsync(cancellationToken);
-            return Map(cart);
+try
+                {
+                    await Db.SaveChangesAsync(cancellationToken);
+                    return Map(cart);
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    // Another request changed the cart between read and save.
+                    // Reload the aggregate and retry the add against current state.
+                    if (attempt == 0)
+                    {
+                        Db.ClearChangeTracker();
+                        continue;
+                    }
+                }
+            }
+
+            throw new DomainException("The cart was changed by another request. Please retry.");
         }
     }
 }
