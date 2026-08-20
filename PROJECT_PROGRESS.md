@@ -712,10 +712,10 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
     - Features intelligent fallback layers (Category Affinity followed by Featured / Catalog Top Picks).
     - Excludes items already present in the customer's cart.
   - Added endpoints in `ProductsController`: `POST /api/products/recommendations` & `GET /api/products/recommendations`.
-  - Added comprehensive unit test suite in `ProductRecommendationHandlerTests.cs` (4 unit tests, total tests now 191/191 passing at 100%).
+  - Added comprehensive unit test suite in `ProductRecommendationHandlerTests.cs` (8 unit tests covering co-occurrence ranking, multi-item cart aggregation, available stock computation from inventory, inactive/deleted filtering, category affinity fallback, empty cart catalog discovery, and limit parameters; total tests now 195/195 passing at 100%).
   - Enriched `DbSeeder.cs` with sample completed orders containing realistic complementary product pairs.
 - Integrated frontend `productsService.getRecommendations` with the Cart page "قد يعجبك أيضاً" (You May Also Like) section.
 
 ---
 
-*Last updated: 2026-08-21 — Frequently Bought Together Recommendation Engine complete and verified. Total 191 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Frequently Bought Together Recommendation Engine with 8 unit tests complete and verified. Total 195 application unit tests passing (100% pass rate).*

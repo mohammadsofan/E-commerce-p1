@@ -161,5 +161,133 @@ namespace Ecommerce.Application.Tests
             // Assert
             Assert.Equal(2, result.Count);
         }
+
+        [Fact]
+        public async Task Handle_CalculatesAvailableStock_CorrectlyFromInventoryItems()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateTestMapper();
+            var handler = new GetFrequentlyBoughtTogetherQueryHandler(db, mapper);
+
+            var p1 = new Product { Id = Guid.NewGuid(), Name = "P1", Slug = "p1", BasePrice = 10m, IsActive = true };
+            var p2 = new Product { Id = Guid.NewGuid(), Name = "P2", Slug = "p2", BasePrice = 20m, IsActive = true };
+
+            var whId = Guid.NewGuid();
+            var inv = new InventoryItem(p2.Id, whId, 50);
+            inv.Reserve(10); // 50 on hand - 10 reserved = 40 available
+
+            await db.Products.AddRangeAsync(p1, p2);
+            await db.InventoryItems.AddAsync(inv);
+            await db.SaveChangesAsync();
+
+            // Act
+            var query = new GetFrequentlyBoughtTogetherQuery(new List<Guid> { p1.Id }, limit: 1);
+            var result = await handler.Handle(query);
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal(40, result[0].AvailableStock);
+        }
+
+        [Fact]
+        public async Task Handle_FiltersOutDeletedAndInactiveProducts()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateTestMapper();
+            var handler = new GetFrequentlyBoughtTogetherQueryHandler(db, mapper);
+
+            var p1 = new Product { Id = Guid.NewGuid(), Name = "P1", Slug = "p1", BasePrice = 10m, IsActive = true };
+            var pInactive = new Product { Id = Guid.NewGuid(), Name = "PInactive", Slug = "pinactive", BasePrice = 20m, IsActive = false };
+            var pDeleted = new Product { Id = Guid.NewGuid(), Name = "PDeleted", Slug = "pdeleted", BasePrice = 30m, IsActive = true, IsDeleted = true };
+            var pActive = new Product { Id = Guid.NewGuid(), Name = "PActive", Slug = "pactive", BasePrice = 40m, IsActive = true };
+
+            await db.Products.AddRangeAsync(p1, pInactive, pDeleted, pActive);
+
+            var order = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-001" };
+            order.AddItem(p1.Id, Guid.NewGuid(), p1.Name, 10m, 1);
+            order.AddItem(pInactive.Id, Guid.NewGuid(), pInactive.Name, 20m, 1);
+            order.AddItem(pDeleted.Id, Guid.NewGuid(), pDeleted.Name, 30m, 1);
+            order.AddItem(pActive.Id, Guid.NewGuid(), pActive.Name, 40m, 1);
+
+            await db.Orders.AddAsync(order);
+            await db.SaveChangesAsync();
+
+            // Act
+            var query = new GetFrequentlyBoughtTogetherQuery(new List<Guid> { p1.Id }, limit: 4);
+            var result = await handler.Handle(query);
+
+            // Assert: only pActive should be returned
+            Assert.Single(result);
+            Assert.Equal(pActive.Id, result[0].Id);
+        }
+
+        [Fact]
+        public async Task Handle_WithEmptyProductIds_ReturnsPopularFeaturedCatalogProducts()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateTestMapper();
+            var handler = new GetFrequentlyBoughtTogetherQueryHandler(db, mapper);
+
+            var pNormal = new Product { Id = Guid.NewGuid(), Name = "PNormal", Slug = "pnormal", BasePrice = 10m, IsActive = true, IsFeatured = false };
+            var pFeatured = new Product { Id = Guid.NewGuid(), Name = "PFeatured", Slug = "pfeatured", BasePrice = 20m, IsActive = true, IsFeatured = true };
+
+            await db.Products.AddRangeAsync(pNormal, pFeatured);
+            await db.SaveChangesAsync();
+
+            // Act: no products in cart
+            var query = new GetFrequentlyBoughtTogetherQuery(new List<Guid>(), limit: 2);
+            var result = await handler.Handle(query);
+
+            // Assert: featured should come first
+            Assert.Equal(2, result.Count);
+            Assert.Equal(pFeatured.Id, result[0].Id);
+            Assert.Equal(pNormal.Id, result[1].Id);
+        }
+
+        [Fact]
+        public async Task Handle_WithMultipleCartItems_AggregatesCoOccurrenceCounts()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateTestMapper();
+            var handler = new GetFrequentlyBoughtTogetherQueryHandler(db, mapper);
+
+            var itemCart1 = new Product { Id = Guid.NewGuid(), Name = "Cart1", Slug = "c1", BasePrice = 10m, IsActive = true };
+            var itemCart2 = new Product { Id = Guid.NewGuid(), Name = "Cart2", Slug = "c2", BasePrice = 20m, IsActive = true };
+            var recommendedTarget = new Product { Id = Guid.NewGuid(), Name = "Target", Slug = "target", BasePrice = 30m, IsActive = true };
+            var lesserTarget = new Product { Id = Guid.NewGuid(), Name = "Lesser", Slug = "lesser", BasePrice = 40m, IsActive = true };
+
+            await db.Products.AddRangeAsync(itemCart1, itemCart2, recommendedTarget, lesserTarget);
+
+            // Order 1 has Cart1 + Target
+            var o1 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-001" };
+            o1.AddItem(itemCart1.Id, Guid.NewGuid(), itemCart1.Name, 10m, 1);
+            o1.AddItem(recommendedTarget.Id, Guid.NewGuid(), recommendedTarget.Name, 30m, 1);
+
+            // Order 2 has Cart2 + Target
+            var o2 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-002" };
+            o2.AddItem(itemCart2.Id, Guid.NewGuid(), itemCart2.Name, 20m, 1);
+            o2.AddItem(recommendedTarget.Id, Guid.NewGuid(), recommendedTarget.Name, 30m, 1);
+
+            // Order 3 has Cart1 + Lesser
+            var o3 = new Order { Id = Guid.NewGuid(), OrderNumber = "ORD-003" };
+            o3.AddItem(itemCart1.Id, Guid.NewGuid(), itemCart1.Name, 10m, 1);
+            o3.AddItem(lesserTarget.Id, Guid.NewGuid(), lesserTarget.Name, 40m, 1);
+
+            await db.Orders.AddRangeAsync(o1, o2, o3);
+            await db.SaveChangesAsync();
+
+            // Act: both Cart1 and Cart2 are in the cart
+            var query = new GetFrequentlyBoughtTogetherQuery(new List<Guid> { itemCart1.Id, itemCart2.Id }, limit: 2);
+            var result = await handler.Handle(query);
+
+            // Assert: recommendedTarget has co-occurrence score of 2, lesserTarget has 1
+            Assert.Equal(2, result.Count);
+            Assert.Equal(recommendedTarget.Id, result[0].Id);
+            Assert.Equal(lesserTarget.Id, result[1].Id);
+        }
     }
 }
