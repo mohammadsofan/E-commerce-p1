@@ -686,8 +686,14 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - Added `WarehouseId` and `WarehouseName` to `AdminProductDto` and mapped them in `MappingProfile` to resolve the product's assigned warehouse.
   - Enhanced `UpdateProductCommandHandler` to dynamically reassign `InventoryItem.WarehouseId` when selecting a different warehouse during product edit.
   - Added unit test `UpdateProduct_ChangesWarehouse_WhenWarehouseIdProvided` in `AdminProductHandlerTests.cs`.
-- Verified all 179 application unit tests pass (100% pass rate) and verified clean frontend production builds.
+### 2026-08-21 — Dynamic Home Page Hero Banner Management (إدارة بانر الصفحة الرئيسية)
+- Created `HeroBanner` domain entity (`Id`, `BadgeText`, `Title`, `Subtitle`, `PrimaryButtonText`, `PrimaryButtonLink`, `SecondaryButtonText`, `SecondaryButtonLink`, `ImageUrl`, `IsActive`, `CreatedAt`, `UpdatedAt`).
+- Added EF Core configuration and generated migration `AddHeroBannersTable` with seeded initial Arabic hero banner.
+- Implemented CQRS queries and commands for public and admin operations (`GetActiveHeroBannerQuery`, `GetAdminHeroBannersQuery`, `GetHeroBannerByIdQuery`, `CreateHeroBannerCommand`, `UpdateHeroBannerCommand`, `SetActiveHeroBannerCommand`, `DeleteHeroBannerCommand`).
+- Created `HeroBannersController` (`GET /api/herobanners/active`) and `AdminHeroBannersController` (`/api/admin/hero-banners`) with full CRUD support.
+- Added comprehensive unit tests in `HeroBannerHandlerTests.cs` (187/187 unit tests passing, 100% pass rate).
+- Built Admin Dashboard UI with interactive real-time Live Preview Card (`HeroBanners.tsx` and `HeroBannerForm.tsx`) and dynamic customer Home Page rendering (`Home.tsx`).
 
 ---
 
-*Last updated: 2026-08-21 — All PUT endpoints standardized and warehouse linkage completed. Total 179 application unit tests passing.*
+*Last updated: 2026-08-21 — Dynamic Home Page Hero Banner feature complete. Total 187 application unit tests passing (100% pass rate).*

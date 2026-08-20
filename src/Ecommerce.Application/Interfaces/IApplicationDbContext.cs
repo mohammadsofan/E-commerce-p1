@@ -54,6 +54,7 @@ namespace Ecommerce.Application.Interfaces
         DbSet<VendorProduct> VendorProducts { get; }
         DbSet<Address> Addresses { get; }
         DbSet<AuditLog> AuditLogs { get; }
+        DbSet<HeroBanner> HeroBanners { get; }
         IQueryable<IApplicationUser> Users { get; }
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;

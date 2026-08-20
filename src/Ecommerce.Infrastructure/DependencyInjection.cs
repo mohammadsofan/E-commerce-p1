@@ -10,6 +10,7 @@ using Ecommerce.Application.Commands.Orders;
 using Ecommerce.Application.Commands.Carts;
 using Ecommerce.Application.Commands.Wishlist;
 using Ecommerce.Application.Commands.StoreFeatures;
+using Ecommerce.Application.Commands.HeroBanners;
 using Ecommerce.Application.Commands.Admin;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.Products;
@@ -17,6 +18,7 @@ using Ecommerce.Application.Queries.Orders;
 using Ecommerce.Application.Queries.Carts;
 using Ecommerce.Application.Queries.Wishlist;
 using Ecommerce.Application.Queries.StoreFeatures;
+using Ecommerce.Application.Queries.HeroBanners;
 using Ecommerce.Application.Queries.Admin;
 using Ecommerce.Infrastructure.Services;
 using System.Collections.Generic;
@@ -110,6 +112,12 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<CreateStoreFeatureCommand, StoreFeatureDto>, CreateStoreFeatureCommandHandler>();
             services.AddScoped<ICommandHandler<UpdateStoreFeatureCommand, StoreFeatureDto>, UpdateStoreFeatureCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteStoreFeatureCommand, Unit>, DeleteStoreFeatureCommandHandler>();
+
+            // Hero banner command handlers
+            services.AddScoped<ICommandHandler<CreateHeroBannerCommand, HeroBannerDto>, CreateHeroBannerCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateHeroBannerCommand, HeroBannerDto>, UpdateHeroBannerCommandHandler>();
+            services.AddScoped<ICommandHandler<SetActiveHeroBannerCommand, HeroBannerDto>, SetActiveHeroBannerCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteHeroBannerCommand, Unit>, DeleteHeroBannerCommandHandler>();
 
             // Admin product command handlers
             services.AddScoped<ICommandHandler<CreateProductCommand, AdminProductDto>, CreateProductCommandHandler>();
@@ -210,6 +218,9 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetActiveFeaturesQuery, List<StoreFeatureDto>>, GetActiveFeaturesQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminFeaturesQuery, PagedResult<StoreFeatureDto>>, GetAdminFeaturesQueryHandler>();
             services.AddScoped<IQueryHandler<GetFeatureByIdQuery, StoreFeatureDto>, GetFeatureByIdQueryHandler>();
+            services.AddScoped<IQueryHandler<GetActiveHeroBannerQuery, HeroBannerDto?>, GetActiveHeroBannerQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminHeroBannersQuery, PagedResult<HeroBannerDto>>, GetAdminHeroBannersQueryHandler>();
+            services.AddScoped<IQueryHandler<GetHeroBannerByIdQuery, HeroBannerDto>, GetHeroBannerByIdQueryHandler>();
 
             // Admin product query handlers
             services.AddScoped<IQueryHandler<GetAdminProductsQuery, PagedResult<AdminProductDto>>, GetAdminProductsQueryHandler>();

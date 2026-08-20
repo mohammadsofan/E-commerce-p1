@@ -6327,6 +6327,153 @@ The response pagination metadata reflects the requested `page` and the full filt
 
 ---
 
+## Hero Banners (بانرات الصفحة الرئيسية)
+
+### Get Active Hero Banner (Public)
+**GET** `/api/herobanners/active`
+
+**Description:** Returns the currently active Home Page Hero Banner.
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "badgeText": "مجموعة جديدة 2024",
+  "title": "اكتشف منتجات مذهلة بأسعار لا تُقاوم",
+  "subtitle": "تسوق أحدث الصيحات في الإلكترونيات والأزياء والمنزل والمزيد. شحن مجاني للطلبات فوق ₪50. إرجاع سهل خلال 30 يوماً.",
+  "primaryButtonText": "تسوق الآن",
+  "primaryButtonLink": "/products",
+  "secondaryButtonText": "تصفح التصنيفات",
+  "secondaryButtonLink": "/categories",
+  "imageUrl": null,
+  "isActive": true,
+  "createdAt": "2026-08-21T00:00:00Z",
+  "updatedAt": null
+}
+```
+
+---
+
+### Get All Hero Banners (Admin)
+**GET** `/api/admin/hero-banners`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Query Parameters:**
+- `page`: Page number (default: 1)
+- `pageSize`: Items per page (default: 20)
+- `search`: Search term in title/subtitle/badge
+- `isActive`: Filter by active status (bool)
+
+**Response:** `200 OK`
+```json
+{
+  "items": [
+    {
+      "id": "guid",
+      "badgeText": "مجموعة جديدة 2024",
+      "title": "اكتشف منتجات مذهلة بأسعار لا تُقاوم",
+      "subtitle": "تسوق أحدث الصيحات في الإلكترونيات والأزياء والمنزل والمزيد...",
+      "primaryButtonText": "تسوق الآن",
+      "primaryButtonLink": "/products",
+      "secondaryButtonText": "تصفح التصنيفات",
+      "secondaryButtonLink": "/categories",
+      "imageUrl": null,
+      "isActive": true,
+      "createdAt": "2026-08-21T00:00:00Z",
+      "updatedAt": null
+    }
+  ],
+  "totalCount": 1,
+  "page": 1,
+  "pageSize": 20,
+  "totalPages": 1
+}
+```
+
+---
+
+### Get Hero Banner By ID (Admin)
+**GET** `/api/admin/hero-banners/{id}`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Response:** `200 OK`
+
+---
+
+### Create Hero Banner (Admin)
+**POST** `/api/admin/hero-banners`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Request Body:**
+```json
+{
+  "badgeText": "مجموعة جديدة 2024",
+  "title": "اكتشف منتجات مذهلة بأسعار لا تُقاوم",
+  "subtitle": "تسوق أحدث الصيحات في الإلكترونيات والأزياء والمنزل والمزيد...",
+  "primaryButtonText": "تسوق الآن",
+  "primaryButtonLink": "/products",
+  "secondaryButtonText": "تصفح التصنيفات",
+  "secondaryButtonLink": "/categories",
+  "imageUrl": null,
+  "isActive": true
+}
+```
+
+**Response:** `201 Created`
+
+---
+
+### Update Hero Banner (Admin)
+**PUT** `/api/admin/hero-banners/{id}`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Request Body:**
+```json
+{
+  "badgeText": "خصومات الصيف",
+  "title": "عروض حصرية حتى 50%",
+  "subtitle": "تسوق التشكيلة الصيفية بأسعار مخفضة لفترة محدودة",
+  "primaryButtonText": "تسوق العروض",
+  "primaryButtonLink": "/products",
+  "secondaryButtonText": "التصنيفات",
+  "secondaryButtonLink": "/categories",
+  "imageUrl": "https://example.com/banner.jpg",
+  "isActive": true
+}
+```
+
+**Response:** `200 OK`
+
+---
+
+### Set Active Hero Banner (Admin)
+**PUT** `/api/admin/hero-banners/{id}/activate`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Response:** `200 OK`
+
+---
+
+### Delete Hero Banner (Admin)
+**DELETE** `/api/admin/hero-banners/{id}`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Response:** `204 NoContent`
+
+---
+
 ## Notes
 
 - All authenticated endpoints return `401 Unauthorized` if the token is missing or invalid.

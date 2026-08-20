@@ -46,6 +46,9 @@ namespace Ecommerce.Infrastructure.Persistence
                 // Seed tax categories
                 await SeedTaxCategoriesAsync(db);
 
+                // Seed hero banners
+                await SeedHeroBannersAsync(db);
+
                 _logger.LogInformation("Database seeding completed successfully.");
             }
             catch (Exception ex)
@@ -137,6 +140,31 @@ namespace Ecommerce.Infrastructure.Persistence
             await db.TaxCategories.AddRangeAsync(taxCategories);
             await db.SaveChangesAsync();
             _logger.LogInformation("Seeded {Count} tax categories", taxCategories.Count);
+        }
+
+        private async Task SeedHeroBannersAsync(ApplicationDbContext db)
+        {
+            if (await db.HeroBanners.AnyAsync()) return;
+
+            var banner = new HeroBanner
+            {
+                Id = Guid.NewGuid(),
+                BadgeText = "مجموعة جديدة 2024",
+                Title = "اكتشف منتجات مذهلة بأسعار لا تُقاوم",
+                Subtitle = "تسوق أحدث الصيحات في الإلكترونيات والأزياء والمنزل والمزيد. شحن مجاني للطلبات فوق ₪50. إرجاع سهل خلال 30 يوماً.",
+                PrimaryButtonText = "تسوق الآن",
+                PrimaryButtonLink = "/products",
+                SecondaryButtonText = "تصفح التصنيفات",
+                SecondaryButtonLink = "/categories",
+                ImageUrl = null,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            await db.HeroBanners.AddAsync(banner);
+            await db.SaveChangesAsync();
+            _logger.LogInformation("Seeded default hero banner");
         }
 
         private async Task SeedRolesAsync(RoleManager<ApplicationRole>? roleManager)

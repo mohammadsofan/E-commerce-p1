@@ -101,6 +101,8 @@ namespace Ecommerce.Application.Mappings
 
             CreateMap<Address, AddressDto>();
             CreateMap<AuditLog, AuditLogDto>();
-    }
+            CreateMap<StoreFeature, StoreFeatureDto>();
+            CreateMap<HeroBanner, HeroBannerDto>();
+        }
     }
 }
