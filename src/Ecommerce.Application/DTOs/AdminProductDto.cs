@@ -7,6 +7,7 @@ namespace Ecommerce.Application.DTOs
     {
         public Guid Id { get; set; }
         public Guid? BrandId { get; set; }
+        public Guid? CategoryId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Slug { get; set; } = string.Empty;
         public string Sku { get; set; } = string.Empty;

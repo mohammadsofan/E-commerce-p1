@@ -1498,8 +1498,8 @@ If a cart item was removed or became stale between reads, the API reloads the ca
   "slug": "string (required)",
   "description": "string",
   "price": "decimal (required)",
-  "categoryId": "guid (required)",
-  "brandId": "guid (required)",
+  "categoryId": "guid? (optional)",
+  "brandId": "guid? (optional)",
   "isActive": true,
   "stock": "int? (optional, initial stock quantity, default: 0)",
   "warehouseId": "guid? (optional, default warehouse if not provided)"
@@ -1545,8 +1545,8 @@ If a cart item was removed or became stale between reads, the API reloads the ca
   "slug": "string",
   "description": "string",
   "price": "decimal",
-  "categoryId": "guid",
-  "brandId": "guid",
+  "categoryId": "guid? (optional)",
+  "brandId": "guid? (optional)",
   "isActive": true,
   "stock": "int? (optional, absolute stock quantity)",
   "warehouseId": "guid? (optional)"

@@ -52,6 +52,7 @@ namespace Ecommerce.Application.Commands.Admin
             {
                 Id = Guid.NewGuid(),
                 BrandId = command.BrandId,
+                CategoryId = command.CategoryId,
                 Name = command.Name,
                 Slug = command.Slug,
                 Sku = command.Sku,

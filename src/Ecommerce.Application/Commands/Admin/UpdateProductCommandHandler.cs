@@ -45,6 +45,7 @@ namespace Ecommerce.Application.Commands.Admin
                 throw new DomainException($"Product with SKU '{command.Sku}' already exists.");
 
             product.BrandId = command.BrandId;
+            product.CategoryId = command.CategoryId;
             product.Name = command.Name;
             product.Slug = command.Slug;
             product.Sku = command.Sku;

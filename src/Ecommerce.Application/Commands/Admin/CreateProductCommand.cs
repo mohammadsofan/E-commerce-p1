@@ -6,6 +6,7 @@ namespace Ecommerce.Application.Commands.Admin
     public class CreateProductCommand
     {
         public Guid? BrandId { get; set; }
+        public Guid? CategoryId { get; set; }
         public required string Name { get; set; }
         public required string Slug { get; set; }
         public required string Sku { get; set; }
