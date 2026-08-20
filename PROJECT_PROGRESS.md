@@ -669,12 +669,16 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Health: `https://localhost:7001/health`
 - Metrics: `https://localhost:7001/metrics` (Prometheus on port 9090)
 
-### 2026-08-20 — Dynamic Store Features (المميزات)
+### 2026-08-20 — Dynamic Store Features & Unit Test Suites
 - Created `StoreFeature` domain entity with `Id`, `Title`, `Description`, `IconName`, `DisplayOrder`, `IsActive`, `CreatedAt`, `UpdatedAt`.
 - Added EF Core configuration and generated migration `AddStoreFeaturesTable` with seeded initial store features.
 - Implemented CQRS queries and commands for public and admin store feature operations (`GetActiveFeaturesQuery`, `GetAdminFeaturesQuery`, `GetFeatureByIdQuery`, `CreateStoreFeatureCommand`, `UpdateStoreFeatureCommand`, `DeleteStoreFeatureCommand`).
 - Created `FeaturesController` (`GET /api/features`) and `AdminFeaturesController` (`/api/admin/features`) with full CRUD support.
+- Added comprehensive unit tests for all newly added backend features:
+  - `WishlistHandlerTests.cs`: (AddToWishlist, duplicate prevention, item removal, user isolation on clear, querying with full details).
+  - `StoreFeatureHandlerTests.cs`: (Create, Update, Delete, GetActive ordered by displayOrder, GetAdmin with search/status filters, GetById).
+  - `ProductFeatureSortingTests.cs`: (Featured product sorting filter, category assignments during create and update).
 
 ---
 
-*Last updated: 2026-08-20 — Dynamic Store Features implemented with full database migration, CQRS handlers, and REST API. All 162 application tests passing.*
+*Last updated: 2026-08-20 — All backend features covered with comprehensive unit tests. Total 178 application unit tests passing (100% pass rate).*
