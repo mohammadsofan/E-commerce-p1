@@ -72,7 +72,8 @@ namespace Ecommerce.Infrastructure.Services
 
             await _db.SaveChangesAsync();
 
-            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email ?? string.Empty, UserName = user.UserName ?? string.Empty };
+            var roles = (await _userManager.GetRolesAsync(user)).ToList();
+            var dto = new ApplicationUserDto { Id = user.Id, Email = user.Email ?? string.Empty, UserName = user.UserName ?? string.Empty, Roles = roles };
             var accessToken = await _tokenService.CreateTokenAsync(dto);
 
             return (true, accessToken, newToken, expires);

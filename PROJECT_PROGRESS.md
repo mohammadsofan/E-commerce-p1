@@ -569,6 +569,11 @@ This section documents work that already exists in the repository as of 2026-08-
 - Added a separate `XSRF-TOKEN` cookie and `X-XSRF-TOKEN` header validation for refresh and revoke operations.
 - Frontend no longer stores or sends refresh tokens through JavaScript; Axios sends credentials and the CSRF header automatically.
 
+### 2026-08-20 — Refresh Tokens Include User Roles
+- Fixed a bug where access tokens issued by the refresh flow (`RefreshTokenService.RefreshAsync`) omitted the user's role claims.
+- The refresh endpoint now loads the user's roles and passes them into the token DTO, so refreshed tokens authorize admin endpoints correctly.
+- Previously, after an access-token refresh, every `[Authorize(Policy = "AdminOnly")]` request returned 403 even for admin users.
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)

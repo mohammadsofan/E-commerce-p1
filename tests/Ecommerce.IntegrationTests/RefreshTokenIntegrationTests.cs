@@ -1,16 +1,21 @@
 using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Infrastructure.Identity;
 using Ecommerce.Infrastructure.Services;
+using Ecommerce.Infrastructure.Auth;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.DTOs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -175,6 +180,58 @@ namespace Ecommerce.IntegrationTests
             var tokens = await ctx.RefreshTokens.Where(x => x.UserId == user.Id).ToListAsync();
             Assert.NotEmpty(tokens);
             Assert.All(tokens, t => Assert.NotNull(t.RevokedAt));
+        }
+
+        [Fact]
+        public async Task RefreshAsync_IssuedAccessToken_IncludesUserRoles()
+        {
+            using var ctx = CreateInMemoryContext();
+
+            var userManager = CreateUserManager(ctx);
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    ["Jwt:Key"] = "test_signing_key_that_is_long_enough_for_hmac_sha256_1234",
+                    ["Jwt:Issuer"] = "ecommerce-test"
+                })
+                .Build();
+            var tokenService = new JwtTokenService(config);
+            var svc = new RefreshTokenService(ctx, tokenService, userManager);
+
+            var user = new ApplicationUser
+            {
+                Id = Guid.NewGuid(),
+                UserName = "admin-refresh-tester",
+                Email = "admin-refresh@example.com",
+                FirstName = "Admin",
+                LastName = "Refresher",
+                DisplayName = "Admin Refresher",
+                ProfileImageUrl = "",
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            await userManager.CreateAsync(user);
+
+            var role = new ApplicationRole
+            {
+                Id = Guid.NewGuid(),
+                Name = "Admin",
+                NormalizedName = "ADMIN",
+                Description = "Admin role",
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+            await ctx.Roles.AddAsync(role);
+            await ctx.SaveChangesAsync();
+            await userManager.AddToRoleAsync(user, "Admin");
+
+            var (token1, _) = await svc.CreateRefreshTokenAsync(user.Id);
+            var refreshResult = await svc.RefreshAsync(token1);
+            Assert.True(refreshResult.Success);
+            Assert.False(string.IsNullOrEmpty(refreshResult.AccessToken));
+
+            var jwt = new JwtSecurityTokenHandler().ReadJwtToken(refreshResult.AccessToken);
+            var roleClaims = jwt.Claims.Where(c => c.Type == "role" || c.Type == ClaimTypes.Role).ToList();
+            Assert.Contains(roleClaims, c => c.Value == "Admin");
         }
     }
 }

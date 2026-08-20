@@ -153,6 +153,8 @@ Refresh tokens are stored in an HttpOnly, Secure `__Host-refreshToken` cookie an
 
 The refresh token is read from the HttpOnly `__Host-refreshToken` cookie. The request must include the CSRF token from the `XSRF-TOKEN` cookie as the `X-XSRF-TOKEN` header.
 
+The new access token is issued with the user's current roles, so role-based authorization (e.g. admin endpoints) continues to work after refresh.
+
 **Response:** `200 OK`
 ```json
 {
