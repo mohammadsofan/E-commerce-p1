@@ -21,10 +21,7 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.UpdatedAt).IsRequired();
 
             // RowVersion for optimistic concurrency
-                 builder.Property(x => x.RowVersion)
-                     .IsRequired(false)
-                     .IsRowVersion()
-                     .IsConcurrencyToken();
+            builder.Property(x => x.RowVersion).IsRowVersion();
 
             // Computed / derived property - ignore in EF mapping
             builder.Ignore(x => x.Available);

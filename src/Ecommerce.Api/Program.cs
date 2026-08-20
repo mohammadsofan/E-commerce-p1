@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
 using Ecommerce.Infrastructure;
 using Ecommerce.Infrastructure.Identity;
+using Ecommerce.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -313,6 +314,23 @@ app.UseAuthorization();
 // app.UseHttpMetrics();
 
 app.MapControllers();
+
+// Seed initial database data
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var roleManager = scope.ServiceProvider.GetService<RoleManager<ApplicationRole>>();
+        await seeder.SeedAsync(db, roleManager);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database on startup.");
+    }
+}
 
 app.Run();
 

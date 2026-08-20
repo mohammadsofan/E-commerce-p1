@@ -694,6 +694,16 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Added comprehensive unit tests in `HeroBannerHandlerTests.cs` (187/187 unit tests passing, 100% pass rate).
 - Built Admin Dashboard UI with interactive real-time Live Preview Card (`HeroBanners.tsx` and `HeroBannerForm.tsx`) and dynamic customer Home Page rendering (`Home.tsx`).
 
+### 2026-08-21 — Comprehensive Seed Data Enrichment (زراعة بيانات المنتجات والتصنيفات والعلامات التجارية)
+- Enriched `DbSeeder.cs` with realistic, high-quality bilingual seed data:
+  - **Categories**: 8 primary categories with high-resolution Unsplash images (Electronics, Fashion, Shoes & Bags, Home & Kitchen, Beauty & Perfumes, Sports & Fitness, Watches & Accessories, Smartphones).
+  - **Brands**: 8 premier brands with logos/imagery (Apple, Samsung, Nike, Adidas, Sony, Zara, Dior, Dell).
+  - **Products & Variants**: 12 diverse, realistic products with Arabic names, rich descriptions, prices, compare-at prices, multiple high-res product images (`ProductImage`), product variants with different options (Colors, Sizes, Storages, Capacities), and stock quantities linked to warehouses (`InventoryItem`).
+  - **Warehouses & Features**: 3 warehouses (Main, East, West) and 4 core store service features with modern Lucide icons.
+- Applied EF migration `FixProductVariantRowVersion` to ensure standard optimistic concurrency rowversion handling on `ProductVariants` and `InventoryItems`.
+- Registered `DbSeeder` execution in `Program.cs` startup pipeline.
+- Verified all 187 application unit tests pass (100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Dynamic Home Page Hero Banner feature complete. Total 187 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Rich database seed data completed and verified. Total 187 application unit tests passing (100% pass rate).*
