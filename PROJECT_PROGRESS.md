@@ -663,4 +663,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-20 — Added `CategoryId` to product creation and update logic to associate products with categories. All 162 application tests passing.*
+*Last updated: 2026-08-20 — Added `CategoryId` to product creation and update logic to associate products with categories. `SortBy=featured` now filters out non-featured products. All 162 application tests passing.*

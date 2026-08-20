@@ -238,7 +238,7 @@ All public product responses include these fields:
 | minPrice | decimal | No | Minimum price |
 | maxPrice | decimal | No | Maximum price |
 | isActive | bool | No | Filter by active status |
-| sortBy | string | No | Sort by: name, price_asc, price_desc, newest, featured |
+| sortBy | string | No | Sort by: name, price_asc, price_desc, newest, featured (filters out non-featured) |
 
 **Response:** `200 OK`
 ```json
