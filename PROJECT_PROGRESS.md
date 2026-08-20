@@ -679,11 +679,15 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - `StoreFeatureHandlerTests.cs`: (Create, Update, Delete, GetActive ordered by displayOrder, GetAdmin with search/status filters, GetById).
   - `ProductFeatureSortingTests.cs`: (Featured product sorting filter, category assignments during create and update).
 
-### 2026-08-21 — Standardized All PUT APIs Route ID Binding
+### 2026-08-21 — Standardized All PUT APIs Route ID Binding & Warehouse Product Linkage
 - Refactored all `[HttpPut]` actions across all backend controllers to source `id` directly from URL route parameters (`command.Id = id`), eliminating redundant `id` in request bodies and removing ID mismatch errors.
 - Aligned frontend services and TypeScript interfaces.
-- Verified all 178 unit tests pass and verified clean frontend production builds.
+- Fixed Product-Warehouse inventory linkage:
+  - Added `WarehouseId` and `WarehouseName` to `AdminProductDto` and mapped them in `MappingProfile` to resolve the product's assigned warehouse.
+  - Enhanced `UpdateProductCommandHandler` to dynamically reassign `InventoryItem.WarehouseId` when selecting a different warehouse during product edit.
+  - Added unit test `UpdateProduct_ChangesWarehouse_WhenWarehouseIdProvided` in `AdminProductHandlerTests.cs`.
+- Verified all 179 application unit tests pass (100% pass rate) and verified clean frontend production builds.
 
 ---
 
-*Last updated: 2026-08-21 — All PUT endpoints standardized to route-sourced IDs. All 178 application unit tests passing.*
+*Last updated: 2026-08-21 — All PUT endpoints standardized and warehouse linkage completed. Total 179 application unit tests passing.*

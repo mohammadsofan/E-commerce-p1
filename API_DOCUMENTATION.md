@@ -6338,4 +6338,5 @@ The response pagination metadata reflects the requested `page` and the full filt
 - All GUIDs are returned as strings.
 - All decimal values are returned as numbers.
 - For all `PUT` endpoints (e.g. `/api/resource/{id}`), the resource ID is sourced directly from the URL route parameter. The ID is not required in the JSON request body.
+- Admin product responses (`AdminProductDto`) include `warehouseId` (guid?) and `warehouseName` (string) representing the product's assigned warehouse inventory location.
 - Error responses follow RFC 7807 ProblemDetails format.
