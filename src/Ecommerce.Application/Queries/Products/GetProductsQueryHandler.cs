@@ -73,6 +73,11 @@ namespace Ecommerce.Application.Queries.Products
 
         private static IQueryable<Product> ApplySorting(IQueryable<Product> query, string? sortBy)
         {
+            if (!string.IsNullOrEmpty(sortBy) && sortBy.ToLower() == "featured")
+            {
+                query = query.Where(p => p.IsFeatured);
+            }
+
             return sortBy switch
             {
                 "price_asc" => query.OrderBy(p => p.BasePrice),
