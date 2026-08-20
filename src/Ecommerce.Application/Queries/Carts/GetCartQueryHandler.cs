@@ -18,7 +18,7 @@ namespace Ecommerce.Application.Queries.Carts
         public async Task<CartDto> Handle(GetCartQuery query, CancellationToken cancellationToken = default)
         {
             var cart = await GetOrCreateCartAsync(cancellationToken);
-            return Map(cart);
+            return await MapAsync(cart, cancellationToken);
         }
     }
 }

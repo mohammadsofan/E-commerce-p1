@@ -21,7 +21,7 @@ namespace Ecommerce.Application.Commands.Carts
             cart.RemoveItem(command.CartItemId);
 
             await Db.SaveChangesAsync(cancellationToken);
-            return Map(cart);
+            return await MapAsync(cart, cancellationToken);
         }
     }
 }

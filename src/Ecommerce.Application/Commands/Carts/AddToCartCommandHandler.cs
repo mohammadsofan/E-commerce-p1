@@ -75,7 +75,7 @@ namespace Ecommerce.Application.Commands.Carts
                     Db.CartItems.Add(item);
                 }
                 await Db.SaveChangesAsync(cancellationToken);
-                return Map(cart);
+                return await MapAsync(cart, cancellationToken);
             }
             finally
             {

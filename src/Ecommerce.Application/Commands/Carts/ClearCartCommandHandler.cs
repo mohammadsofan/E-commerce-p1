@@ -22,7 +22,7 @@ namespace Ecommerce.Application.Commands.Carts
             cart.Clear();
 
             await Db.SaveChangesAsync(cancellationToken);
-            return Map(cart);
+            return await MapAsync(cart, cancellationToken);
         }
     }
 }

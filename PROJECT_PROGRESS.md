@@ -556,6 +556,11 @@ This section documents work that already exists in the repository as of 2026-08-
 - Fix: `AddToCartCommandHandler` serializes cart writes, verifies that a tracked item still exists in the database before merging quantity, and inserts a fresh cart-item row when the tracked entry is stale.
 - Existing cart-item quantity merging remains supported when the database row is present.
 
+### 2026-08-20 — Cart Item Images
+- Added `imageUrl` to `CartItemDto` responses.
+- Cart responses now load the matching variant image first, then fall back to the product-level primary image.
+- Applied the enriched cart mapping to get, add, update, remove, and clear operations.
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)

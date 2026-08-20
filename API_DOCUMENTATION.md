@@ -408,7 +408,8 @@ All public product responses include these fields:
       "productName": "string",
       "quantity": 1,
       "unitPrice": "decimal",
-      "lineTotal": "decimal"
+      "lineTotal": "decimal",
+      "imageUrl": "string?"
     }
   ],
   "totalAmount": "decimal"

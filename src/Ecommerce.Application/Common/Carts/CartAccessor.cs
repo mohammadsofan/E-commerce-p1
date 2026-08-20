@@ -56,6 +56,32 @@ namespace Ecommerce.Application.Common.Carts
             return cart ?? throw new NotFoundException("Cart", userId);
         }
 
-        protected CartDto Map(Cart cart) => Mapper.Map<CartDto>(cart);
+        protected async Task<CartDto> MapAsync(Cart cart, CancellationToken cancellationToken)
+        {
+            var result = Mapper.Map<CartDto>(cart);
+            var productIds = result.Items.Select(item => item.ProductId).Distinct().ToList();
+            if (productIds.Count == 0) return result;
+
+            var images = await Db.ProductImages
+                .AsNoTracking()
+                .Where(image => productIds.Contains(image.ProductId))
+                .OrderByDescending(image => image.IsPrimary)
+                .ThenBy(image => image.SortOrder)
+                .ToListAsync(cancellationToken);
+
+            foreach (var item in result.Items)
+            {
+                item.ImageUrl = images
+                    .Where(image => image.ProductId == item.ProductId && image.ProductVariantId == item.ProductVariantId)
+                    .Select(image => image.Url)
+                    .FirstOrDefault()
+                    ?? images
+                        .Where(image => image.ProductId == item.ProductId && image.ProductVariantId == null)
+                        .Select(image => image.Url)
+                        .FirstOrDefault();
+            }
+
+            return result;
+        }
     }
 }

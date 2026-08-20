@@ -22,7 +22,7 @@ namespace Ecommerce.Application.Commands.Carts
             cart.UpdateItemQuantity(command.CartItemId, command.Quantity);
 
             await Db.SaveChangesAsync(cancellationToken);
-            return Map(cart);
+            return await MapAsync(cart, cancellationToken);
         }
     }
 }
