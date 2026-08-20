@@ -8,11 +8,13 @@ using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.Commands.Orders;
 using Ecommerce.Application.Commands.Carts;
+using Ecommerce.Application.Commands.Wishlist;
 using Ecommerce.Application.Commands.Admin;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.Products;
 using Ecommerce.Application.Queries.Orders;
 using Ecommerce.Application.Queries.Carts;
+using Ecommerce.Application.Queries.Wishlist;
 using Ecommerce.Application.Queries.Admin;
 using Ecommerce.Infrastructure.Services;
 using System.Collections.Generic;
@@ -96,6 +98,11 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateCartItemCommand, CartDto>, UpdateCartItemCommandHandler>();
             services.AddScoped<ICommandHandler<RemoveFromCartCommand, CartDto>, RemoveFromCartCommandHandler>();
             services.AddScoped<ICommandHandler<ClearCartCommand, CartDto>, ClearCartCommandHandler>();
+
+            // Wishlist command handlers
+            services.AddScoped<ICommandHandler<AddToWishlistCommand, WishlistItemDto>, AddToWishlistCommandHandler>();
+            services.AddScoped<ICommandHandler<RemoveFromWishlistCommand, Unit>, RemoveFromWishlistCommandHandler>();
+            services.AddScoped<ICommandHandler<ClearWishlistCommand, Unit>, ClearWishlistCommandHandler>();
 
             // Admin product command handlers
             services.AddScoped<ICommandHandler<CreateProductCommand, AdminProductDto>, CreateProductCommandHandler>();
@@ -192,6 +199,7 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetOrdersQuery, List<OrderDto>>, GetOrdersQueryHandler>();
             services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto>, GetOrderByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetCartQuery, CartDto>, GetCartQueryHandler>();
+            services.AddScoped<IQueryHandler<GetWishlistQuery, List<WishlistItemDto>>, GetWishlistQueryHandler>();
 
             // Admin product query handlers
             services.AddScoped<IQueryHandler<GetAdminProductsQuery, PagedResult<AdminProductDto>>, GetAdminProductsQueryHandler>();

@@ -574,6 +574,14 @@ This section documents work that already exists in the repository as of 2026-08-
 - The refresh endpoint now loads the user's roles and passes them into the token DTO, so refreshed tokens authorize admin endpoints correctly.
 - Previously, after an access-token refresh, every `[Authorize(Policy = "AdminOnly")]` request returned 403 even for admin users.
 
+### 2026-08-20 — Wishlist Feature (صفحة المفضلة)
+- Added `WishlistItem` domain entity with `(UserId, ProductId)` unique composite key.
+- Created `WishlistItemConfiguration` with cascade delete to `Product`.
+- Added migration `AddWishlistTable` and applied to database.
+- Implemented CQRS commands and queries: `GetWishlistQuery`, `AddToWishlistCommand`, `RemoveFromWishlistCommand`, `ClearWishlistCommand`.
+- Created `WishlistController` (`/api/wishlist`) with `GET /api/wishlist`, `POST /api/wishlist/items`, `DELETE /api/wishlist/items/{productId}`, `DELETE /api/wishlist`.
+- All 162 application tests passing.
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)
@@ -663,4 +671,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-20 — Added `CategoryId` to product creation and update logic to associate products with categories. `SortBy=featured` now filters out non-featured products. All 162 application tests passing.*
+*Last updated: 2026-08-20 — Wishlist feature implemented with full database migration, CQRS handlers, and REST API. All 162 application tests passing.*

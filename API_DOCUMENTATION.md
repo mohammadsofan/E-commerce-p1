@@ -529,6 +529,90 @@ If a cart item was removed or became stale between reads, the API reloads the ca
 
 ---
 
+## Wishlist
+
+**All endpoints require authentication (`Authorization: Bearer <token>`).**
+
+### Get Wishlist
+**GET** `/api/wishlist`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "guid",
+    "productId": "guid",
+    "productName": "string",
+    "productSlug": "string",
+    "productPrice": "decimal",
+    "productImageUrl": "string?",
+    "availableStock": 10,
+    "isActive": true,
+    "categoryName": "string?",
+    "brandName": "string?",
+    "createdAt": "2026-08-20T00:00:00Z"
+  }
+]
+```
+
+---
+
+### Add Item to Wishlist
+**POST** `/api/wishlist/items`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request Body:**
+```json
+{
+  "productId": "guid (required)"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "productId": "guid",
+  "productName": "string",
+  "productSlug": "string",
+  "productPrice": "decimal",
+  "productImageUrl": "string?",
+  "availableStock": 10,
+  "isActive": true,
+  "categoryName": "string?",
+  "brandName": "string?",
+  "createdAt": "2026-08-20T00:00:00Z"
+}
+```
+
+---
+
+### Remove Item from Wishlist
+**DELETE** `/api/wishlist/items/{productId:guid}`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| productId | guid | Product ID |
+
+**Response:** `204 No Content`
+
+---
+
+### Clear Wishlist
+**DELETE** `/api/wishlist`
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response:** `204 No Content`
+
+---
+
 ## Orders
 
 ### Get Orders
