@@ -550,11 +550,11 @@ This section documents work that already exists in the repository as of 2026-08-
 - `POST /api/admin/inventory/set-stock` and `POST /api/admin/inventory` are now exposed by the controller used by the running API.
 - Inventory list pagination now reports accurate `totalCount` and `page` values.
 
-### 2026-08-20 - Cart Add-Item Concurrency Fix
+### 2026-08-20 — Cart Add-Item Concurrency Fix
 - Fixed `POST /api/cart/items` intermittently returning 500 (`DbUpdateConcurrencyException`: "expected to affect 1 row(s), but actually affected 0 row(s)").
-- Root cause: a concurrent request (e.g. cart item delete from another tab) could delete a `CartItem`/`Cart` row between the handler's read and `SaveChangesAsync`, so the EF UPDATE matched 0 rows.
-- Fix: `AddToCartCommandHandler` retries the get-or-create + add once after clearing the change tracker, then fails with a clean `DomainException` (400) instead of a 500 if the conflict persists.
-- Added `IApplicationDbContext.ClearChangeTracker()` (implemented in `ApplicationDbContext`) so the retry reloads the aggregate against current DB state.
+- Root cause: the handler could retain a stale tracked `CartItem` and issue an EF UPDATE for a row that no longer existed, causing the save to affect zero rows.
+- Fix: `AddToCartCommandHandler` serializes cart writes, verifies that a tracked item still exists in the database before merging quantity, and inserts a fresh cart-item row when the tracked entry is stale.
+- Existing cart-item quantity merging remains supported when the database row is present.
 
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
@@ -645,4 +645,4 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-19 — Public ProductDto now exposes status, description, category, brand, available stock, and images; all 215 tests passing.*
+*Last updated: 2026-08-20 — Cart add-item stale tracked-row handling fixed; all 162 application tests passing.*

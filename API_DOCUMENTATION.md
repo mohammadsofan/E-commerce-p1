@@ -398,26 +398,20 @@ All public product responses include these fields:
 {
   "id": "guid",
   "userId": "guid",
+  "currencyCode": "USD",
   "status": "Active",
   "items": [
     {
       "id": "guid",
       "productId": "guid",
       "productVariantId": "guid?",
+      "productName": "string",
       "quantity": 1,
       "unitPrice": "decimal",
-      "productName": "string",
-      "productSlug": "string",
-      "variantName": "string?",
-      "imageUrl": "string?"
+      "lineTotal": "decimal"
     }
   ],
-  "subtotal": "decimal",
-  "discount": "decimal",
-  "tax": "decimal",
-  "total": "decimal",
-  "createdAt": "2026-08-18T00:00:00Z",
-  "updatedAt": "2026-08-18T00:00:00Z"
+  "totalAmount": "decimal"
 }
 ```
 
@@ -442,14 +436,14 @@ All public product responses include these fields:
 {
   "id": "guid",
   "userId": "guid",
+  "currencyCode": "USD",
   "status": "Active",
   "items": [...],
-  "subtotal": "decimal",
-  "discount": "decimal",
-  "tax": "decimal",
-  "total": "decimal"
+  "totalAmount": "decimal"
 }
 ```
+
+If a cart item was removed or became stale between reads, the API reloads the cart before inserting the item. Cart writes are serialized to prevent overlapping add requests from producing optimistic-concurrency failures.
 
 ---
 
@@ -475,12 +469,10 @@ All public product responses include these fields:
 {
   "id": "guid",
   "userId": "guid",
+  "currencyCode": "USD",
   "status": "Active",
   "items": [...],
-  "subtotal": "decimal",
-  "discount": "decimal",
-  "tax": "decimal",
-  "total": "decimal"
+  "totalAmount": "decimal"
 }
 ```
 
@@ -501,12 +493,10 @@ All public product responses include these fields:
 {
   "id": "guid",
   "userId": "guid",
+  "currencyCode": "USD",
   "status": "Active",
   "items": [...],
-  "subtotal": "decimal",
-  "discount": "decimal",
-  "tax": "decimal",
-  "total": "decimal"
+  "totalAmount": "decimal"
 }
 ```
 
@@ -522,12 +512,10 @@ All public product responses include these fields:
 {
   "id": "guid",
   "userId": "guid",
+  "currencyCode": "USD",
   "status": "Active",
   "items": [],
-  "subtotal": 0,
-  "discount": 0,
-  "tax": 0,
-  "total": 0
+  "totalAmount": 0
 }
 ```
 

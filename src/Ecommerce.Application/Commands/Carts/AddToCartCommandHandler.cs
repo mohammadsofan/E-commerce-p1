@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -7,12 +8,17 @@ using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Domain.Exceptions;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Commands.Carts
 {
     public class AddToCartCommandHandler : CartAccessor, ICommandHandler<AddToCartCommand, CartDto>
     {
+        // Cart writes must not interleave while the aggregate is being loaded and saved.
+        // This prevents two requests from trying to persist the same cart snapshot.
+        private static readonly SemaphoreSlim CartWriteLock = new(1, 1);
+
         public AddToCartCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IMapper mapper)
             : base(db, currentUser, mapper)
         {
@@ -44,29 +50,37 @@ namespace Ecommerce.Application.Commands.Carts
                 productName = string.IsNullOrWhiteSpace(variant.Name) ? product.Name : variant.Name;
             }
 
-            for (var attempt = 0; attempt < 2; attempt++)
+            await CartWriteLock.WaitAsync(cancellationToken);
+            try
             {
                 var cart = await GetOrCreateCartAsync(cancellationToken);
-                cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity);
-
-try
+                var existing = cart.Items.FirstOrDefault(i =>
+                    i.ProductId == product.Id && i.ProductVariantId == command.ProductVariantId);
+                if (existing != null && await Db.CartItems.AnyAsync(i => i.Id == existing.Id, cancellationToken))
                 {
-                    await Db.SaveChangesAsync(cancellationToken);
-                    return Map(cart);
+                    cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity);
                 }
-                catch (DbUpdateConcurrencyException)
+                else
                 {
-                    // Another request changed the cart between read and save.
-                    // Reload the aggregate and retry the add against current state.
-                    if (attempt == 0)
-                    {
-                        Db.ClearChangeTracker();
-                        continue;
-                    }
+                    // Do not let a stale tracked item make EF issue an UPDATE for a
+                    // row that no longer exists in the database.
+                    var item = CartItem.Create(
+                        cart.Id,
+                        product.Id,
+                        command.ProductVariantId,
+                        productName,
+                        unitPrice,
+                        command.Quantity);
+                    cart.Items.Add(item);
+                    Db.CartItems.Add(item);
                 }
+                await Db.SaveChangesAsync(cancellationToken);
+                return Map(cart);
             }
-
-            throw new DomainException("The cart was changed by another request. Please retry.");
+            finally
+            {
+                CartWriteLock.Release();
+            }
         }
     }
 }
