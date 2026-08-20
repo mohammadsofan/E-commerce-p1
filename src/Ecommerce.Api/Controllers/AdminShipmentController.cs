@@ -66,9 +66,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateShipmentStatusCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("Shipment ID mismatch");
-
+            command.Id = id;
             await _commandDispatcher.Send<UpdateShipmentStatusCommand, Unit>(command);
             return NoContent();
         }
@@ -77,9 +75,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}/tracking")]
         public async Task<IActionResult> UpdateTracking(Guid id, [FromBody] UpdateShipmentTrackingCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("Shipment ID mismatch");
-
+            command.Id = id;
             await _commandDispatcher.Send<UpdateShipmentTrackingCommand, Unit>(command);
             return NoContent();
         }

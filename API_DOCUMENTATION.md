@@ -6337,4 +6337,5 @@ The response pagination metadata reflects the requested `page` and the full filt
 - All dates are returned in UTC (`2026-08-18T00:00:00Z` format).
 - All GUIDs are returned as strings.
 - All decimal values are returned as numbers.
+- For all `PUT` endpoints (e.g. `/api/resource/{id}`), the resource ID is sourced directly from the URL route parameter. The ID is not required in the JSON request body.
 - Error responses follow RFC 7807 ProblemDetails format.

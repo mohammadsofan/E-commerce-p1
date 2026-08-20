@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.StoreFeatures;
 using Ecommerce.Application.Common;
@@ -66,11 +66,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStoreFeatureCommand command)
         {
-            if (id != command.Id)
-            {
-                return BadRequest("ID mismatch");
-            }
-
+            command.Id = id;
             var result = await _commandDispatcher.Send<UpdateStoreFeatureCommand, StoreFeatureDto>(command);
             return Ok(result);
         }

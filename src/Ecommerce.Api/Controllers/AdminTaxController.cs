@@ -61,7 +61,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("categories/{id:guid}")]
         public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateTaxCategoryCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var category = await _commandDispatcher.Send<UpdateTaxCategoryCommand, AdminTaxCategoryDto>(command);
             return Ok(category);
         }
@@ -112,7 +112,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("rates/{id:guid}")]
         public async Task<IActionResult> UpdateRate(Guid id, [FromBody] UpdateTaxRateOnlyCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var rate = await _commandDispatcher.Send<UpdateTaxRateOnlyCommand, AdminTaxRateDto>(command);
             return Ok(rate);
         }

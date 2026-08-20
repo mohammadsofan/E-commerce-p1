@@ -51,7 +51,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCurrencyCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var currency = await _commandDispatcher.Send<UpdateCurrencyCommand, CurrencyDto>(command);
             return Ok(currency);
         }

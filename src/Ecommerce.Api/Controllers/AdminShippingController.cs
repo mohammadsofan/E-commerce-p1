@@ -61,7 +61,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("zones/{id:guid}")]
         public async Task<IActionResult> UpdateZone(Guid id, [FromBody] UpdateShippingZoneCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var zone = await _commandDispatcher.Send<UpdateShippingZoneCommand, AdminShippingZoneDto>(command);
             return Ok(zone);
         }
@@ -112,7 +112,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("methods/{id:guid}")]
         public async Task<IActionResult> UpdateMethod(Guid id, [FromBody] UpdateShippingMethodCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var method = await _commandDispatcher.Send<UpdateShippingMethodCommand, AdminShippingMethodDto>(command);
             return Ok(method);
         }
@@ -159,7 +159,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("rates/{id:guid}")]
         public async Task<IActionResult> UpdateRate(Guid id, [FromBody] UpdateShippingRateOnlyCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var rate = await _commandDispatcher.Send<UpdateShippingRateOnlyCommand, AdminShippingRateDto>(command);
             return Ok(rate);
         }

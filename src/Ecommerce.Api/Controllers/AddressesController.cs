@@ -55,9 +55,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAddressCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("Address ID mismatch");
-
+            command.Id = id;
             var result = await _commandDispatcher.Send<UpdateAddressCommand, AddressDto>(command);
             return Ok(result);
         }

@@ -64,7 +64,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePromotionCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var promotion = await _commandDispatcher.Send<UpdatePromotionCommand, AdminPromotionDto>(command);
             return Ok(promotion);
         }

@@ -65,7 +65,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateNotificationCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var notification = await _commandDispatcher.Send<UpdateNotificationCommand, AdminNotificationDto>(command);
             return Ok(notification);
         }
@@ -116,7 +116,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("templates/{id:guid}")]
         public async Task<IActionResult> UpdateTemplate(Guid id, [FromBody] UpdateNotificationTemplateCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var template = await _commandDispatcher.Send<UpdateNotificationTemplateCommand, AdminNotificationTemplateDto>(command);
             return Ok(template);
         }
@@ -150,7 +150,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("preferences/{id:guid}")]
         public async Task<IActionResult> UpdatePreferences(Guid id, [FromBody] UpdateNotificationPreferenceCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var preference = await _commandDispatcher.Send<UpdateNotificationPreferenceCommand, AdminNotificationPreferenceDto>(command);
             return Ok(preference);
         }
@@ -189,7 +189,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("channels/{id:guid}")]
         public async Task<IActionResult> UpdateChannel(Guid id, [FromBody] UpdateNotificationChannelCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var channel = await _commandDispatcher.Send<UpdateNotificationChannelCommand, AdminNotificationChannelDto>(command);
             return Ok(channel);
         }

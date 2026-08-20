@@ -67,9 +67,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateVendorCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("Vendor ID mismatch");
-
+            command.Id = id;
             var result = await _commandDispatcher.Send<UpdateVendorCommand, VendorDto>(command);
             return Ok(result);
         }

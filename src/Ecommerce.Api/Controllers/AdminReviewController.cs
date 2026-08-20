@@ -51,9 +51,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateReviewStatusCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("Review ID mismatch");
-
+            command.Id = id;
             await _commandDispatcher.Send<UpdateReviewStatusCommand, Unit>(command);
             return NoContent();
         }

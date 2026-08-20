@@ -72,7 +72,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCouponCommand command)
         {
-            if (id != command.Id) return BadRequest("ID mismatch");
+            command.Id = id;
             var coupon = await _commandDispatcher.Send<UpdateCouponCommand, AdminCouponDto>(command);
             return Ok(coupon);
         }

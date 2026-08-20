@@ -80,9 +80,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id:guid}/adjust")]
         public async Task<IActionResult> Adjust(Guid id, [FromBody] AdjustInventoryCommand command)
         {
-            if (id != command.InventoryItemId)
-                return BadRequest("Inventory item ID mismatch");
-
+            command.InventoryItemId = id;
             await _commandDispatcher.Send<AdjustInventoryCommand, Unit>(command);
             return NoContent();
         }
@@ -91,9 +89,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id:guid}/transfer")]
         public async Task<IActionResult> Transfer(Guid id, [FromBody] TransferInventoryCommand command)
         {
-            if (id != command.InventoryItemId)
-                return BadRequest("Inventory item ID mismatch");
-
+            command.InventoryItemId = id;
             await _commandDispatcher.Send<TransferInventoryCommand, Unit>(command);
             return NoContent();
         }
@@ -102,9 +98,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}/reorder-point")]
         public async Task<IActionResult> SetReorderPoint(Guid id, [FromBody] SetReorderPointCommand command)
         {
-            if (id != command.InventoryItemId)
-                return BadRequest("Inventory item ID mismatch");
-
+            command.InventoryItemId = id;
             await _commandDispatcher.Send<SetReorderPointCommand, Unit>(command);
             return NoContent();
         }

@@ -61,9 +61,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Guid productId, [FromBody] CreateProductVariantCommand command)
         {
-            if (productId != command.ProductId)
-                return BadRequest("Product ID mismatch");
-
+            command.ProductId = productId;
             var variant = await _commandDispatcher.Send<CreateProductVariantCommand, AdminProductVariantDto>(command);
             return CreatedAtAction(nameof(GetById), new { productId, id = variant.Id }, variant);
         }
@@ -72,9 +70,8 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid productId, Guid id, [FromBody] UpdateProductVariantCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("ID mismatch");
-
+            command.Id = id;
+            command.ProductId = productId;
             var variant = await _commandDispatcher.Send<UpdateProductVariantCommand, AdminProductVariantDto>(command);
             return Ok(variant);
         }
@@ -197,9 +194,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductAttributeCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("ID mismatch");
-
+            command.Id = id;
             var attribute = await _commandDispatcher.Send<UpdateProductAttributeCommand, AdminProductAttributeDto>(command);
             return Ok(attribute);
         }
