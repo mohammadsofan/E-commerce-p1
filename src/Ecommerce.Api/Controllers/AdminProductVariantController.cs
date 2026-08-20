@@ -71,7 +71,6 @@ namespace Ecommerce.Api.Controllers
         public async Task<IActionResult> Update(Guid productId, Guid id, [FromBody] UpdateProductVariantCommand command)
         {
             command.Id = id;
-            command.ProductId = productId;
             var variant = await _commandDispatcher.Send<UpdateProductVariantCommand, AdminProductVariantDto>(command);
             return Ok(variant);
         }
@@ -124,9 +123,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Guid productId, [FromBody] CreateProductImageCommand command)
         {
-            if (command.ProductId != productId)
-                return BadRequest("Product ID mismatch");
-
+            command.ProductId = productId;
             var result = await _commandDispatcher.Send<CreateProductImageCommand, AdminProductImageDto>(command);
             return Ok(result);
         }

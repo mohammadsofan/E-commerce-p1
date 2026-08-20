@@ -55,9 +55,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id:guid}/reply")]
         public async Task<IActionResult> Reply(Guid id, [FromBody] ReplySupportTicketCommand command)
         {
-            if (id != command.Id)
-                return BadRequest("Support ticket ID mismatch");
-
+            command.Id = id;
             await _commandDispatcher.Send<ReplySupportTicketCommand, Unit>(command);
             return NoContent();
         }

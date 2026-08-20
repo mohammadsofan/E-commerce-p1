@@ -38,9 +38,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Submit(Guid productId, [FromBody] SubmitProductReviewCommand command)
         {
-            if (productId != command.ProductId)
-                return BadRequest("Product ID mismatch");
-
+            command.ProductId = productId;
             var result = await _commandDispatcher.Send<SubmitProductReviewCommand, ProductReviewDto>(command);
             return CreatedAtAction(nameof(GetAll), new { productId }, result);
         }

@@ -94,9 +94,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id:guid}/products")]
         public async Task<IActionResult> AddProduct(Guid id, [FromBody] CreateVendorProductCommand command)
         {
-            if (id != command.VendorId)
-                return BadRequest("Vendor ID mismatch");
-
+            command.VendorId = id;
             var result = await _commandDispatcher.Send<CreateVendorProductCommand, VendorProductDto>(command);
             return Ok(result);
         }

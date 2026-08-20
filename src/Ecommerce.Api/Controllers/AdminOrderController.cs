@@ -68,9 +68,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id:guid}/ship")]
         public async Task<IActionResult> Ship(Guid id, [FromBody] MarkOrderShippedCommand command)
         {
-            if (id != command.OrderId)
-                return BadRequest("Order ID mismatch");
-
+            command.OrderId = id;
             await _commandDispatcher.Send<MarkOrderShippedCommand, Unit>(command);
             return NoContent();
         }
@@ -88,9 +86,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id:guid}/refund")]
         public async Task<IActionResult> Refund(Guid id, [FromBody] ProcessOrderRefundCommand command)
         {
-            if (id != command.OrderId)
-                return BadRequest("Order ID mismatch");
-
+            command.OrderId = id;
             await _commandDispatcher.Send<ProcessOrderRefundCommand, Unit>(command);
             return NoContent();
         }
@@ -99,9 +95,7 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("{id:guid}/return")]
         public async Task<IActionResult> Return(Guid id, [FromBody] ProcessOrderReturnCommand command)
         {
-            if (id != command.OrderId)
-                return BadRequest("Order ID mismatch");
-
+            command.OrderId = id;
             await _commandDispatcher.Send<ProcessOrderReturnCommand, Unit>(command);
             return NoContent();
         }
