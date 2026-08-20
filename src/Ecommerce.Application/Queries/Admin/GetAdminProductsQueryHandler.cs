@@ -25,6 +25,7 @@ namespace Ecommerce.Application.Queries.Admin
                 .Include(p => p.Variants)
                 .Include(p => p.Images)
                 .Include(p => p.InventoryItems)
+                    .ThenInclude(i => i.Warehouse)
                 .AsQueryable();
 
             if (!query.IncludeDeleted)

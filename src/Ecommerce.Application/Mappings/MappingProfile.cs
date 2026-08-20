@@ -34,12 +34,13 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Variants, opt => opt.MapFrom(s => s.Variants))
                 .ForMember(d => d.Images, opt => opt.MapFrom(s => s.Images))
                 .ForMember(d => d.Stock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.QuantityOnHand)))
-                .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)));
+                .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)))
+                .ForMember(d => d.WarehouseId, opt => opt.MapFrom(s => s.InventoryItems.Select(i => (Guid?)i.WarehouseId).FirstOrDefault()))
+                .ForMember(d => d.WarehouseName, opt => opt.MapFrom(s => s.InventoryItems.Select(i => i.Warehouse != null ? i.Warehouse.Name : string.Empty).FirstOrDefault() ?? string.Empty));
 
             CreateMap<ProductVariant, AdminProductVariantDto>();
             CreateMap<ProductImage, AdminProductImageDto>();
             CreateMap<ProductAttribute, AdminProductAttributeDto>();
-
             CreateMap<Coupon, AdminCouponDto>();
             CreateMap<Promotion, AdminPromotionDto>();
 
