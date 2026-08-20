@@ -6189,6 +6189,144 @@ The response pagination metadata reflects the requested `page` and the full filt
 
 ---
 
+## Store Features (المميزات)
+
+### Get Active Features (Public)
+**GET** `/api/features`
+
+**Description:** Returns all active store features ordered by `displayOrder` for public display (e.g. on the Home Page).
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "title": "الشحن مجاني",
+    "description": "للطلبات فوق ₪50. توصيل سريع حتى باب منزلك.",
+    "iconName": "Truck",
+    "displayOrder": 1,
+    "isActive": true,
+    "createdAt": "2026-08-20T00:00:00Z",
+    "updatedAt": null
+  }
+]
+```
+
+---
+
+### Get All Features (Admin)
+**GET** `/api/admin/features`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Query Parameters:**
+- `page`: Page number (default: 1)
+- `pageSize`: Items per page (default: 20)
+- `search`: Search by title or description
+- `isActive`: Filter by active status (bool)
+
+**Response:** `200 OK`
+```json
+{
+  "items": [
+    {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "title": "الشحن مجاني",
+      "description": "للطلبات فوق ₪50. توصيل سريع حتى باب منزلك.",
+      "iconName": "Truck",
+      "displayOrder": 1,
+      "isActive": true,
+      "createdAt": "2026-08-20T00:00:00Z",
+      "updatedAt": null
+    }
+  ],
+  "totalCount": 1,
+  "page": 1,
+  "pageSize": 20,
+  "totalPages": 1,
+  "hasNextPage": false,
+  "hasPreviousPage": false
+}
+```
+
+---
+
+### Get Feature By ID (Admin)
+**GET** `/api/admin/features/{id}`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Response:** `200 OK`
+```json
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "title": "الشحن مجاني",
+  "description": "للطلبات فوق ₪50. توصيل سريع حتى باب منزلك.",
+  "iconName": "Truck",
+  "displayOrder": 1,
+  "isActive": true,
+  "createdAt": "2026-08-20T00:00:00Z",
+  "updatedAt": null
+}
+```
+
+---
+
+### Create Store Feature (Admin)
+**POST** `/api/admin/features`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Request Body:**
+```json
+{
+  "title": "دعم فني متواصل",
+  "description": "فريق خدمة عملاء متاح على مدار الساعة للمساعدة.",
+  "iconName": "Headphones",
+  "displayOrder": 5,
+  "isActive": true
+}
+```
+
+**Response:** `201 Created`
+
+---
+
+### Update Store Feature (Admin)
+**PUT** `/api/admin/features/{id}`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Request Body:**
+```json
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "title": "الشحن مجاني وسريع",
+  "description": "للطلبات فوق ₪50. توصيل فوري حتى باب منزلك.",
+  "iconName": "Truck",
+  "displayOrder": 1,
+  "isActive": true
+}
+```
+
+**Response:** `200 OK`
+
+---
+
+### Delete Store Feature (Admin)
+**DELETE** `/api/admin/features/{id}`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Response:** `204 NoContent`
+
+---
+
 ## Notes
 
 - All authenticated endpoints return `401 Unauthorized` if the token is missing or invalid.

@@ -9,12 +9,14 @@ using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.Commands.Orders;
 using Ecommerce.Application.Commands.Carts;
 using Ecommerce.Application.Commands.Wishlist;
+using Ecommerce.Application.Commands.StoreFeatures;
 using Ecommerce.Application.Commands.Admin;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.Products;
 using Ecommerce.Application.Queries.Orders;
 using Ecommerce.Application.Queries.Carts;
 using Ecommerce.Application.Queries.Wishlist;
+using Ecommerce.Application.Queries.StoreFeatures;
 using Ecommerce.Application.Queries.Admin;
 using Ecommerce.Infrastructure.Services;
 using System.Collections.Generic;
@@ -103,6 +105,11 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<AddToWishlistCommand, WishlistItemDto>, AddToWishlistCommandHandler>();
             services.AddScoped<ICommandHandler<RemoveFromWishlistCommand, Unit>, RemoveFromWishlistCommandHandler>();
             services.AddScoped<ICommandHandler<ClearWishlistCommand, Unit>, ClearWishlistCommandHandler>();
+
+            // StoreFeature command handlers
+            services.AddScoped<ICommandHandler<CreateStoreFeatureCommand, StoreFeatureDto>, CreateStoreFeatureCommandHandler>();
+            services.AddScoped<ICommandHandler<UpdateStoreFeatureCommand, StoreFeatureDto>, UpdateStoreFeatureCommandHandler>();
+            services.AddScoped<ICommandHandler<DeleteStoreFeatureCommand, Unit>, DeleteStoreFeatureCommandHandler>();
 
             // Admin product command handlers
             services.AddScoped<ICommandHandler<CreateProductCommand, AdminProductDto>, CreateProductCommandHandler>();
@@ -200,6 +207,9 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetOrderByIdQuery, OrderDto>, GetOrderByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetCartQuery, CartDto>, GetCartQueryHandler>();
             services.AddScoped<IQueryHandler<GetWishlistQuery, List<WishlistItemDto>>, GetWishlistQueryHandler>();
+            services.AddScoped<IQueryHandler<GetActiveFeaturesQuery, List<StoreFeatureDto>>, GetActiveFeaturesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetAdminFeaturesQuery, PagedResult<StoreFeatureDto>>, GetAdminFeaturesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetFeatureByIdQuery, StoreFeatureDto>, GetFeatureByIdQueryHandler>();
 
             // Admin product query handlers
             services.AddScoped<IQueryHandler<GetAdminProductsQuery, PagedResult<AdminProductDto>>, GetAdminProductsQueryHandler>();

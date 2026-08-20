@@ -26,6 +26,7 @@ namespace Ecommerce.Application.Interfaces
         DbSet<Cart> Carts { get; }
         DbSet<CartItem> CartItems { get; }
         DbSet<WishlistItem> WishlistItems { get; }
+        DbSet<StoreFeature> StoreFeatures { get; }
         DbSet<Coupon> Coupons { get; }
         DbSet<CouponUsage> CouponUsages { get; }
         DbSet<Promotion> Promotions { get; }

@@ -669,6 +669,12 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Health: `https://localhost:7001/health`
 - Metrics: `https://localhost:7001/metrics` (Prometheus on port 9090)
 
+### 2026-08-20 — Dynamic Store Features (المميزات)
+- Created `StoreFeature` domain entity with `Id`, `Title`, `Description`, `IconName`, `DisplayOrder`, `IsActive`, `CreatedAt`, `UpdatedAt`.
+- Added EF Core configuration and generated migration `AddStoreFeaturesTable` with seeded initial store features.
+- Implemented CQRS queries and commands for public and admin store feature operations (`GetActiveFeaturesQuery`, `GetAdminFeaturesQuery`, `GetFeatureByIdQuery`, `CreateStoreFeatureCommand`, `UpdateStoreFeatureCommand`, `DeleteStoreFeatureCommand`).
+- Created `FeaturesController` (`GET /api/features`) and `AdminFeaturesController` (`/api/admin/features`) with full CRUD support.
+
 ---
 
-*Last updated: 2026-08-20 — Wishlist feature implemented with full database migration, CQRS handlers, and REST API. All 162 application tests passing.*
+*Last updated: 2026-08-20 — Dynamic Store Features implemented with full database migration, CQRS handlers, and REST API. All 162 application tests passing.*
