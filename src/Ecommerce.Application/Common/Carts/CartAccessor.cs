@@ -62,6 +62,12 @@ namespace Ecommerce.Application.Common.Carts
             var productIds = result.Items.Select(item => item.ProductId).Distinct().ToList();
             if (productIds.Count == 0) return result;
 
+            var products = await Db.Products
+                .AsNoTracking()
+                .Where(product => productIds.Contains(product.Id))
+                .Select(product => new { product.Id, product.Slug })
+                .ToListAsync(cancellationToken);
+
             var images = await Db.ProductImages
                 .AsNoTracking()
                 .Where(image => productIds.Contains(image.ProductId))
@@ -71,6 +77,10 @@ namespace Ecommerce.Application.Common.Carts
 
             foreach (var item in result.Items)
             {
+                item.ProductSlug = products
+                    .Where(product => product.Id == item.ProductId)
+                    .Select(product => product.Slug)
+                    .FirstOrDefault() ?? string.Empty;
                 item.ImageUrl = images
                     .Where(image => image.ProductId == item.ProductId && image.ProductVariantId == item.ProductVariantId)
                     .Select(image => image.Url)

@@ -561,6 +561,9 @@ This section documents work that already exists in the repository as of 2026-08-
 - Cart responses now load the matching variant image first, then fall back to the product-level primary image.
 - Applied the enriched cart mapping to get, add, update, remove, and clear operations.
 
+### 2026-08-20 — Cart Product Links
+- Added `productSlug` to `CartItemDto` responses so cart links navigate to `/products/{slug}` instead of an invalid undefined route.
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)

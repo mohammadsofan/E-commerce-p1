@@ -405,6 +405,7 @@ All public product responses include these fields:
       "id": "guid",
       "productId": "guid",
       "productVariantId": "guid?",
+      "productSlug": "string",
       "productName": "string",
       "quantity": 1,
       "unitPrice": "decimal",
