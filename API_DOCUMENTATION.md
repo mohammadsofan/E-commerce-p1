@@ -4,6 +4,8 @@ Base URL: `https://localhost:7001` (development)
 Authentication: JWT Bearer token (`Authorization: Bearer <token>`)  
 Content-Type: `application/json`
 
+Refresh tokens are stored in an HttpOnly, Secure `__Host-refreshToken` cookie and are not exposed to browser JavaScript. Refresh and revoke requests must include the readable `XSRF-TOKEN` cookie value in the `X-XSRF-TOKEN` header.
+
 ---
 
 ## Authentication
@@ -45,7 +47,6 @@ Content-Type: `application/json`
 ```json
 {
   "token": "string",
-  "refreshToken": "string",
   "refreshTokenExpires": "2026-08-18T00:00:00Z"
 }
 ```
@@ -146,15 +147,16 @@ Content-Type: `application/json`
 **Request Body:**
 ```json
 {
-  "refreshToken": "string (required)"
+  "refreshToken": "string (optional; cookie is preferred)"
 }
 ```
+
+The refresh token is read from the HttpOnly `__Host-refreshToken` cookie. The request must include the CSRF token from the `XSRF-TOKEN` cookie as the `X-XSRF-TOKEN` header.
 
 **Response:** `200 OK`
 ```json
 {
   "token": "string",
-  "refreshToken": "string",
   "refreshTokenExpires": "2026-08-18T00:00:00Z"
 }
 ```
@@ -169,9 +171,11 @@ Content-Type: `application/json`
 **Request Body:**
 ```json
 {
-  "refreshToken": "string (required)"
+  "refreshToken": "string (optional; cookie is preferred)"
 }
 ```
+
+The request must include the `X-XSRF-TOKEN` header matching the `XSRF-TOKEN` cookie. Successful revocation clears the refresh and CSRF cookies.
 
 **Response:** `204 No Content`
 

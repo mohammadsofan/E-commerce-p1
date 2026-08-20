@@ -564,6 +564,11 @@ This section documents work that already exists in the repository as of 2026-08-
 ### 2026-08-20 — Cart Product Links
 - Added `productSlug` to `CartItemDto` responses so cart links navigate to `/products/{slug}` instead of an invalid undefined route.
 
+### 2026-08-20 — HttpOnly Refresh Token Cookies
+- Refresh tokens are now issued only as Secure, HttpOnly `__Host-refreshToken` cookies.
+- Added a separate `XSRF-TOKEN` cookie and `X-XSRF-TOKEN` header validation for refresh and revoke operations.
+- Frontend no longer stores or sends refresh tokens through JavaScript; Axios sends credentials and the CSRF header automatically.
+
 ### 2026-08-16 — Admin Product Variant/Image/Attribute Management
 - Added ProductImage, ProductAttribute, ProductVariantAttribute domain entities with navigation properties
 - Created EF Core configurations for new entities (ProductImageConfiguration, ProductAttributeConfiguration, ProductVariantAttributeConfiguration)

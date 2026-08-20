@@ -2,6 +2,8 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
@@ -190,25 +192,31 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] RefreshRequest req)
+        public async Task<IActionResult> Refresh([FromBody] RefreshRequest? req)
         {
-            if (req == null || string.IsNullOrWhiteSpace(req.RefreshToken)) return BadRequest();
+            if (!IsValidCsrfRequest()) return Forbid();
+            var refreshToken = Request.Cookies[RefreshCookieName] ?? req?.RefreshToken;
+            if (string.IsNullOrWhiteSpace(refreshToken)) return Unauthorized();
 
-            var (success, accessToken, refreshToken, expires) = await _refreshTokenService.RefreshAsync(req.RefreshToken);
+            var (success, accessToken, rotatedRefreshToken, expires) = await _refreshTokenService.RefreshAsync(refreshToken);
             if (!success) return Unauthorized();
 
-            return Ok(new { token = accessToken, refreshToken, refreshTokenExpires = expires });
+            SetRefreshCookies(rotatedRefreshToken!, expires!.Value);
+            return Ok(new { token = accessToken, refreshTokenExpires = expires });
         }
 
         [Authorize]
         [HttpPost("revoke")]
-        public async Task<IActionResult> Revoke([FromBody] RefreshRequest req)
+        public async Task<IActionResult> Revoke([FromBody] RefreshRequest? req)
         {
-            if (req == null || string.IsNullOrWhiteSpace(req.RefreshToken)) return BadRequest();
+            if (!IsValidCsrfRequest()) return Forbid();
+            var refreshToken = Request.Cookies[RefreshCookieName] ?? req?.RefreshToken;
+            if (string.IsNullOrWhiteSpace(refreshToken)) return BadRequest();
 
-            var revoked = await _refreshTokenService.RevokeAsync(req.RefreshToken);
+            var revoked = await _refreshTokenService.RevokeAsync(refreshToken);
             if (!revoked) return NotFound();
 
+            ClearRefreshCookies();
             return NoContent();
         }
 
@@ -219,6 +227,7 @@ namespace Ecommerce.Api.Controllers
             if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
 
             await _refreshTokenService.RevokeAllAsync(userId);
+            ClearRefreshCookies();
             return NoContent();
         }
 
@@ -247,7 +256,49 @@ namespace Ecommerce.Api.Controllers
             };
             var token = await _tokenService.CreateTokenAsync(dto);
             var (refreshToken, expires) = await _refreshTokenService.CreateRefreshTokenAsync(user.Id);
-            return new { token, refreshToken, refreshTokenExpires = expires };
+            SetRefreshCookies(refreshToken, expires);
+            return new { token, refreshTokenExpires = expires };
+        }
+
+        private const string RefreshCookieName = "__Host-refreshToken";
+        private const string CsrfCookieName = "XSRF-TOKEN";
+
+        private void SetRefreshCookies(string refreshToken, DateTimeOffset expires)
+        {
+            var secureOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/",
+                Expires = expires
+            };
+            Response.Cookies.Append(RefreshCookieName, refreshToken, secureOptions);
+            Response.Cookies.Append(CsrfCookieName, Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)), new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/",
+                Expires = expires
+            });
+        }
+
+        private void ClearRefreshCookies()
+        {
+            Response.Cookies.Delete(RefreshCookieName, new CookieOptions { Secure = true, SameSite = SameSiteMode.None, Path = "/" });
+            Response.Cookies.Delete(CsrfCookieName, new CookieOptions { Secure = true, SameSite = SameSiteMode.None, Path = "/" });
+        }
+
+        private bool IsValidCsrfRequest()
+        {
+            var cookieToken = Request.Cookies[CsrfCookieName];
+            var headerToken = Request.Headers["X-XSRF-TOKEN"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(cookieToken) || string.IsNullOrWhiteSpace(headerToken)) return false;
+
+            var cookieBytes = Encoding.UTF8.GetBytes(cookieToken);
+            var headerBytes = Encoding.UTF8.GetBytes(headerToken);
+            return cookieBytes.Length == headerBytes.Length && CryptographicOperations.FixedTimeEquals(cookieBytes, headerBytes);
         }
 
         private bool TryGetCurrentUserId(out Guid userId)
@@ -413,7 +464,7 @@ namespace Ecommerce.Api.Controllers
 
     public class RefreshRequest
     {
-        public required string RefreshToken { get; set; }
+        public string? RefreshToken { get; set; }
     }
 
     public class VerifyEmailRequest
