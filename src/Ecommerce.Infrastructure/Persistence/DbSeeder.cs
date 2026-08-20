@@ -339,9 +339,29 @@ namespace Ecommerce.Infrastructure.Persistence
                     existing.DisplayOrder = cat.DisplayOrder;
                 }
             }
-
             await db.SaveChangesAsync();
-            _logger.LogInformation("Seeded and synchronized categories");
+
+            // Clean up obsolete English categories and reassign any products linked to them
+            var fashionCat = await db.Categories.FirstOrDefaultAsync(c => c.Slug == "clothing-fashion");
+            var homeCat = await db.Categories.FirstOrDefaultAsync(c => c.Slug == "home-kitchen");
+            var sportsCat = await db.Categories.FirstOrDefaultAsync(c => c.Slug == "sports-fitness");
+
+            var obsoleteCatSlugs = new[] { "clothing", "home-garden", "sports-outdoors", "books" };
+            var obsoleteCats = await db.Categories.Where(c => obsoleteCatSlugs.Contains(c.Slug)).ToListAsync();
+            foreach (var oldCat in obsoleteCats)
+            {
+                var prods = await db.Products.Where(p => p.CategoryId == oldCat.Id).ToListAsync();
+                foreach (var p in prods)
+                {
+                    if (oldCat.Slug == "clothing" && fashionCat != null) p.CategoryId = fashionCat.Id;
+                    else if (oldCat.Slug == "home-garden" && homeCat != null) p.CategoryId = homeCat.Id;
+                    else if (oldCat.Slug == "sports-outdoors" && sportsCat != null) p.CategoryId = sportsCat.Id;
+                    else p.CategoryId = null;
+                }
+                db.Categories.Remove(oldCat);
+            }
+            await db.SaveChangesAsync();
+            _logger.LogInformation("Seeded and synchronized categories, cleaned obsolete English categories");
         }
 
         private async Task SeedBrandsAsync(ApplicationDbContext db)
@@ -460,9 +480,22 @@ namespace Ecommerce.Infrastructure.Persistence
                     existing.ImageUrl = brand.ImageUrl;
                 }
             }
-
             await db.SaveChangesAsync();
-            _logger.LogInformation("Seeded and synchronized brands");
+
+            // Clean up obsolete English placeholder brands
+            var obsoleteBrandSlugs = new[] { "techbrand", "fashionco", "homeessentials" };
+            var obsoleteBrands = await db.Brands.Where(b => obsoleteBrandSlugs.Contains(b.Slug)).ToListAsync();
+            foreach (var oldBrand in obsoleteBrands)
+            {
+                var prods = await db.Products.Where(p => p.BrandId == oldBrand.Id).ToListAsync();
+                foreach (var p in prods)
+                {
+                    p.BrandId = null;
+                }
+                db.Brands.Remove(oldBrand);
+            }
+            await db.SaveChangesAsync();
+            _logger.LogInformation("Seeded and synchronized brands, cleaned obsolete English brands");
         }
 
         private async Task SeedProductsAsync(ApplicationDbContext db)
