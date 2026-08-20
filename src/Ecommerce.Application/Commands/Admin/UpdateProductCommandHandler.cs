@@ -73,14 +73,29 @@ namespace Ecommerce.Application.Commands.Admin
             product.SeoKeywords = command.SeoKeywords;
             product.UpdatedAt = DateTimeOffset.UtcNow;
 
-            // Handle stock update if provided
-            if (command.Stock.HasValue)
+            // Handle inventory / warehouse update
+            if (command.TrackInventory || command.Stock.HasValue || command.WarehouseId.HasValue)
             {
                 var inventoryItem = await _db.InventoryItems
                     .FirstOrDefaultAsync(i => i.ProductId == product.Id && i.ProductVariantId == null, cancellationToken);
+
                 if (inventoryItem != null)
                 {
-                    inventoryItem.SetStock(command.Stock.Value);
+                    if (command.Stock.HasValue)
+                    {
+                        inventoryItem.SetStock(command.Stock.Value);
+                    }
+
+                    if (command.WarehouseId.HasValue && command.WarehouseId.Value != Guid.Empty && inventoryItem.WarehouseId != command.WarehouseId.Value)
+                    {
+                        var warehouseExists = await _db.Warehouses.AnyAsync(w => w.Id == command.WarehouseId.Value, cancellationToken);
+                        if (warehouseExists)
+                        {
+                            inventoryItem.WarehouseId = command.WarehouseId.Value;
+                        }
+                    }
+
+                    inventoryItem.AllowBackorder = command.AllowBackorder;
                 }
                 else if (command.TrackInventory)
                 {
@@ -96,12 +111,15 @@ namespace Ecommerce.Application.Commands.Admin
                             warehouseId = defaultWarehouse.Id;
                     }
 
-                    var newInventoryItem = new InventoryItem(product.Id, warehouseId, command.Stock.Value)
+                    if (warehouseId != Guid.Empty)
                     {
-                        AllowBackorder = command.AllowBackorder
-                    };
+                        var newInventoryItem = new InventoryItem(product.Id, warehouseId, command.Stock ?? 0)
+                        {
+                            AllowBackorder = command.AllowBackorder
+                        };
 
-                    _db.InventoryItems.Add(newInventoryItem);
+                        _db.InventoryItems.Add(newInventoryItem);
+                    }
                 }
             }
 

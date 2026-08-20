@@ -177,6 +177,58 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
+        public async Task UpdateProduct_ChangesWarehouse_WhenWarehouseIdProvided()
+        {
+            using var ctx = CreateInMemoryContext();
+
+            var warehouse1 = new Ecommerce.Domain.Entities.Warehouse { Id = Guid.NewGuid(), Name = "Main Warehouse", Code = "WH-1", IsActive = true };
+            var warehouse2 = new Ecommerce.Domain.Entities.Warehouse { Id = Guid.NewGuid(), Name = "East Coast Warehouse", Code = "WH-2", IsActive = true };
+            await ctx.Warehouses.AddRangeAsync(warehouse1, warehouse2);
+
+            var product = new Ecommerce.Domain.Entities.Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "Product A",
+                Slug = "product-a",
+                Sku = "SKU-A",
+                BasePrice = 100m,
+                TrackInventory = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await ctx.Products.AddAsync(product);
+
+            var invItem = new Ecommerce.Domain.Entities.InventoryItem(product.Id, warehouse1.Id, 50);
+            await ctx.InventoryItems.AddAsync(invItem);
+            await ctx.SaveChangesAsync();
+
+            var handler = new UpdateProductCommandHandler(ctx, new AutoMapper.MapperConfiguration(cfg =>
+            {
+                cfg.AddProfile<AutoMapperProfileForTests>();
+            }).CreateMapper());
+
+            var command = new UpdateProductCommand
+            {
+                Id = product.Id,
+                Name = "Product A",
+                Slug = "product-a",
+                Sku = "SKU-A",
+                BasePrice = 100m,
+                Stock = 60,
+                WarehouseId = warehouse2.Id,
+                TrackInventory = true
+            };
+
+            var result = await handler.Handle(command);
+            Assert.NotNull(result);
+
+            var updatedInv = await ctx.InventoryItems.FirstOrDefaultAsync(i => i.ProductId == product.Id);
+            Assert.NotNull(updatedInv);
+            Assert.Equal(warehouse2.Id, updatedInv.WarehouseId);
+            Assert.Equal(60, updatedInv.QuantityOnHand);
+        }
+
+        [Fact]
         public async Task UpdateProduct_NotFound_Throws()
         {
             using var ctx = CreateInMemoryContext();
