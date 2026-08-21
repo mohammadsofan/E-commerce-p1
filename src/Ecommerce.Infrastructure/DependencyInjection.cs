@@ -326,6 +326,7 @@ namespace Ecommerce.Infrastructure
 
             // Review query + command handlers
             services.AddScoped<IQueryHandler<GetProductReviewsQuery, List<ProductReviewDto>>, GetProductReviewsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetProductReviewEligibilityQuery, ProductReviewEligibilityDto>, GetProductReviewEligibilityQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminReviewsQuery, PagedResult<ProductReviewDto>>, GetAdminReviewsQueryHandler>();
             services.AddScoped<ICommandHandler<SubmitProductReviewCommand, ProductReviewDto>, SubmitProductReviewCommandHandler>();
             services.AddScoped<ICommandHandler<UpdateReviewStatusCommand, Unit>, UpdateReviewStatusCommandHandler>();
