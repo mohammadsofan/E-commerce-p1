@@ -38,14 +38,30 @@ namespace Ecommerce.Application.Commands.Admin
                 throw new NotFoundException("Product", command.ProductId);
 
             var userId = _currentUser.UserId;
-            if (!userId.HasValue)
+            var userName = _currentUser.UserName;
+            var isAdmin = _currentUser.IsAdmin;
+
+            if (!userId.HasValue && !string.IsNullOrWhiteSpace(userName))
+            {
+                var userDb = await _db.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.UserName == userName || u.Email == userName, cancellationToken);
+                if (userDb != null) userId = userDb.Id;
+            }
+
+            if (!userId.HasValue && !isAdmin)
                 throw new DomainException("يجب تسجيل الدخول أولاً لكتابة تقييم.");
 
+            var effectiveUserId = userId ?? Guid.NewGuid();
+
             // Verified Purchase Requirement: Customer must have ordered the product in a non-cancelled order, or be an Admin
-            var isAdmin = _currentUser.IsAdmin;
-            var hasPurchased = isAdmin || await _db.Orders
-                .AsNoTracking()
-                .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == command.ProductId), cancellationToken);
+            var hasPurchased = isAdmin;
+            if (!hasPurchased && userId.HasValue)
+            {
+                hasPurchased = await _db.Orders
+                    .AsNoTracking()
+                    .AnyAsync(o => o.UserId == effectiveUserId && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == command.ProductId), cancellationToken);
+            }
 
             if (!hasPurchased)
             {
@@ -54,7 +70,7 @@ namespace Ecommerce.Application.Commands.Admin
 
             var now = DateTimeOffset.UtcNow;
             var existingReview = await _db.ProductReviews
-                .FirstOrDefaultAsync(r => r.ProductId == command.ProductId && r.UserId == userId.Value, cancellationToken);
+                .FirstOrDefaultAsync(r => r.ProductId == command.ProductId && r.UserId == effectiveUserId, cancellationToken);
 
             ProductReview review;
             if (existingReview != null)

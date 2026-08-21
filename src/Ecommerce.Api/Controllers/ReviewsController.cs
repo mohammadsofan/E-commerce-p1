@@ -36,7 +36,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Checks if the current authenticated user can review this product</summary>
         [HttpGet("eligibility")]
-        [Authorize(Policy = "AdminOrCustomer")]
+        [Authorize]
         public async Task<IActionResult> GetEligibility(Guid productId)
         {
             var query = new GetProductReviewEligibilityQuery { ProductId = productId };
@@ -46,7 +46,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Submits or updates a verified review for a product</summary>
         [HttpPost]
-        [Authorize(Policy = "AdminOrCustomer")]
+        [Authorize]
         public async Task<IActionResult> Submit(Guid productId, [FromBody] SubmitProductReviewCommand command)
         {
             command.ProductId = productId;

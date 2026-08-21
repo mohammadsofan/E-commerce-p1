@@ -52,7 +52,10 @@ namespace Ecommerce.Application.Queries.Admin
         public async Task<ProductReviewEligibilityDto> Handle(GetProductReviewEligibilityQuery query, CancellationToken cancellationToken = default)
         {
             var userId = _currentUser.UserId;
-            if (!userId.HasValue)
+            var userName = _currentUser.UserName;
+            var isAdmin = _currentUser.IsAdmin;
+
+            if (!userId.HasValue && string.IsNullOrWhiteSpace(userName) && !isAdmin)
             {
                 return new ProductReviewEligibilityDto
                 {
@@ -63,14 +66,35 @@ namespace Ecommerce.Application.Queries.Admin
                 };
             }
 
-            var isAdmin = _currentUser.IsAdmin;
-            var hasPurchased = isAdmin || await _db.Orders
-                .AsNoTracking()
-                .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == query.ProductId), cancellationToken);
+            // Check if admin OR if user has any non-cancelled order containing this product
+            var hasPurchased = isAdmin;
+            if (!hasPurchased && userId.HasValue)
+            {
+                hasPurchased = await _db.Orders
+                    .AsNoTracking()
+                    .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == query.ProductId), cancellationToken);
+            }
 
-            var existingReview = await _db.ProductReviews
-                .AsNoTracking()
-                .FirstOrDefaultAsync(r => r.ProductId == query.ProductId && r.UserId == userId.Value, cancellationToken);
+            if (!hasPurchased && !string.IsNullOrWhiteSpace(userName))
+            {
+                var userDb = await _db.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.UserName == userName || u.Email == userName, cancellationToken);
+                if (userDb != null)
+                {
+                    hasPurchased = await _db.Orders
+                        .AsNoTracking()
+                        .AnyAsync(o => o.UserId == userDb.Id && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == query.ProductId), cancellationToken);
+                    if (userId == null) userId = userDb.Id;
+                }
+            }
+
+            var effectiveUserId = userId ?? Guid.Empty;
+            var existingReview = effectiveUserId != Guid.Empty
+                ? await _db.ProductReviews
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.ProductId == query.ProductId && r.UserId == effectiveUserId, cancellationToken)
+                : null;
 
             ProductReviewDto? reviewDto = null;
             if (existingReview != null)
