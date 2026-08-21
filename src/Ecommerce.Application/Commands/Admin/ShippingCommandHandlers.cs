@@ -282,14 +282,32 @@ namespace Ecommerce.Application.Commands.Admin
                 entry.OriginalValues["RowVersion"] = command.RowVersion;
             }
 
-            method.ShippingZoneId = command.ShippingZoneId;
-            method.Name = command.Name;
-            method.Description = command.Description;
-            method.Type = command.Type;
+            if (command.ShippingZoneId != Guid.Empty)
+            {
+                method.ShippingZoneId = command.ShippingZoneId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.Name))
+            {
+                method.Name = command.Name;
+            }
+
+            if (command.Description != null)
+            {
+                method.Description = command.Description;
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.Type))
+            {
+                method.Type = command.Type;
+            }
+
             method.BaseRate = command.BaseRate;
             method.FreeShippingThreshold = command.FreeShippingThreshold;
-            method.EstimatedDaysMin = command.EstimatedDaysMin;
-            method.EstimatedDaysMax = command.EstimatedDaysMax;
+            if (command.EstimatedDaysMin.HasValue)
+                method.EstimatedDaysMin = command.EstimatedDaysMin;
+            if (command.EstimatedDaysMax.HasValue)
+                method.EstimatedDaysMax = command.EstimatedDaysMax;
             method.IsActive = command.IsActive;
             method.DisplayOrder = command.DisplayOrder;
             method.UpdatedAt = DateTimeOffset.UtcNow;

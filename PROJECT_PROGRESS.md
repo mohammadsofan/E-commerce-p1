@@ -767,9 +767,16 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - Positioned **تم التوصيل (Delivered)** before **تم الدفع / الدفع عند الاستلام (Cash Collected upon Delivery)** for Cash on Delivery orders.
 - All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
 
+### 2026-08-21 — Admin Shipping Method Price & Details Update Fix
+- Fixed `UpdateShippingMethodCommandHandler`:
+  - Protected `ShippingZoneId` foreign key assignment when updating shipping methods.
+  - Safely updated delivery price (`BaseRate`), name, description, estimated days, and active status.
+- Updated frontend `shippingService.updateAdminMethod` and `Shipping.tsx` to pass the shipping zone ID during update operations.
+- All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Cash on Delivery Status Lifecycle complete and verified. Total 197 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Admin Shipping Method Price & Details Update Fix complete and verified. Total 197 application unit tests passing (100% pass rate).*
 
 
 
