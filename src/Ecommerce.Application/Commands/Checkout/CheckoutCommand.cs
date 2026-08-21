@@ -10,6 +10,7 @@ namespace Ecommerce.Application.Commands.Checkout
         public string Currency { get; set; } = "USD";
         public string ShippingAddress { get; set; } = string.Empty;
         public decimal ShippingAmount { get; set; } = 0m;
+        public decimal TaxAmount { get; set; } = 0m;
         public string? CouponCode { get; set; }
         public string? CustomerNotes { get; set; }
         public string? PaymentMethod { get; set; }

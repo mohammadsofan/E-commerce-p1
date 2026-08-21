@@ -16,6 +16,8 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.DiscountAmount, opt => opt.MapFrom(s => s.DiscountAmount))
                 .ForMember(d => d.Shipping, opt => opt.MapFrom(s => s.ShippingAmount))
                 .ForMember(d => d.ShippingAmount, opt => opt.MapFrom(s => s.ShippingAmount))
+                .ForMember(d => d.Tax, opt => opt.MapFrom(s => s.TaxAmount))
+                .ForMember(d => d.TaxAmount, opt => opt.MapFrom(s => s.TaxAmount))
                 .ForMember(d => d.Total, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.TotalAmount, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.OrderNumber, opt => opt.MapFrom(s => s.OrderNumber))
