@@ -127,7 +127,20 @@ namespace Ecommerce.Application.Commands.Checkout
 
             order.PlaceOrder();
 
-            // Persist order
+            // Clear user's active cart in database if exists
+            if (command.UserId != Guid.Empty)
+            {
+                var userCart = await _db.Carts
+                    .Include(c => c.Items)
+                    .FirstOrDefaultAsync(c => c.UserId == command.UserId && c.Status == Domain.Enums.CartStatus.Active, cancellationToken);
+
+                if (userCart != null)
+                {
+                    userCart.Clear();
+                }
+            }
+
+            // Persist order and cleared cart
             await _db.Orders.AddAsync(order, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
 

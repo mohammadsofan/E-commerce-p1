@@ -737,9 +737,14 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Updated AutoMapper `MappingProfile` to map all order financial totals and line-item details.
 - Verified all 230 tests pass (196 Application, 14 Architecture, 20 Integration; 100% pass rate).
 
+### 2026-08-21 — Cart Auto-Clear on Checkout Completion
+- Updated `CheckoutCommandHandler` to automatically clear the customer's active database cart (`userCart.Clear()`) upon placing an order.
+- Updated frontend `Checkout.tsx` to call `clearCart()` after successful order creation.
+- Verified all 230 tests pass (196 Application, 14 Architecture, 20 Integration; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Order DTO Enrichment & Totals Synchronization complete and verified. Total 196 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Cart Auto-Clear on Checkout complete and verified. Total 196 application unit tests passing (100% pass rate).*
 
 
 
