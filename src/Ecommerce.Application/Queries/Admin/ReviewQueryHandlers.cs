@@ -96,9 +96,11 @@ namespace Ecommerce.Application.Queries.Admin
             var hasPurchased = isAdmin;
             if (!hasPurchased && candidateUserIds.Any())
             {
+                var candidateNullableIds = candidateUserIds.Select(id => (Guid?)id).ToList();
+
                 var orderIds = await _db.Orders
                     .AsNoTracking()
-                    .Where(o => o.UserId.HasValue && candidateUserIds.Contains(o.UserId.Value) && o.Status != OrderStatus.Cancelled)
+                    .Where(o => candidateNullableIds.Contains(o.UserId) && o.Status != OrderStatus.Cancelled)
                     .Select(o => o.Id)
                     .ToListAsync(cancellationToken);
 
@@ -110,10 +112,13 @@ namespace Ecommerce.Application.Queries.Admin
                 }
             }
 
-            var existingReview = primaryUserId != Guid.Empty
-                ? await _db.ProductReviews
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.ProductId == query.ProductId && (candidateUserIds.Contains(r.UserId) || r.UserId == primaryUserId), cancellationToken)
+            var productReviews = await _db.ProductReviews
+                .AsNoTracking()
+                .Where(r => r.ProductId == query.ProductId)
+                .ToListAsync(cancellationToken);
+
+            var existingReview = candidateUserIds.Any()
+                ? productReviews.FirstOrDefault(r => candidateUserIds.Contains(r.UserId))
                 : null;
 
             ProductReviewDto? reviewDto = null;
