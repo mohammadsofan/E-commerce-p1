@@ -195,7 +195,6 @@ namespace Ecommerce.Application.Queries.Admin
             var effectiveEnd = endDate ?? (orders.Any() ? orders.Max(o => o.CreatedAt) : DateTimeOffset.UtcNow);
 
             var totalDiscounts = orders.Sum(o => o.DiscountAmount);
-            var totalTax = orders.Sum(o => o.TaxAmount);
             var totalShipping = orders.Sum(o => o.ShippingAmount);
 
             var revenueByPeriod = orders
@@ -241,7 +240,6 @@ namespace Ecommerce.Application.Queries.Admin
                 NetRevenue = grossRevenue - totalRefunds,
                 TotalDiscounts = totalDiscounts,
                 TotalRefunds = totalRefunds,
-                TotalTax = totalTax,
                 TotalShipping = totalShipping,
                 RevenueByPeriod = revenueByPeriod,
                 RevenueByChannel = revenueByChannel

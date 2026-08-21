@@ -14,7 +14,6 @@ namespace Ecommerce.Domain.Entities
         public decimal UnitPrice { get; set; }
         public int Quantity { get; set; }
         public decimal DiscountAmount { get; set; }
-        public decimal TaxAmount { get; set; }
         public decimal TotalAmount { get; set; }
         public string ProductImageUrl { get; set; } = string.Empty;
     }

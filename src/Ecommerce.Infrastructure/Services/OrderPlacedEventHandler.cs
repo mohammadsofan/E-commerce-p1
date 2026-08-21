@@ -278,8 +278,6 @@ namespace Ecommerce.Infrastructure.Services
                 sb.AppendLine($"<tr><td colspan='2' align='right'><strong>Discount</strong></td><td align='right'>-{order.DiscountAmount.ToString("C")}</td></tr>");
             if (order.ShippingAmount > 0)
                 sb.AppendLine($"<tr><td colspan='2' align='right'><strong>Shipping</strong></td><td align='right'>{order.ShippingAmount.ToString("C")}</td></tr>");
-            if (order.TaxAmount > 0)
-                sb.AppendLine($"<tr><td colspan='2' align='right'><strong>Tax</strong></td><td align='right'>{order.TaxAmount.ToString("C")}</td></tr>");
             sb.AppendLine($"<tr><td colspan='2' align='right'><strong>Total</strong></td><td align='right'><strong>{order.TotalAmount.ToString("C")}</strong></td></tr>");
             sb.AppendLine("</table>");
             sb.AppendLine("<p style='margin-top: 20px;'>Thank you for shopping with us!</p>");

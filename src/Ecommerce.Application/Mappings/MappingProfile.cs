@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using AutoMapper;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Domain.Entities;
@@ -14,8 +16,6 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.DiscountAmount, opt => opt.MapFrom(s => s.DiscountAmount))
                 .ForMember(d => d.Shipping, opt => opt.MapFrom(s => s.ShippingAmount))
                 .ForMember(d => d.ShippingAmount, opt => opt.MapFrom(s => s.ShippingAmount))
-                .ForMember(d => d.Tax, opt => opt.MapFrom(s => s.TaxAmount))
-                .ForMember(d => d.TaxAmount, opt => opt.MapFrom(s => s.TaxAmount))
                 .ForMember(d => d.Total, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.TotalAmount, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.OrderNumber, opt => opt.MapFrom(s => s.OrderNumber))
@@ -37,7 +37,6 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.TotalPrice, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.TotalAmount, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.DiscountAmount, opt => opt.MapFrom(s => s.DiscountAmount))
-                .ForMember(d => d.TaxAmount, opt => opt.MapFrom(s => s.TaxAmount))
                 .ForMember(d => d.ImageUrl, opt => opt.MapFrom(s => s.ProductImageUrl))
                 .ForMember(d => d.ProductImageUrl, opt => opt.MapFrom(s => s.ProductImageUrl));
 
@@ -78,9 +77,6 @@ namespace Ecommerce.Application.Mappings
             CreateMap<ShippingZoneLocation, AdminShippingZoneLocationDto>();
             CreateMap<ShippingMethod, AdminShippingMethodDto>();
             CreateMap<ShippingRate, AdminShippingRateDto>();
-
-            CreateMap<TaxCategory, AdminTaxCategoryDto>();
-            CreateMap<TaxRate, AdminTaxRateDto>();
 
             CreateMap<Notification, AdminNotificationDto>();
             CreateMap<NotificationTemplate, AdminNotificationTemplateDto>();

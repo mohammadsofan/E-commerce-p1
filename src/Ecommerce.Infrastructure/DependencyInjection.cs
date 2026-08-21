@@ -187,13 +187,6 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateShippingRateOnlyCommand, AdminShippingRateDto>, UpdateShippingRateOnlyCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteShippingRateCommand, Unit>, DeleteShippingRateCommandHandler>();
 
-            // Admin tax command handlers
-            services.AddScoped<ICommandHandler<CreateTaxCategoryCommand, AdminTaxCategoryDto>, CreateTaxCategoryCommandHandler>();
-            services.AddScoped<ICommandHandler<UpdateTaxCategoryCommand, AdminTaxCategoryDto>, UpdateTaxCategoryCommandHandler>();
-            services.AddScoped<ICommandHandler<DeleteTaxCategoryCommand, Unit>, DeleteTaxCategoryCommandHandler>();
-            services.AddScoped<ICommandHandler<CreateTaxRateOnlyCommand, AdminTaxRateDto>, CreateTaxRateOnlyCommandHandler>();
-            services.AddScoped<ICommandHandler<UpdateTaxRateOnlyCommand, AdminTaxRateDto>, UpdateTaxRateOnlyCommandHandler>();
-            services.AddScoped<ICommandHandler<DeleteTaxRateCommand, Unit>, DeleteTaxRateCommandHandler>();
 
             // Admin notification command handlers
             services.AddScoped<ICommandHandler<CreateNotificationCommand, AdminNotificationDto>, CreateNotificationCommandHandler>();
@@ -279,11 +272,6 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetAdminShippingRatesQuery, PagedResult<AdminShippingRateDto>>, GetAdminShippingRatesQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminShippingRateByIdQuery, AdminShippingRateDto>, GetAdminShippingRateByIdQueryHandler>();
 
-            // Admin tax query handlers
-            services.AddScoped<IQueryHandler<GetAdminTaxCategoriesQuery, PagedResult<AdminTaxCategoryDto>>, GetAdminTaxCategoriesQueryHandler>();
-            services.AddScoped<IQueryHandler<GetAdminTaxCategoryByIdQuery, AdminTaxCategoryDto>, GetAdminTaxCategoryByIdQueryHandler>();
-            services.AddScoped<IQueryHandler<GetAdminTaxRatesQuery, PagedResult<AdminTaxRateDto>>, GetAdminTaxRatesQueryHandler>();
-            services.AddScoped<IQueryHandler<GetAdminTaxRateByIdQuery, AdminTaxRateDto>, GetAdminTaxRateByIdQueryHandler>();
 
             // Currency & exchange rate query handlers
             services.AddScoped<IQueryHandler<GetCurrenciesQuery, List<CurrencyDto>>, GetCurrenciesQueryHandler>();

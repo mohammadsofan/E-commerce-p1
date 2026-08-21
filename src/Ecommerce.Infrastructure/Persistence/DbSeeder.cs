@@ -29,7 +29,6 @@ namespace Ecommerce.Infrastructure.Persistence
                 await SeedRolesAsync(roleManager);
                 await SeedCurrenciesAsync(db);
                 await SeedWarehousesAsync(db);
-                await SeedTaxCategoriesAsync(db);
                 await SeedShippingZonesAsync(db);
                 await SeedHeroBannersAsync(db);
                 await SeedStoreFeaturesAsync(db);
@@ -97,21 +96,6 @@ namespace Ecommerce.Infrastructure.Persistence
             _logger.LogInformation("Seeded {Count} warehouses", warehouses.Count);
         }
 
-        private async Task SeedTaxCategoriesAsync(ApplicationDbContext db)
-        {
-            if (await db.TaxCategories.AnyAsync()) return;
-
-            var taxCategories = new List<TaxCategory>
-            {
-                new TaxCategory { Id = Guid.NewGuid(), Name = "Standard", Description = "Standard tax rate (16%)", CreatedAt = DateTimeOffset.UtcNow },
-                new TaxCategory { Id = Guid.NewGuid(), Name = "Reduced", Description = "Reduced tax rate for essentials", CreatedAt = DateTimeOffset.UtcNow },
-                new TaxCategory { Id = Guid.NewGuid(), Name = "Zero", Description = "Zero-rated items", CreatedAt = DateTimeOffset.UtcNow },
-            };
-
-            await db.TaxCategories.AddRangeAsync(taxCategories);
-            await db.SaveChangesAsync();
-            _logger.LogInformation("Seeded {Count} tax categories", taxCategories.Count);
-        }
 
         private async Task SeedHeroBannersAsync(ApplicationDbContext db)
         {

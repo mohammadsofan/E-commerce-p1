@@ -20,7 +20,6 @@ namespace Ecommerce.Domain.Entities
         public decimal Subtotal { get; private set; }
         public decimal DiscountAmount { get; private set; }
         public decimal ShippingAmount { get; set; }
-        public decimal TaxAmount { get; private set; }
         public decimal TotalAmount { get; private set; }
         public decimal RefundedAmount { get; set; }
         public string CouponCode { get; set; } = string.Empty;
@@ -36,7 +35,7 @@ namespace Ecommerce.Domain.Entities
 
         public ICollection<OrderItem> Items { get; private set; } = new List<OrderItem>();
 
-        public void AddItem(Guid productId, Guid productVariantId, string productName, decimal unitPrice, int quantity, decimal discount = 0m, decimal tax = 0m, string variantName = "", string sku = "", string productImageUrl = "")
+        public void AddItem(Guid productId, Guid productVariantId, string productName, decimal unitPrice, int quantity, decimal discount = 0m, string variantName = "", string sku = "", string productImageUrl = "")
         {
             if (quantity <= 0) throw new DomainException("Quantity must be positive");
             if (unitPrice < 0) throw new DomainException("Unit price cannot be negative");
@@ -52,11 +51,10 @@ namespace Ecommerce.Domain.Entities
                 UnitPrice = unitPrice,
                 Quantity = quantity,
                 DiscountAmount = discount,
-                TaxAmount = tax,
                 ProductImageUrl = productImageUrl
             };
 
-            item.TotalAmount = item.UnitPrice * item.Quantity - item.DiscountAmount + item.TaxAmount;
+            item.TotalAmount = item.UnitPrice * item.Quantity - item.DiscountAmount;
 
             Items.Add(item);
             RecalculateTotals();
@@ -85,11 +83,10 @@ namespace Ecommerce.Domain.Entities
         public void RecalculateTotals()
         {
             Subtotal = Items.Sum(i => i.UnitPrice * i.Quantity);
-            TaxAmount = Items.Sum(i => i.TaxAmount);
             // DiscountAmount is partially from items and partially from coupon
             var itemsDiscount = Items.Sum(i => i.DiscountAmount);
             DiscountAmount = itemsDiscount + DiscountAmount; // if coupon already set, it will be included
-            TotalAmount = Subtotal - DiscountAmount + ShippingAmount + TaxAmount;
+            TotalAmount = Subtotal - DiscountAmount + ShippingAmount;
         }
 
         public void PlaceOrder()

@@ -832,9 +832,20 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - Added "كل الفترات (All Time)" and "هذا العام (This Year)" presets and `formatLocalDate` for timezone-safe frontend date selection.
 - All 271 tests passing (207 Application, 26 Integration, 24 Domain, 14 Architecture; 100% pass rate).
 
+### 2026-08-21 — Complete Tax System Removal Across Entire Solution
+- **Complete Elimination of Tax Logic**:
+  - Removed domain entities `TaxCategory` and `TaxRate`.
+  - Removed `TaxAmount` from `Order` and `OrderItem` entities and updated total calculation: `TotalAmount = Subtotal - DiscountAmount + ShippingAmount`.
+  - Removed all Tax CQRS commands (`CreateTaxCategoryCommand`, `UpdateTaxCategoryCommand`, `DeleteTaxCategoryCommand`, `CreateTaxRateOnlyCommand`, `UpdateTaxRateOnlyCommand`, `DeleteTaxRateCommand`) and queries (`GetAdminTaxCategoriesQuery`, `GetAdminTaxCategoryByIdQuery`, `GetAdminTaxRatesQuery`, `GetAdminTaxRateByIdQuery`).
+  - Removed `AdminTaxController`, `TaxConfiguration`, `AdminTaxDtos`, and EF DbSets from `ApplicationDbContext` and `IApplicationDbContext`.
+  - Removed Tax references from `OrderPlacedEventHandler`, `DbSeeder`, `OrderDto`, `OrderItemDto`, and `RevenueReportDto`.
+- **Frontend Tax Clean Up**:
+  - Removed tax calculation and estimated tax rows from `Cart.tsx`, `Checkout.tsx`, `OrderDetail.tsx` (Customer & Admin), and `CartContext.tsx`.
+  - Removed "إجمالي الضرائب المحصلة" KPI card from `RevenueReport.tsx`.
+  - Removed Tax types and admin service endpoints from `types/api.ts` and `services/admin.ts`.
+  - Removed `/admin/tax` route from `App.tsx` and Tax menu link from `Sidebar.tsx`.
+- All 264 unit, domain, architecture, and integration tests passing (100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Admin Reports Suite and real-data queries complete and verified. Total 271 tests passing (100% pass rate).*
-
-
-
+*Last updated: 2026-08-21 — Complete Tax Removal across Backend and Frontend completed and verified. Total 264 tests passing (100% pass rate).*

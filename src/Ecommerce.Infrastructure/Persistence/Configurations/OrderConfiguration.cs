@@ -25,7 +25,6 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Subtotal).HasColumnType("decimal(18,2)");
             builder.Property(x => x.DiscountAmount).HasColumnType("decimal(18,2)");
             builder.Property(x => x.ShippingAmount).HasColumnType("decimal(18,2)");
-            builder.Property(x => x.TaxAmount).HasColumnType("decimal(18,2)");
             builder.Property(x => x.TotalAmount).HasColumnType("decimal(18,2)");
             builder.Property(x => x.RefundedAmount).HasColumnType("decimal(18,2)");
 

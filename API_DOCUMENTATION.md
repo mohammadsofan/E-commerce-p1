@@ -687,8 +687,6 @@ If a cart item was removed or became stale between reads, the API reloads the ca
     "discountAmount": "decimal",
     "shipping": "decimal",
     "shippingAmount": "decimal",
-    "tax": "decimal",
-    "taxAmount": "decimal",
     "total": "decimal",
     "totalAmount": "decimal",
     "couponCode": "string",
@@ -747,8 +745,6 @@ If a cart item was removed or became stale between reads, the API reloads the ca
   "discountAmount": "decimal",
   "shipping": "decimal",
   "shippingAmount": "decimal",
-  "tax": "decimal",
-  "taxAmount": "decimal",
   "total": "decimal",
   "totalAmount": "decimal",
   "couponCode": "string",
@@ -798,7 +794,6 @@ If a cart item was removed or became stale between reads, the API reloads the ca
   "subtotal": "decimal",
   "discount": "decimal",
   "shipping": "decimal",
-  "tax": "decimal",
   "total": "decimal",
   "items": [...],
   "createdAt": "2026-08-18T00:00:00Z"
@@ -829,7 +824,6 @@ If a cart item was removed or became stale between reads, the API reloads the ca
   "subtotal": "decimal",
   "discount": "decimal",
   "shipping": "decimal",
-  "tax": "decimal",
   "total": "decimal",
   "items": [...],
   "createdAt": "2026-08-18T00:00:00Z"
@@ -867,7 +861,6 @@ If a cart item was removed or became stale between reads, the API reloads the ca
   "subtotal": "decimal",
   "discount": "decimal",
   "shipping": "decimal",
-  "tax": "decimal",
   "total": "decimal",
   "items": [...],
   "createdAt": "2026-08-18T00:00:00Z"
@@ -1861,7 +1854,6 @@ Returns all active shipping and delivery options configured for the store (e.g. 
       "subtotal": "decimal",
       "discount": "decimal",
       "shipping": "decimal",
-      "tax": "decimal",
       "total": "decimal",
       "items": [...],
       "createdAt": "2026-08-18T00:00:00Z"
@@ -1903,7 +1895,6 @@ Returns all active shipping and delivery options configured for the store (e.g. 
   "subtotal": "decimal",
   "discount": "decimal",
   "shipping": "decimal",
-  "tax": "decimal",
   "total": "decimal",
   "items": [...],
   "createdAt": "2026-08-18T00:00:00Z"
@@ -3628,291 +3619,6 @@ Returns all active shipping and delivery options configured for the store (e.g. 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | id | guid | Shipping rate ID |
-
-**Response:** `204 No Content`
-
----
-
-## Admin: Tax
-
-**Requires AdminOnly policy.**
-
-### Get Tax Categories
-**GET** `/api/admin/tax/categories`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| page | int | No | Page number (default: 1) |
-| pageSize | int | No | Items per page (default: 20) |
-| search | string | No | Search term |
-| isActive | bool | No | Filter by active status |
-
-**Response:** `200 OK`
-```json
-{
-  "items": [
-    {
-      "id": "guid",
-      "name": "string",
-      "description": "string",
-      "isActive": true,
-      "createdAt": "2026-08-18T00:00:00Z"
-    }
-  ],
-  "totalCount": 100,
-  "page": 1,
-  "pageSize": 20,
-  "totalPages": 5
-}
-```
-
----
-
-### Create Tax Category
-**POST** `/api/admin/tax/categories`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Request Body:**
-```json
-{
-  "name": "string (required)",
-  "description": "string",
-  "isActive": true
-}
-```
-
-**Response:** `201 Created`
-```json
-{
-  "id": "guid",
-  "name": "string",
-  "description": "string",
-  "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
-}
-```
-
----
-
-### Get Tax Category By ID
-**GET** `/api/admin/tax/categories/{id:guid}`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | guid | Tax category ID |
-
-**Response:** `200 OK`
-```json
-{
-  "id": "guid",
-  "name": "string",
-  "description": "string",
-  "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
-}
-```
-
----
-
-### Update Tax Category
-**PUT** `/api/admin/tax/categories/{id:guid}`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | guid | Tax category ID |
-
-**Request Body:**
-```json
-{
-  "id": "guid (required)",
-  "name": "string",
-  "description": "string",
-  "isActive": true
-}
-```
-
-**Response:** `200 OK`
-```json
-{
-  "id": "guid",
-  "name": "string",
-  "description": "string",
-  "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
-}
-```
-
----
-
-### Delete Tax Category
-**DELETE** `/api/admin/tax/categories/{id:guid}`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | guid | Tax category ID |
-
-**Response:** `204 No Content`
-
----
-
-### Get Tax Rates
-**GET** `/api/admin/tax/rates`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Query Parameters:**
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| page | int | No | Page number (default: 1) |
-| pageSize | int | No | Items per page (default: 20) |
-| categoryId | guid | No | Filter by tax category |
-| countryCode | string | No | Filter by country code |
-| isActive | bool | No | Filter by active status |
-
-**Response:** `200 OK`
-```json
-{
-  "items": [
-    {
-      "id": "guid",
-      "taxCategoryId": "guid",
-      "countryCode": "US",
-      "state": "string",
-      "postalCodePattern": "string",
-      "rate": "decimal",
-      "isActive": true,
-      "createdAt": "2026-08-18T00:00:00Z"
-    }
-  ],
-  "totalCount": 100,
-  "page": 1,
-  "pageSize": 20,
-  "totalPages": 5
-}
-```
-
----
-
-### Create Tax Rate
-**POST** `/api/admin/tax/rates`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Request Body:**
-```json
-{
-  "taxCategoryId": "guid (required)",
-  "countryCode": "string (required)",
-  "state": "string",
-  "postalCodePattern": "string",
-  "rate": "decimal (required)",
-  "isActive": true
-}
-```
-
-**Response:** `201 Created`
-```json
-{
-  "id": "guid",
-  "taxCategoryId": "guid",
-  "countryCode": "US",
-  "state": "string",
-  "postalCodePattern": "string",
-  "rate": "decimal",
-  "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
-}
-```
-
----
-
-### Get Tax Rate By ID
-**GET** `/api/admin/tax/rates/{id:guid}`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | guid | Tax rate ID |
-
-**Response:** `200 OK`
-```json
-{
-  "id": "guid",
-  "taxCategoryId": "guid",
-  "countryCode": "US",
-  "state": "string",
-  "postalCodePattern": "string",
-  "rate": "decimal",
-  "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
-}
-```
-
----
-
-### Update Tax Rate
-**PUT** `/api/admin/tax/rates/{id:guid}`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | guid | Tax rate ID |
-
-**Request Body:**
-```json
-{
-  "id": "guid (required)",
-  "taxCategoryId": "guid",
-  "countryCode": "string",
-  "state": "string",
-  "postalCodePattern": "string",
-  "rate": "decimal",
-  "isActive": true
-}
-```
-
-**Response:** `200 OK`
-```json
-{
-  "id": "guid",
-  "taxCategoryId": "guid",
-  "countryCode": "US",
-  "state": "string",
-  "postalCodePattern": "string",
-  "rate": "decimal",
-  "isActive": true,
-  "createdAt": "2026-08-18T00:00:00Z"
-}
-```
-
----
-
-### Delete Tax Rate
-**DELETE** `/api/admin/tax/rates/{id:guid}`
-
-**Headers:** `Authorization: Bearer <admin_token>`
-
-**Path Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| id | guid | Tax rate ID |
 
 **Response:** `204 No Content`
 

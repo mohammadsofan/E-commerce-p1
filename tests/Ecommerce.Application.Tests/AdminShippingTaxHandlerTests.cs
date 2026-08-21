@@ -107,43 +107,6 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(14.99m, rateEntity.Rate);
         }
 
-        [Fact]
-        public async Task TaxCategory_CanBeCreatedWithRates()
-        {
-            using var ctx = CreateInMemoryContext();
-
-            var category = new TaxCategory
-            {
-                Id = Guid.NewGuid(),
-                Name = "Standard Goods",
-                Description = "Standard tax rate for physical goods",
-                IsActive = true,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            };
-            await ctx.TaxCategories.AddAsync(category);
-
-            var rate = new TaxRate
-            {
-                Id = Guid.NewGuid(),
-                TaxCategoryId = category.Id,
-                CountryCode = "US",
-                RegionCode = "CA",
-                PostalCodePattern = "9*",
-                Rate = 0.0825m, // 8.25%
-                IsActive = true,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            };
-            await ctx.TaxRates.AddAsync(rate);
-            await ctx.SaveChangesAsync();
-
-            var categories = await ctx.TaxCategories.Include(c => c.Rates).ToListAsync();
-            Assert.Single(categories);
-            var rateEntity = categories[0].Rates.First();
-            Assert.Equal(0.0825m, rateEntity.Rate);
-            Assert.Equal("CA", rateEntity.RegionCode);
-        }
 
         [Fact]
         public async Task GetActiveShippingMethods_ReturnsOnlyActiveMethodsAndZones()

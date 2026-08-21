@@ -19,7 +19,6 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.UnitPrice).HasColumnType("decimal(18,2)");
             builder.Property(x => x.DiscountAmount).HasColumnType("decimal(18,2)");
-            builder.Property(x => x.TaxAmount).HasColumnType("decimal(18,2)");
             builder.Property(x => x.TotalAmount).HasColumnType("decimal(18,2)");
 
             builder.HasIndex(x => x.OrderId);

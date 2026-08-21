@@ -33,7 +33,6 @@ namespace Ecommerce.Application.DTOs
         public decimal NetRevenue { get; set; }
         public decimal TotalDiscounts { get; set; }
         public decimal TotalRefunds { get; set; }
-        public decimal TotalTax { get; set; }
         public decimal TotalShipping { get; set; }
         public List<RevenueByPeriodDto> RevenueByPeriod { get; set; } = new();
         public List<RevenueByChannelDto> RevenueByChannel { get; set; } = new();

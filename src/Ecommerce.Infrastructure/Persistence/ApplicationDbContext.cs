@@ -28,8 +28,6 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<ExchangeRate> ExchangeRates { get; set; }
         public DbSet<Brand> Brands { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
-        public DbSet<TaxCategory> TaxCategories { get; set; }
-        public DbSet<TaxRate> TaxRates { get; set; }
         public DbSet<InventoryItem> InventoryItems { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }

@@ -33,8 +33,6 @@ namespace Ecommerce.Application.Interfaces
         DbSet<PromotionUsage> PromotionUsages { get; }
         DbSet<Payment> Payments { get; }
         DbSet<Refund> Refunds { get; }
-        DbSet<TaxCategory> TaxCategories { get; }
-        DbSet<TaxRate> TaxRates { get; }
         DbSet<ShippingZone> ShippingZones { get; }
         DbSet<ShippingZoneLocation> ShippingZoneLocations { get; }
         DbSet<ShippingMethod> ShippingMethods { get; }

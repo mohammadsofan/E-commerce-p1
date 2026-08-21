@@ -46,7 +46,6 @@ namespace Ecommerce.Application.Tests
             OrderStatus status = OrderStatus.Completed,
             decimal discount = 0,
             decimal shipping = 0,
-            decimal tax = 0,
             DateTimeOffset? createdAt = null)
         {
             var order = new Order
@@ -59,7 +58,7 @@ namespace Ecommerce.Application.Tests
 
             foreach (var item in items)
             {
-                order.AddItem(item.ProductId, item.ProductVariantId, item.ProductName, item.UnitPrice, item.Quantity, item.DiscountAmount, item.TaxAmount);
+                order.AddItem(item.ProductId, item.ProductVariantId, item.ProductName, item.UnitPrice, item.Quantity, item.DiscountAmount);
             }
 
             order.PlaceOrder();
@@ -230,17 +229,17 @@ namespace Ecommerce.Application.Tests
             var customerId = Guid.NewGuid();
             var productId = Guid.NewGuid();
 
-            // Order 1: 500 total, 50 discount, 20 shipping, 15 tax
+            // Order 1: 500 total, 50 discount, 20 shipping
             var order1 = await CreateOrderAsync(ctx, customerId, new List<OrderItem>
             {
                 new OrderItem { Id = Guid.NewGuid(), ProductId = productId, ProductName = "Product A", Quantity = 5, UnitPrice = 100m, TotalAmount = 500m }
-            }, discount: 50m, shipping: 20m, tax: 15m);
+            }, discount: 50m, shipping: 20m);
 
-            // Order 2: 300 total, 0 discount, 10 shipping, 0 tax
+            // Order 2: 300 total, 0 discount, 10 shipping
             var order2 = await CreateOrderAsync(ctx, customerId, new List<OrderItem>
             {
                 new OrderItem { Id = Guid.NewGuid(), ProductId = productId, ProductName = "Product B", Quantity = 3, UnitPrice = 100m, TotalAmount = 300m }
-            }, discount: 0m, shipping: 10m, tax: 0m);
+            }, discount: 0m, shipping: 10m);
 
             // Refund on Order 1: 100 refund
             var refund = new Refund
@@ -270,7 +269,6 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(100m, report.TotalRefunds);
             Assert.Equal(50m, report.TotalDiscounts);
             Assert.Equal(30m, report.TotalShipping);
-            Assert.Equal(0m, report.TotalTax);
             Assert.NotEmpty(report.RevenueByChannel);
             Assert.Equal(780m, report.RevenueByChannel[0].Revenue);
         }

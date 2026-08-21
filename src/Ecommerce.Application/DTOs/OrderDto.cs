@@ -18,8 +18,6 @@ namespace Ecommerce.Application.DTOs
         public decimal DiscountAmount { get; set; }
         public decimal Shipping { get; set; }
         public decimal ShippingAmount { get; set; }
-        public decimal Tax { get; set; }
-        public decimal TaxAmount { get; set; }
         public decimal Total { get; set; }
         public decimal TotalAmount { get; set; }
         public string CouponCode { get; set; } = string.Empty;
@@ -45,7 +43,6 @@ namespace Ecommerce.Application.DTOs
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal DiscountAmount { get; set; }
-        public decimal TaxAmount { get; set; }
         public decimal TotalPrice { get; set; }
         public decimal TotalAmount { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
