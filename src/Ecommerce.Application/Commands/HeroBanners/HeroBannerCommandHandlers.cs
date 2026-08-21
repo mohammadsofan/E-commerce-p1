@@ -33,6 +33,7 @@ namespace Ecommerce.Application.Commands.HeroBanners
                 SecondaryButtonText = command.SecondaryButtonText?.Trim() ?? string.Empty,
                 SecondaryButtonLink = command.SecondaryButtonLink?.Trim() ?? string.Empty,
                 ImageUrl = string.IsNullOrWhiteSpace(command.ImageUrl) ? null : command.ImageUrl.Trim(),
+                DisplayOrder = command.DisplayOrder,
                 IsActive = command.IsActive,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
@@ -52,6 +53,7 @@ namespace Ecommerce.Application.Commands.HeroBanners
                 SecondaryButtonText = banner.SecondaryButtonText,
                 SecondaryButtonLink = banner.SecondaryButtonLink,
                 ImageUrl = banner.ImageUrl,
+                DisplayOrder = banner.DisplayOrder,
                 IsActive = banner.IsActive,
                 CreatedAt = banner.CreatedAt,
                 UpdatedAt = banner.UpdatedAt
@@ -86,6 +88,7 @@ namespace Ecommerce.Application.Commands.HeroBanners
             banner.SecondaryButtonText = command.SecondaryButtonText?.Trim() ?? string.Empty;
             banner.SecondaryButtonLink = command.SecondaryButtonLink?.Trim() ?? string.Empty;
             banner.ImageUrl = string.IsNullOrWhiteSpace(command.ImageUrl) ? null : command.ImageUrl.Trim();
+            banner.DisplayOrder = command.DisplayOrder;
             banner.IsActive = command.IsActive;
             banner.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -102,10 +105,46 @@ namespace Ecommerce.Application.Commands.HeroBanners
                 SecondaryButtonText = banner.SecondaryButtonText,
                 SecondaryButtonLink = banner.SecondaryButtonLink,
                 ImageUrl = banner.ImageUrl,
+                DisplayOrder = banner.DisplayOrder,
                 IsActive = banner.IsActive,
                 CreatedAt = banner.CreatedAt,
                 UpdatedAt = banner.UpdatedAt
             };
+        }
+    }
+
+    public class ReorderHeroBannersCommandHandler : ICommandHandler<ReorderHeroBannersCommand, Unit>
+    {
+        private readonly IApplicationDbContext _db;
+
+        public ReorderHeroBannersCommandHandler(IApplicationDbContext db)
+        {
+            _db = db;
+        }
+
+        public async Task<Unit> Handle(ReorderHeroBannersCommand command, CancellationToken cancellationToken = default)
+        {
+            if (command.BannerIds == null || command.BannerIds.Count == 0)
+                return Unit.Value;
+
+            var banners = await _db.HeroBanners
+                .Where(b => command.BannerIds.Contains(b.Id))
+                .ToListAsync(cancellationToken);
+
+            var now = DateTimeOffset.UtcNow;
+            for (int i = 0; i < command.BannerIds.Count; i++)
+            {
+                var bannerId = command.BannerIds[i];
+                var banner = banners.FirstOrDefault(b => b.Id == bannerId);
+                if (banner != null)
+                {
+                    banner.DisplayOrder = i + 1;
+                    banner.UpdatedAt = now;
+                }
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+            return Unit.Value;
         }
     }
 
@@ -144,6 +183,7 @@ namespace Ecommerce.Application.Commands.HeroBanners
                 SecondaryButtonText = banner.SecondaryButtonText,
                 SecondaryButtonLink = banner.SecondaryButtonLink,
                 ImageUrl = banner.ImageUrl,
+                DisplayOrder = banner.DisplayOrder,
                 IsActive = banner.IsActive,
                 CreatedAt = banner.CreatedAt,
                 UpdatedAt = banner.UpdatedAt

@@ -1,4 +1,4 @@
-﻿using Ecommerce.Domain.Entities;
+using Ecommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -43,10 +43,14 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(b => b.ImageUrl)
                 .HasMaxLength(1000);
 
+            builder.Property(b => b.DisplayOrder)
+                .HasDefaultValue(0);
+
             builder.Property(b => b.IsActive)
                 .HasDefaultValue(true);
 
             builder.HasIndex(b => b.IsActive);
+            builder.HasIndex(b => b.DisplayOrder);
         }
     }
 }

@@ -178,13 +178,44 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
-        public async Task GetActiveHeroBanners_ReturnsAllActiveBannersInOrder()
+        public async Task ReorderHeroBanners_UpdatesDisplayOrderInSequence()
         {
             // Arrange
             using var db = CreateInMemoryContext();
-            var b1 = new HeroBanner { Id = Guid.NewGuid(), Title = "Active 1", IsActive = true, CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-5) };
-            var b2 = new HeroBanner { Id = Guid.NewGuid(), Title = "Active 2", IsActive = true, CreatedAt = DateTimeOffset.UtcNow };
-            var b3 = new HeroBanner { Id = Guid.NewGuid(), Title = "Inactive", IsActive = false, CreatedAt = DateTimeOffset.UtcNow };
+            var b1 = new HeroBanner { Id = Guid.NewGuid(), Title = "Banner 1", DisplayOrder = 1, CreatedAt = DateTimeOffset.UtcNow };
+            var b2 = new HeroBanner { Id = Guid.NewGuid(), Title = "Banner 2", DisplayOrder = 2, CreatedAt = DateTimeOffset.UtcNow };
+            var b3 = new HeroBanner { Id = Guid.NewGuid(), Title = "Banner 3", DisplayOrder = 3, CreatedAt = DateTimeOffset.UtcNow };
+            db.HeroBanners.AddRange(b1, b2, b3);
+            await db.SaveChangesAsync();
+
+            var handler = new ReorderHeroBannersCommandHandler(db);
+            // Reorder so that b3 is first, b1 is second, b2 is third
+            var command = new ReorderHeroBannersCommand
+            {
+                BannerIds = new() { b3.Id, b1.Id, b2.Id }
+            };
+
+            // Act
+            await handler.Handle(command);
+
+            // Assert
+            var updatedB1 = await db.HeroBanners.FindAsync(b1.Id);
+            var updatedB2 = await db.HeroBanners.FindAsync(b2.Id);
+            var updatedB3 = await db.HeroBanners.FindAsync(b3.Id);
+
+            Assert.Equal(2, updatedB1!.DisplayOrder);
+            Assert.Equal(3, updatedB2!.DisplayOrder);
+            Assert.Equal(1, updatedB3!.DisplayOrder);
+        }
+
+        [Fact]
+        public async Task GetActiveHeroBanners_ReturnsAllActiveBannersInDisplayOrder()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var b1 = new HeroBanner { Id = Guid.NewGuid(), Title = "Active Order 2", DisplayOrder = 2, IsActive = true, CreatedAt = DateTimeOffset.UtcNow };
+            var b2 = new HeroBanner { Id = Guid.NewGuid(), Title = "Active Order 1", DisplayOrder = 1, IsActive = true, CreatedAt = DateTimeOffset.UtcNow };
+            var b3 = new HeroBanner { Id = Guid.NewGuid(), Title = "Inactive", DisplayOrder = 0, IsActive = false, CreatedAt = DateTimeOffset.UtcNow };
             db.HeroBanners.AddRange(b1, b2, b3);
             await db.SaveChangesAsync();
 
@@ -197,17 +228,17 @@ namespace Ecommerce.Application.Tests
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
-            Assert.Equal("Active 2", result[0].Title);
-            Assert.Equal("Active 1", result[1].Title);
+            Assert.Equal("Active Order 1", result[0].Title);
+            Assert.Equal("Active Order 2", result[1].Title);
         }
 
         [Fact]
-        public async Task GetActiveHeroBanner_ReturnsLatestActiveBanner()
+        public async Task GetActiveHeroBanner_ReturnsFirstActiveBannerByDisplayOrder()
         {
             // Arrange
             using var db = CreateInMemoryContext();
-            db.HeroBanners.Add(new HeroBanner { Id = Guid.NewGuid(), Title = "Inactive Banner", IsActive = false, CreatedAt = DateTimeOffset.UtcNow });
-            db.HeroBanners.Add(new HeroBanner { Id = Guid.NewGuid(), Title = "Active Banner", IsActive = true, CreatedAt = DateTimeOffset.UtcNow });
+            db.HeroBanners.Add(new HeroBanner { Id = Guid.NewGuid(), Title = "Second Banner", DisplayOrder = 2, IsActive = true, CreatedAt = DateTimeOffset.UtcNow });
+            db.HeroBanners.Add(new HeroBanner { Id = Guid.NewGuid(), Title = "First Banner", DisplayOrder = 1, IsActive = true, CreatedAt = DateTimeOffset.UtcNow });
             await db.SaveChangesAsync();
 
             var handler = new GetActiveHeroBannerQueryHandler(db);
@@ -218,7 +249,8 @@ namespace Ecommerce.Application.Tests
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal("Active Banner", result.Title);
+            Assert.Equal("First Banner", result.Title);
+            Assert.Equal(1, result.DisplayOrder);
         }
 
         [Fact]
@@ -250,6 +282,7 @@ namespace Ecommerce.Application.Tests
             {
                 Id = Guid.NewGuid(),
                 Title = "Banner Detail",
+                DisplayOrder = 5,
                 IsActive = true,
                 CreatedAt = DateTimeOffset.UtcNow
             };
@@ -265,6 +298,7 @@ namespace Ecommerce.Application.Tests
             Assert.NotNull(result);
             Assert.Equal(banner.Id, result.Id);
             Assert.Equal("Banner Detail", result.Title);
+            Assert.Equal(5, result.DisplayOrder);
         }
     }
 }

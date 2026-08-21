@@ -26,7 +26,8 @@ namespace Ecommerce.Application.Queries.HeroBanners
             var banner = await _db.HeroBanners
                 .AsNoTracking()
                 .Where(b => b.IsActive)
-                .OrderByDescending(b => b.UpdatedAt ?? b.CreatedAt)
+                .OrderBy(b => b.DisplayOrder)
+                .ThenByDescending(b => b.UpdatedAt ?? b.CreatedAt)
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (banner == null)
@@ -43,6 +44,7 @@ namespace Ecommerce.Application.Queries.HeroBanners
                 SecondaryButtonText = banner.SecondaryButtonText,
                 SecondaryButtonLink = banner.SecondaryButtonLink,
                 ImageUrl = banner.ImageUrl,
+                DisplayOrder = banner.DisplayOrder,
                 IsActive = banner.IsActive,
                 CreatedAt = banner.CreatedAt,
                 UpdatedAt = banner.UpdatedAt
@@ -64,7 +66,8 @@ namespace Ecommerce.Application.Queries.HeroBanners
             return await _db.HeroBanners
                 .AsNoTracking()
                 .Where(b => b.IsActive)
-                .OrderByDescending(b => b.UpdatedAt ?? b.CreatedAt)
+                .OrderBy(b => b.DisplayOrder)
+                .ThenByDescending(b => b.UpdatedAt ?? b.CreatedAt)
                 .Select(banner => new HeroBannerDto
                 {
                     Id = banner.Id,
@@ -76,6 +79,7 @@ namespace Ecommerce.Application.Queries.HeroBanners
                     SecondaryButtonText = banner.SecondaryButtonText,
                     SecondaryButtonLink = banner.SecondaryButtonLink,
                     ImageUrl = banner.ImageUrl,
+                    DisplayOrder = banner.DisplayOrder,
                     IsActive = banner.IsActive,
                     CreatedAt = banner.CreatedAt,
                     UpdatedAt = banner.UpdatedAt
@@ -111,7 +115,8 @@ namespace Ecommerce.Application.Queries.HeroBanners
             var totalCount = await q.CountAsync(cancellationToken);
 
             var items = await q
-                .OrderByDescending(b => b.IsActive)
+                .OrderBy(b => b.DisplayOrder)
+                .ThenByDescending(b => b.IsActive)
                 .ThenByDescending(b => b.UpdatedAt ?? b.CreatedAt)
                 .Skip((query.Page - 1) * query.PageSize)
                 .Take(query.PageSize)
@@ -126,6 +131,7 @@ namespace Ecommerce.Application.Queries.HeroBanners
                     SecondaryButtonText = b.SecondaryButtonText,
                     SecondaryButtonLink = b.SecondaryButtonLink,
                     ImageUrl = b.ImageUrl,
+                    DisplayOrder = b.DisplayOrder,
                     IsActive = b.IsActive,
                     CreatedAt = b.CreatedAt,
                     UpdatedAt = b.UpdatedAt
@@ -173,6 +179,7 @@ namespace Ecommerce.Application.Queries.HeroBanners
                 SecondaryButtonText = banner.SecondaryButtonText,
                 SecondaryButtonLink = banner.SecondaryButtonLink,
                 ImageUrl = banner.ImageUrl,
+                DisplayOrder = banner.DisplayOrder,
                 IsActive = banner.IsActive,
                 CreatedAt = banner.CreatedAt,
                 UpdatedAt = banner.UpdatedAt

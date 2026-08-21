@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ecommerce.Application.DTOs
 {
@@ -13,6 +13,7 @@ namespace Ecommerce.Application.DTOs
         public string SecondaryButtonText { get; set; } = string.Empty;
         public string SecondaryButtonLink { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public int DisplayOrder { get; set; }
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }

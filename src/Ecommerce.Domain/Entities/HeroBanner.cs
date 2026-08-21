@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace Ecommerce.Domain.Entities
 {
@@ -13,6 +13,7 @@ namespace Ecommerce.Domain.Entities
         public string SecondaryButtonText { get; set; } = string.Empty;
         public string SecondaryButtonLink { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public int DisplayOrder { get; set; } = 0;
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
@@ -21,6 +22,7 @@ namespace Ecommerce.Domain.Entities
         {
             Id = Guid.NewGuid();
             CreatedAt = DateTimeOffset.UtcNow;
+            DisplayOrder = 0;
             IsActive = true;
         }
     }

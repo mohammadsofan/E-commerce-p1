@@ -783,15 +783,23 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Updated `CurrentUserService`:
   - Resolved JWT claims across standard and XML claim types (`JwtRegisteredClaimNames.Sub`, `ClaimTypes.NameIdentifier`, `ClaimTypes.Name`, `ClaimTypes.Email`).
   - Added `IsAdmin` detection supporting both role claim schemas and default admin account.
+- Registered `GetProductReviewEligibilityQueryHandler` in `DependencyInjection.cs`.
 - Updated `ReviewsController`:
   - Enabled public anonymous access on `GET /api/products/{productId}/reviews`.
   - Added authenticated endpoint `GET /api/products/{productId}/reviews/eligibility`.
-- Added 3 new unit tests in `ProductReviewHandlerTests.cs`.
-- All 258 tests passing (200 Application, 14 Architecture, 20 Integration, 24 Domain; 100% pass rate).
+- Added unit tests in `ProductReviewHandlerTests.cs` (200/200 application unit tests passing).
+
+### 2026-08-21 — Hero Banners Card Ordering & Dynamic Slider Reordering
+- Added `DisplayOrder` integer property to `HeroBanner` domain entity and configured EF Core table indexing (`AddDisplayOrderToHeroBanners` migration).
+- Implemented `ReorderHeroBannersCommand` and `ReorderHeroBannersCommandHandler` to persist custom slide sequencing in the database.
+- Updated `GetActiveHeroBannersQuery`, `GetActiveHeroBannerQuery`, and `GetAdminHeroBannersQuery` to order banners by `DisplayOrder` ascending, then by timestamp descending.
+- Added `PUT /api/admin/hero-banners/reorder` endpoint on `AdminHeroBannersController`.
+- Added unit tests in `HeroBannerHandlerTests.cs` (201/201 application unit tests passing, 259/259 total tests passing, 100% pass rate).
+- Updated Admin UI (`HeroBanners.tsx` & `HeroBannerForm.tsx`) with Move Up / Move Down reordering controls, position index indicators (`#1`, `#2`), and instant reactive state updates.
 
 ---
 
-*Last updated: 2026-08-21 — Verified Purchase Product Reviews Enforcement & Admin Eligibility complete and verified. Total 200 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Hero Banners Card Ordering & Dynamic Slider Reordering complete and verified. Total 259 tests passing (100% pass rate).*
 
 
 

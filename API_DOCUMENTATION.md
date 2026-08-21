@@ -6480,6 +6480,7 @@ The response pagination metadata reflects the requested `page` and the full filt
     "secondaryButtonText": "تصفح التصنيفات",
     "secondaryButtonLink": "/categories",
     "imageUrl": null,
+    "displayOrder": 1,
     "isActive": true,
     "createdAt": "2026-08-21T00:00:00Z",
     "updatedAt": null
@@ -6591,6 +6592,27 @@ The response pagination metadata reflects the requested `page` and the full filt
 ```
 
 **Response:** `200 OK`
+
+---
+
+### Reorder Hero Banners (Admin)
+**PUT** `/api/admin/hero-banners/reorder`
+
+**Headers:**
+- `Authorization: Bearer <jwt-token>` (Requires Admin role)
+
+**Request Body:**
+```json
+{
+  "bannerIds": [
+    "33333333-3333-3333-3333-333333333333",
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222"
+  ]
+}
+```
+
+**Response:** `204 NoContent`
 
 ---
 

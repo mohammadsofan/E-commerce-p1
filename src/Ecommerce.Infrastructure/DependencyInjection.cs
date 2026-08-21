@@ -116,6 +116,7 @@ namespace Ecommerce.Infrastructure
             // Hero banner command handlers
             services.AddScoped<ICommandHandler<CreateHeroBannerCommand, HeroBannerDto>, CreateHeroBannerCommandHandler>();
             services.AddScoped<ICommandHandler<UpdateHeroBannerCommand, HeroBannerDto>, UpdateHeroBannerCommandHandler>();
+            services.AddScoped<ICommandHandler<ReorderHeroBannersCommand, Unit>, ReorderHeroBannersCommandHandler>();
             services.AddScoped<ICommandHandler<SetActiveHeroBannerCommand, HeroBannerDto>, SetActiveHeroBannerCommandHandler>();
             services.AddScoped<ICommandHandler<DeleteHeroBannerCommand, Unit>, DeleteHeroBannerCommandHandler>();
 

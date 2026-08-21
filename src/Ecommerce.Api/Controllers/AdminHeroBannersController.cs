@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.HeroBanners;
 using Ecommerce.Application.Common;
@@ -69,6 +69,14 @@ namespace Ecommerce.Api.Controllers
             command.Id = id;
             var result = await _commandDispatcher.Send<UpdateHeroBannerCommand, HeroBannerDto>(command);
             return Ok(result);
+        }
+
+        /// <summary>Reorders hero banners</summary>
+        [HttpPut("reorder")]
+        public async Task<IActionResult> Reorder([FromBody] ReorderHeroBannersCommand command)
+        {
+            await _commandDispatcher.Send<ReorderHeroBannersCommand, Unit>(command);
+            return NoContent();
         }
 
         /// <summary>Sets a hero banner as active primary home banner</summary>

@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.DTOs;
 
@@ -14,6 +15,7 @@ namespace Ecommerce.Application.Commands.HeroBanners
         public string SecondaryButtonText { get; set; } = string.Empty;
         public string SecondaryButtonLink { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public int DisplayOrder { get; set; } = 0;
         public bool IsActive { get; set; } = true;
     }
 
@@ -28,7 +30,13 @@ namespace Ecommerce.Application.Commands.HeroBanners
         public string SecondaryButtonText { get; set; } = string.Empty;
         public string SecondaryButtonLink { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public int DisplayOrder { get; set; } = 0;
         public bool IsActive { get; set; } = true;
+    }
+
+    public class ReorderHeroBannersCommand : ICommand<Ecommerce.Application.Common.Unit>
+    {
+        public List<Guid> BannerIds { get; set; } = new();
     }
 
     public class SetActiveHeroBannerCommand : ICommand<HeroBannerDto>
