@@ -7,6 +7,7 @@ using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
+using Ecommerce.Domain.Enums;
 using Ecommerce.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,24 +39,51 @@ namespace Ecommerce.Application.Commands.Admin
 
             var userId = _currentUser.UserId;
             if (!userId.HasValue)
-                throw new DomainException("User is not authenticated");
+                throw new DomainException("يجب تسجيل الدخول أولاً لكتابة تقييم.");
+
+            // Verified Purchase Requirement: Customer must have ordered the product in a non-cancelled order
+            var hasPurchased = await _db.Orders
+                .AsNoTracking()
+                .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == command.ProductId), cancellationToken);
+
+            if (!hasPurchased)
+            {
+                throw new DomainException("التقييم متاح فقط للعملاء الذين قاموا بشراء هذا المنتج (مشتري موثوق).");
+            }
 
             var now = DateTimeOffset.UtcNow;
-            var review = new ProductReview
-            {
-                Id = Guid.NewGuid(),
-                ProductId = command.ProductId,
-                UserId = userId.Value,
-                Rating = command.Rating,
-                Title = command.Title,
-                Comment = command.Comment,
-                IsVerifiedPurchase = false,
-                IsApproved = false,
-                CreatedAt = now,
-                UpdatedAt = now
-            };
+            var existingReview = await _db.ProductReviews
+                .FirstOrDefaultAsync(r => r.ProductId == command.ProductId && r.UserId == userId.Value, cancellationToken);
 
-            _db.ProductReviews.Add(review);
+            ProductReview review;
+            if (existingReview != null)
+            {
+                existingReview.Rating = command.Rating;
+                existingReview.Title = command.Title ?? string.Empty;
+                existingReview.Comment = command.Comment ?? string.Empty;
+                existingReview.IsVerifiedPurchase = true;
+                existingReview.IsApproved = true;
+                existingReview.UpdatedAt = now;
+                review = existingReview;
+            }
+            else
+            {
+                review = new ProductReview
+                {
+                    Id = Guid.NewGuid(),
+                    ProductId = command.ProductId,
+                    UserId = userId.Value,
+                    Rating = command.Rating,
+                    Title = command.Title ?? string.Empty,
+                    Comment = command.Comment ?? string.Empty,
+                    IsVerifiedPurchase = true,
+                    IsApproved = true,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+                _db.ProductReviews.Add(review);
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
 
             var dto = _mapper.Map<ProductReviewDto>(review);

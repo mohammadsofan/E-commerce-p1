@@ -49,6 +49,14 @@ namespace Ecommerce.Application.DTOs
         public DateTimeOffset CreatedAt { get; set; }
     }
 
+    public class ProductReviewEligibilityDto
+    {
+        public bool CanReview { get; set; }
+        public bool HasPurchased { get; set; }
+        public bool HasReviewed { get; set; }
+        public ProductReviewDto? ExistingReview { get; set; }
+    }
+
     public class ShipmentDto
     {
         public Guid Id { get; set; }

@@ -11,6 +11,11 @@ namespace Ecommerce.Application.Queries.Admin
         public Guid ProductId { get; set; }
     }
 
+    public class GetProductReviewEligibilityQuery : IQuery<ProductReviewEligibilityDto>
+    {
+        public Guid ProductId { get; set; }
+    }
+
     public class GetAdminReviewsQuery : IQuery<PagedResult<ProductReviewDto>>
     {
         public int Page { get; set; } = 1;

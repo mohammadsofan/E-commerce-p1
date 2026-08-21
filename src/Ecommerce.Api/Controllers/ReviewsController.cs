@@ -13,7 +13,6 @@ namespace Ecommerce.Api.Controllers
 {
     [ApiController]
     [Route("api/products/{productId:guid}/reviews")]
-    [Authorize(Policy = "AdminOrCustomer")]
     public class ReviewsController : ControllerBase
     {
         private readonly CommandDispatcher _commandDispatcher;
@@ -27,6 +26,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Gets approved reviews for a product (public view)</summary>
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll(Guid productId)
         {
             var query = new GetProductReviewsQuery { ProductId = productId };
@@ -34,8 +34,19 @@ namespace Ecommerce.Api.Controllers
             return Ok(result);
         }
 
-        /// <summary>Submits a new review for a product</summary>
+        /// <summary>Checks if the current authenticated user can review this product</summary>
+        [HttpGet("eligibility")]
+        [Authorize(Policy = "AdminOrCustomer")]
+        public async Task<IActionResult> GetEligibility(Guid productId)
+        {
+            var query = new GetProductReviewEligibilityQuery { ProductId = productId };
+            var result = await _queryDispatcher.Send<GetProductReviewEligibilityQuery, ProductReviewEligibilityDto>(query);
+            return Ok(result);
+        }
+
+        /// <summary>Submits or updates a verified review for a product</summary>
         [HttpPost]
+        [Authorize(Policy = "AdminOrCustomer")]
         public async Task<IActionResult> Submit(Guid productId, [FromBody] SubmitProductReviewCommand command)
         {
             command.ProductId = productId;

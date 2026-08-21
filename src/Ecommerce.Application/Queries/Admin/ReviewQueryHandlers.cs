@@ -8,6 +8,7 @@ using Ecommerce.Application.Common;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Queries.Admin
@@ -32,6 +33,63 @@ namespace Ecommerce.Application.Queries.Admin
                 .ToListAsync(cancellationToken);
 
             return await ReviewMapper.MapWithDisplayNamesAsync(_db, _mapper, reviews, cancellationToken);
+        }
+    }
+
+    public class GetProductReviewEligibilityQueryHandler : IQueryHandler<GetProductReviewEligibilityQuery, ProductReviewEligibilityDto>
+    {
+        private readonly IApplicationDbContext _db;
+        private readonly IMapper _mapper;
+        private readonly ICurrentUserService _currentUser;
+
+        public GetProductReviewEligibilityQueryHandler(IApplicationDbContext db, IMapper mapper, ICurrentUserService currentUser)
+        {
+            _db = db;
+            _mapper = mapper;
+            _currentUser = currentUser;
+        }
+
+        public async Task<ProductReviewEligibilityDto> Handle(GetProductReviewEligibilityQuery query, CancellationToken cancellationToken = default)
+        {
+            var userId = _currentUser.UserId;
+            if (!userId.HasValue)
+            {
+                return new ProductReviewEligibilityDto
+                {
+                    CanReview = false,
+                    HasPurchased = false,
+                    HasReviewed = false,
+                    ExistingReview = null
+                };
+            }
+
+            var hasPurchased = await _db.Orders
+                .AsNoTracking()
+                .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == query.ProductId), cancellationToken);
+
+            var existingReview = await _db.ProductReviews
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.ProductId == query.ProductId && r.UserId == userId.Value, cancellationToken);
+
+            ProductReviewDto? reviewDto = null;
+            if (existingReview != null)
+            {
+                reviewDto = _mapper.Map<ProductReviewDto>(existingReview);
+                var user = await _db.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == existingReview.UserId, cancellationToken);
+                reviewDto.UserDisplayName = user != null && !string.IsNullOrWhiteSpace(user.DisplayName)
+                    ? user.DisplayName
+                    : user?.UserName ?? string.Empty;
+            }
+
+            return new ProductReviewEligibilityDto
+            {
+                CanReview = hasPurchased,
+                HasPurchased = hasPurchased,
+                HasReviewed = existingReview != null,
+                ExistingReview = reviewDto
+            };
         }
     }
 

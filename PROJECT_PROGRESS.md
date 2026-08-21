@@ -774,9 +774,21 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Updated frontend `shippingService.updateAdminMethod` and `Shipping.tsx` to pass the shipping zone ID during update operations.
 - All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
 
+### 2026-08-21 — Verified Purchase Product Reviews Enforcement & Eligibility API
+- Updated `SubmitProductReviewCommandHandler`:
+  - Enforced that only authenticated customers who have ordered the product in a non-cancelled order can submit reviews.
+  - Automatically marked verified reviews with `IsVerifiedPurchase = true` and `IsApproved = true`.
+  - Added support for updating existing reviews seamlessly.
+- Implemented `GetProductReviewEligibilityQuery` and `GetProductReviewEligibilityQueryHandler` returning user purchase verification and existing review state.
+- Updated `ReviewsController`:
+  - Enabled public anonymous access on `GET /api/products/{productId}/reviews`.
+  - Added authenticated endpoint `GET /api/products/{productId}/reviews/eligibility`.
+- Added 3 new unit tests in `ProductReviewHandlerTests.cs`.
+- All 258 tests passing (200 Application, 14 Architecture, 20 Integration, 24 Domain; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Admin Shipping Method Price & Details Update Fix complete and verified. Total 197 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Verified Purchase Product Reviews Enforcement & Eligibility API complete and verified. Total 200 application unit tests passing (100% pass rate).*
 
 
 
