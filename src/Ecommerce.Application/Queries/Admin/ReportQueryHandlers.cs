@@ -32,7 +32,7 @@ namespace Ecommerce.Application.Queries.Admin
             var startDate = query.StartDate ?? endDate.AddDays(-30);
 
             var orders = await _db.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == OrderStatus.Completed)
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status != OrderStatus.Cancelled)
                 .ToListAsync(cancellationToken);
 
             var orderIds = orders.Select(o => o.Id).ToList();
@@ -40,10 +40,10 @@ namespace Ecommerce.Application.Queries.Admin
                 .Where(oi => orderIds.Contains(oi.OrderId))
                 .ToListAsync(cancellationToken);
 
-            var customerIds = orders.Where(o => o.UserId.HasValue).Select(o => o.UserId.Value).Distinct().ToList();
+            var customerIds = orders.Where(o => o.UserId.HasValue).Select(o => o.UserId!.Value).Distinct().ToList();
             var newCustomerIds = await _db.Orders
-                .Where(o => customerIds.Contains(o.UserId.Value) && o.CreatedAt >= startDate && o.CreatedAt <= endDate)
-                .GroupBy(o => o.UserId.Value)
+                .Where(o => o.UserId.HasValue && customerIds.Contains(o.UserId.Value) && o.CreatedAt >= startDate && o.CreatedAt <= endDate)
+                .GroupBy(o => o.UserId!.Value)
                 .Where(g => g.Min(o => o.CreatedAt) >= startDate)
                 .Select(g => g.Key)
                 .ToListAsync(cancellationToken);
@@ -55,7 +55,7 @@ namespace Ecommerce.Application.Queries.Admin
                     Period = g.Key,
                     OrderCount = g.Count(),
                     Revenue = g.Sum(o => o.TotalAmount),
-                    NewCustomers = g.Count(o => newCustomerIds.Contains(o.UserId.Value))
+                    NewCustomers = g.Count(o => o.UserId.HasValue && newCustomerIds.Contains(o.UserId.Value))
                 })
                 .OrderBy(x => x.Period)
                 .ToList();
@@ -152,12 +152,16 @@ namespace Ecommerce.Application.Queries.Admin
             var startDate = query.StartDate ?? endDate.AddDays(-30);
 
             var orders = await _db.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == OrderStatus.Completed)
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status != OrderStatus.Cancelled)
                 .ToListAsync(cancellationToken);
 
             var refunds = await _db.Refunds
                 .Where(r => r.ProcessedAt >= startDate && r.ProcessedAt <= endDate && r.Status == "succeeded")
                 .ToListAsync(cancellationToken);
+
+            var totalDiscounts = orders.Sum(o => o.DiscountAmount);
+            var totalTax = orders.Sum(o => o.TaxAmount);
+            var totalShipping = orders.Sum(o => o.ShippingAmount);
 
             var revenueByPeriod = orders
                 .GroupBy(o => GetPeriodKey(o.CreatedAt, query.GroupBy))
@@ -166,7 +170,7 @@ namespace Ecommerce.Application.Queries.Admin
                     Period = g.Key,
                     GrossRevenue = g.Sum(o => o.TotalAmount),
                     NetRevenue = g.Sum(o => o.TotalAmount),
-                    Discounts = 0,
+                    Discounts = g.Sum(o => o.DiscountAmount),
                     Refunds = 0
                 })
                 .OrderBy(x => x.Period)
@@ -199,10 +203,10 @@ namespace Ecommerce.Application.Queries.Admin
                 PeriodEnd = endDate,
                 GrossRevenue = grossRevenue,
                 NetRevenue = grossRevenue - totalRefunds,
-                TotalDiscounts = 0,
+                TotalDiscounts = totalDiscounts,
                 TotalRefunds = totalRefunds,
-                TotalTax = 0,
-                TotalShipping = 0,
+                TotalTax = totalTax,
+                TotalShipping = totalShipping,
                 RevenueByPeriod = revenueByPeriod,
                 RevenueByChannel = revenueByChannel
             };
@@ -330,7 +334,7 @@ namespace Ecommerce.Application.Queries.Admin
 
             var customers = await _db.Users.ToListAsync(cancellationToken);
             var orders = await _db.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status == OrderStatus.Completed)
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status != OrderStatus.Cancelled)
                 .ToListAsync(cancellationToken);
 
             var customerOrders = orders

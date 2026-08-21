@@ -811,9 +811,22 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - `OrderDetail.tsx`: Added dedicated **Customer Profile Card (بيانات العميل)** displaying customer name, clickable email & phone links, user account link, and delivery address card.
 - All 262 tests passing (204 Application, 14 Architecture, 24 Domain, 20 Integration; 100% pass rate).
 
+### 2026-08-21 — Admin Reports Hub & Sub-Pages Implementation
+- Enhanced Backend Report Query Handlers (`ReportQueryHandlers.cs`):
+  - Updated `GetSalesReportQueryHandler`, `GetRevenueReportQueryHandler`, and `GetCustomerReportQueryHandler` with non-cancelled orders filter (`o.Status != OrderStatus.Cancelled`).
+  - Added live discount and shipping calculation breakdown in revenue queries.
+- Built Admin Reports UI Suite in Frontend:
+  - **Reports Hub (`/admin/reports`)**: Executive summary metrics, 4 dedicated sub-report cards, and instant CSV/JSON report export tool.
+  - **Sales Report (`/admin/reports/sales`)**: Period trends, sales volume, AOV, top products leaderboard, and category distribution.
+  - **Revenue Report (`/admin/reports/revenue`)**: Gross vs. Net revenue, discounts, refunds, taxes, shipping, and channel breakdown.
+  - **Inventory Report (`/admin/reports/inventory`)**: Warehouse stock distribution, category valuation, and low/out-of-stock warnings with stock adjustment links.
+  - **Customer Report (`/admin/reports/customers`)**: Acquisition metrics, LTV, repeat purchase rate, customer segments, and top spenders.
+  - Reusable Components: `ReportHeader.tsx` (preset date filters, custom date pickers, grouping, print, and export buttons) & `ReportChart.tsx` (SVG trend charts and category progress bars).
+- All 262 tests passing (100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Customer Identification in Admin Orders complete and verified. Total 262 tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Admin Reports Hub & Sub-Pages complete and verified. Total 262 tests passing (100% pass rate).*
 
 
 
