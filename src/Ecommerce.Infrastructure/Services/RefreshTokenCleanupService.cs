@@ -33,13 +33,26 @@ namespace Ecommerce.Infrastructure.Services
                         var removed = await svc.RemoveExpiredAsync();
                         if (removed > 0) _logger.LogInformation("Removed {Count} expired refresh tokens", removed);
                     }
+
+                    await Task.Delay(delay, stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    // Graceful shutdown
+                    break;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error running refresh token cleanup");
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                    }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
                 }
-
-                await Task.Delay(delay, stoppingToken);
             }
         }
     }

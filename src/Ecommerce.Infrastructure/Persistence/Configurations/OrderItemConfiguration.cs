@@ -14,6 +14,7 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
 
             builder.Property(x => x.ProductName).HasMaxLength(256).IsRequired();
             builder.Property(x => x.VariantName).HasMaxLength(128).IsRequired(false);
+            builder.Property(x => x.SelectedOptions).HasMaxLength(1024).IsRequired(false);
             builder.Property(x => x.Sku).HasMaxLength(64).IsRequired(false);
             builder.Property(x => x.ProductImageUrl).IsRequired(false);
 

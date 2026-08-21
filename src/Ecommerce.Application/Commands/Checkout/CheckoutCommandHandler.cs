@@ -85,7 +85,7 @@ namespace Ecommerce.Application.Commands.Checkout
                 var imageUrl = product?.Images?.FirstOrDefault()?.Url ?? string.Empty;
                 var variantId = it.ProductVariantId ?? Guid.Empty;
 
-                order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, 0m, variantName, sku, imageUrl);
+                order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, 0m, variantName, sku, imageUrl, it.SelectedOptions);
 
                 // Reserve inventory if exists
                 var inventory = await _db.InventoryItems

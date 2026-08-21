@@ -47,8 +47,18 @@ namespace Ecommerce.Application.Queries.Products
                     p.Name.ToLower().Contains(term) ||
                     p.Sku.ToLower().Contains(term) ||
                     p.Slug.ToLower().Contains(term) ||
-                    p.ShortDescription.ToLower().Contains(term));
+                    p.ShortDescription.ToLower().Contains(term) ||
+                    (p.SeoKeywords != null && p.SeoKeywords.ToLower().Contains(term)));
             }
+
+            // Tag filtering: SeoKeywords stores comma-separated tag names
+            if (!string.IsNullOrWhiteSpace(query.Tag))
+            {
+                var tagName = query.Tag.Trim();
+                products = products.Where(p => p.SeoKeywords != null && EF.Functions.Like(p.SeoKeywords, $"%{tagName}%"));
+            }
+
+
 
             if (query.CategoryId.HasValue)
                 products = products.Where(p => p.CategoryId == query.CategoryId.Value);

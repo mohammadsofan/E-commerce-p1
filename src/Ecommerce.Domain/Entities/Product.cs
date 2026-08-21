@@ -32,6 +32,7 @@ namespace Ecommerce.Domain.Entities
         public string SeoTitle { get; set; } = string.Empty;
         public string SeoDescription { get; set; } = string.Empty;
         public string SeoKeywords { get; set; } = string.Empty;
+        public string? AttributesJson { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }

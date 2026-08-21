@@ -32,7 +32,8 @@ namespace Ecommerce.Api.Controllers
             [FromQuery] decimal? minPrice = null,
             [FromQuery] decimal? maxPrice = null,
             [FromQuery] bool? isActive = null,
-            [FromQuery] string? sortBy = null)
+            [FromQuery] string? sortBy = null,
+            [FromQuery] string? tag = null)
         {
             var query = new GetProductsQuery
             {
@@ -44,11 +45,13 @@ namespace Ecommerce.Api.Controllers
                 MinPrice = minPrice,
                 MaxPrice = maxPrice,
                 IsActive = isActive,
-                SortBy = sortBy
+                SortBy = sortBy,
+                Tag = tag
             };
             var result = await _queryDispatcher.Send<GetProductsQuery, Ecommerce.Application.Common.PagedResult<ProductDto>>(query);
             return Ok(result);
         }
+
 
         [HttpGet("search")]
         public async Task<IActionResult> Search(

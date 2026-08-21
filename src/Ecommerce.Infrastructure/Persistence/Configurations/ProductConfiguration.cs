@@ -20,6 +20,7 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Length).HasPrecision(18,2);
             builder.Property(x => x.Width).HasPrecision(18,2);
             builder.Property(x => x.Height).HasPrecision(18,2);
+            builder.Property(x => x.AttributesJson).HasMaxLength(4000).IsRequired(false);
 
             builder.Property(x => x.RowVersion).IsRowVersion();
         }

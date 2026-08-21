@@ -18,6 +18,7 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.ProductId);
             builder.Property(x => x.ProductVariantId);
             builder.Property(x => x.ProductName).HasMaxLength(256);
+            builder.Property(x => x.SelectedOptions).HasMaxLength(1024).IsRequired(false);
             builder.Property(x => x.Quantity);
             builder.Property(x => x.UnitPrice).HasColumnType("decimal(18,2)");
             builder.Property(x => x.CreatedAt).IsRequired();

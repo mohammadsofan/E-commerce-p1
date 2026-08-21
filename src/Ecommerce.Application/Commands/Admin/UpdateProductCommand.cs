@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Ecommerce.Application.DTOs;
 
 namespace Ecommerce.Application.Commands.Admin
 {
@@ -33,5 +35,6 @@ namespace Ecommerce.Application.Commands.Admin
         public string SeoKeywords { get; set; } = string.Empty;
         public int? Stock { get; set; }
         public Guid? WarehouseId { get; set; }
+        public List<ProductAttributeOptionDto>? Attributes { get; set; }
     }
 }

@@ -31,6 +31,7 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.ProductVariantId, opt => opt.MapFrom(s => s.ProductVariantId))
                 .ForMember(d => d.ProductName, opt => opt.MapFrom(s => s.ProductName))
                 .ForMember(d => d.VariantName, opt => opt.MapFrom(s => s.VariantName))
+                .ForMember(d => d.SelectedOptions, opt => opt.MapFrom(s => s.SelectedOptions))
                 .ForMember(d => d.Sku, opt => opt.MapFrom(s => s.Sku))
                 .ForMember(d => d.Quantity, opt => opt.MapFrom(s => s.Quantity))
                 .ForMember(d => d.UnitPrice, opt => opt.MapFrom(s => s.UnitPrice))
@@ -49,7 +50,13 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.IsActive, opt => opt.MapFrom(s => s.IsActive))
                 .ForMember(d => d.Category, opt => opt.MapFrom(s => s.Category))
                 .ForMember(d => d.Brand, opt => opt.MapFrom(s => s.Brand))
-                .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)));
+                .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)))
+                .ForMember(d => d.Tags, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.SeoKeywords)
+                    ? new System.Collections.Generic.List<string>()
+                    : s.SeoKeywords.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
+                .ForMember(d => d.Attributes, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.AttributesJson)
+                    ? new System.Collections.Generic.List<ProductAttributeOptionDto>()
+                    : (System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<ProductAttributeOptionDto>>(s.AttributesJson, (System.Text.Json.JsonSerializerOptions?)null) ?? new System.Collections.Generic.List<ProductAttributeOptionDto>())));
 
             CreateMap<Product, AdminProductDto>()
                 .ForMember(d => d.Variants, opt => opt.MapFrom(s => s.Variants))
@@ -57,7 +64,13 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Stock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.QuantityOnHand)))
                 .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)))
                 .ForMember(d => d.WarehouseId, opt => opt.MapFrom(s => s.InventoryItems.Select(i => (Guid?)i.WarehouseId).FirstOrDefault()))
-                .ForMember(d => d.WarehouseName, opt => opt.MapFrom(s => s.InventoryItems.Select(i => i.Warehouse != null ? i.Warehouse.Name : string.Empty).FirstOrDefault() ?? string.Empty));
+                .ForMember(d => d.WarehouseName, opt => opt.MapFrom(s => s.InventoryItems.Select(i => i.Warehouse != null ? i.Warehouse.Name : string.Empty).FirstOrDefault() ?? string.Empty))
+                .ForMember(d => d.Tags, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.SeoKeywords)
+                    ? new System.Collections.Generic.List<string>()
+                    : s.SeoKeywords.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
+                .ForMember(d => d.Attributes, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.AttributesJson)
+                    ? new System.Collections.Generic.List<ProductAttributeOptionDto>()
+                    : (System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<ProductAttributeOptionDto>>(s.AttributesJson, (System.Text.Json.JsonSerializerOptions?)null) ?? new System.Collections.Generic.List<ProductAttributeOptionDto>())));
 
             CreateMap<ProductVariant, AdminProductVariantDto>();
             CreateMap<ProductImage, AdminProductImageDto>();
@@ -92,7 +105,9 @@ namespace Ecommerce.Application.Mappings
             // Cart mappings rely on convention (incl. enum->string for Status
             // and computed getters TotalAmount / LineTotal).
             CreateMap<Cart, CartDto>();
-            CreateMap<CartItem, CartItemDto>();
+            CreateMap<CartItem, CartItemDto>()
+                .ForMember(d => d.SelectedOptions, opt => opt.MapFrom(s => s.SelectedOptions))
+                .ForMember(d => d.VariantName, opt => opt.MapFrom(s => s.SelectedOptions));
 
             CreateMap<Category, CategoryDto>();
             CreateMap<Brand, BrandDto>();

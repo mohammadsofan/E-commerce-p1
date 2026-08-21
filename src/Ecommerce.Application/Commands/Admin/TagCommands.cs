@@ -8,12 +8,14 @@ namespace Ecommerce.Application.Commands.Admin
     public class CreateTagCommand : ICommand<TagDto>
     {
         public string Name { get; set; } = string.Empty;
+        public string? Slug { get; set; }
     }
 
     public class UpdateTagCommand : ICommand<TagDto>
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string? Slug { get; set; }
     }
 
     public class DeleteTagCommand : ICommand<Unit>

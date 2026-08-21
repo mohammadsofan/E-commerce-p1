@@ -17,5 +17,6 @@ namespace Ecommerce.Application.Queries.Products
         public decimal? MaxPrice { get; set; }
         public bool? IsActive { get; set; }
         public string? SortBy { get; set; } // name, price_asc, price_desc, newest, featured
+        public string? Tag { get; set; }    // filter by tag name stored in SeoKeywords
     }
 }

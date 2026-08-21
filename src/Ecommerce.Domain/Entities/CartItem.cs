@@ -13,6 +13,7 @@ namespace Ecommerce.Domain.Entities
         public Guid ProductId { get; set; }
         public Guid? ProductVariantId { get; set; }
         public string? ProductName { get; set; }
+        public string? SelectedOptions { get; set; }
         public int Quantity { get; private set; }
         public decimal UnitPrice { get; private set; }
         public DateTimeOffset CreatedAt { get; set; }
@@ -21,7 +22,7 @@ namespace Ecommerce.Domain.Entities
         /// <summary>Computed line total; not persisted.</summary>
         public decimal LineTotal => UnitPrice * Quantity;
 
-        public static CartItem Create(Guid cartId, Guid productId, Guid? productVariantId, string? productName, decimal unitPrice, int quantity)
+        public static CartItem Create(Guid cartId, Guid productId, Guid? productVariantId, string? productName, decimal unitPrice, int quantity, string? selectedOptions = null)
         {
             if (quantity <= 0) throw new DomainException("Quantity must be positive");
             if (unitPrice < 0) throw new DomainException("Unit price cannot be negative");
@@ -36,6 +37,7 @@ namespace Ecommerce.Domain.Entities
                 ProductName = productName,
                 UnitPrice = unitPrice,
                 Quantity = quantity,
+                SelectedOptions = selectedOptions,
                 CreatedAt = now,
                 UpdatedAt = now
             };

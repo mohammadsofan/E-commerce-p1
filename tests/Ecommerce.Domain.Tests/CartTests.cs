@@ -45,6 +45,52 @@ namespace Ecommerce.Domain.Tests
         }
 
         [Fact]
+        public void AddItem_SameProduct_SameOptions_MergesQuantity()
+        {
+            var productId = Guid.NewGuid();
+            var cart = Cart.Create(Guid.NewGuid(), null);
+
+            cart.AddItem(productId, null, "Shirt", 25m, 1, "Size: M, Color: Blue");
+            cart.AddItem(productId, null, "Shirt", 25m, 2, "Size: M, Color: Blue");
+
+            Assert.Single(cart.Items);
+            Assert.Equal(3, cart.Items.First().Quantity);
+            Assert.Equal(75m, cart.TotalAmount);
+            Assert.Equal("Size: M, Color: Blue", cart.Items.First().SelectedOptions);
+        }
+
+        [Fact]
+        public void AddItem_SameProduct_DifferentOptions_CreatesSeparateCartItems()
+        {
+            var productId = Guid.NewGuid();
+            var cart = Cart.Create(Guid.NewGuid(), null);
+
+            cart.AddItem(productId, null, "Shirt", 25m, 1, "Size: M, Color: Blue");
+            cart.AddItem(productId, null, "Shirt", 25m, 2, "Size: XL, Color: Red");
+
+            Assert.Equal(2, cart.Items.Count);
+            Assert.Equal(75m, cart.TotalAmount);
+            Assert.Contains(cart.Items, i => i.SelectedOptions == "Size: M, Color: Blue" && i.Quantity == 1);
+            Assert.Contains(cart.Items, i => i.SelectedOptions == "Size: XL, Color: Red" && i.Quantity == 2);
+        }
+
+        [Fact]
+        public void AddItem_LegacyProduct_NullOptions_HandlesGracefully()
+        {
+            var productId = Guid.NewGuid();
+            var cart = Cart.Create(Guid.NewGuid(), null);
+
+            cart.AddItem(productId, null, "Classic Table", 100m, 1, null);
+            cart.AddItem(productId, null, "Classic Table", 100m, 1, "");
+
+            Assert.Single(cart.Items);
+            Assert.Equal(2, cart.Items.First().Quantity);
+            Assert.Null(cart.Items.First().SelectedOptions);
+            Assert.Equal(200m, cart.TotalAmount);
+        }
+
+
+        [Fact]
         public void AddItem_InvalidQuantity_Throws()
         {
             var cart = Cart.Create(Guid.NewGuid(), null);

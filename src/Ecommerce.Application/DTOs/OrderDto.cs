@@ -47,5 +47,6 @@ namespace Ecommerce.Application.DTOs
         public decimal TotalAmount { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
         public string ProductImageUrl { get; set; } = string.Empty;
+        public string? SelectedOptions { get; set; }
     }
 }

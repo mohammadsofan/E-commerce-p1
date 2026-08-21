@@ -77,6 +77,7 @@ namespace Ecommerce.Application.Commands.Admin
                 SeoTitle = command.SeoTitle,
                 SeoDescription = command.SeoDescription,
                 SeoKeywords = command.SeoKeywords,
+                AttributesJson = command.Attributes != null && command.Attributes.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(command.Attributes) : null,
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
             };

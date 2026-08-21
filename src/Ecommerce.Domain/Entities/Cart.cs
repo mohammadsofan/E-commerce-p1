@@ -42,11 +42,17 @@ namespace Ecommerce.Domain.Entities
             };
         }
 
-        public void AddItem(Guid productId, Guid? productVariantId, string? productName, decimal unitPrice, int quantity)
+        public void AddItem(Guid productId, Guid? productVariantId, string? productName, decimal unitPrice, int quantity, string? selectedOptions = null)
         {
             if (quantity <= 0) throw new DomainException("Quantity must be positive");
 
-            var existing = Items.FirstOrDefault(i => i.ProductId == productId && i.ProductVariantId == productVariantId);
+            var normalizedOptions = string.IsNullOrWhiteSpace(selectedOptions) ? null : selectedOptions.Trim();
+
+            var existing = Items.FirstOrDefault(i =>
+                i.ProductId == productId &&
+                i.ProductVariantId == productVariantId &&
+                (string.IsNullOrWhiteSpace(i.SelectedOptions) ? null : i.SelectedOptions.Trim()) == normalizedOptions);
+
             if (existing != null)
             {
                 existing.SetQuantity(existing.Quantity + quantity);
@@ -54,7 +60,7 @@ namespace Ecommerce.Domain.Entities
             }
             else
             {
-                Items.Add(CartItem.Create(Id, productId, productVariantId, productName, unitPrice, quantity));
+                Items.Add(CartItem.Create(Id, productId, productVariantId, productName, unitPrice, quantity, normalizedOptions));
             }
 
             Touch();

@@ -41,6 +41,8 @@ namespace Ecommerce.Application.DTOs
         public string WarehouseName { get; set; } = string.Empty;
         public List<AdminProductVariantDto> Variants { get; set; } = new List<AdminProductVariantDto>();
         public List<AdminProductImageDto> Images { get; set; } = new List<AdminProductImageDto>();
+        public List<string> Tags { get; set; } = new List<string>();
+        public List<ProductAttributeOptionDto> Attributes { get; set; } = new List<ProductAttributeOptionDto>();
     }
 
     public class AdminProductVariantDto

@@ -70,6 +70,10 @@ namespace Ecommerce.Application.Commands.Admin
             product.SeoTitle = command.SeoTitle;
             product.SeoDescription = command.SeoDescription;
             product.SeoKeywords = command.SeoKeywords;
+            if (command.Attributes != null)
+            {
+                product.AttributesJson = command.Attributes.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(command.Attributes) : null;
+            }
             product.UpdatedAt = DateTimeOffset.UtcNow;
 
             // Handle inventory / warehouse update

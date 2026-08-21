@@ -24,5 +24,7 @@ namespace Ecommerce.Application.DTOs
         public decimal UnitPrice { get; set; }
         public decimal LineTotal { get; set; }
         public string? ImageUrl { get; set; }
+        public string? SelectedOptions { get; set; }
+        public string? VariantName { get; set; }
     }
 }

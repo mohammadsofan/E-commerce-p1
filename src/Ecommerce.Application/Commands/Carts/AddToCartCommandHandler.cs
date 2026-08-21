@@ -50,15 +50,19 @@ namespace Ecommerce.Application.Commands.Carts
                 productName = string.IsNullOrWhiteSpace(variant.Name) ? product.Name : variant.Name;
             }
 
+            var normalizedOptions = string.IsNullOrWhiteSpace(command.SelectedOptions) ? null : command.SelectedOptions.Trim();
+
             await CartWriteLock.WaitAsync(cancellationToken);
             try
             {
                 var cart = await GetOrCreateCartAsync(cancellationToken);
                 var existing = cart.Items.FirstOrDefault(i =>
-                    i.ProductId == product.Id && i.ProductVariantId == command.ProductVariantId);
+                    i.ProductId == product.Id &&
+                    i.ProductVariantId == command.ProductVariantId &&
+                    (string.IsNullOrWhiteSpace(i.SelectedOptions) ? null : i.SelectedOptions.Trim()) == normalizedOptions);
                 if (existing != null && await Db.CartItems.AnyAsync(i => i.Id == existing.Id, cancellationToken))
                 {
-                    cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity);
+                    cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity, normalizedOptions);
                 }
                 else
                 {
@@ -70,7 +74,8 @@ namespace Ecommerce.Application.Commands.Carts
                         command.ProductVariantId,
                         productName,
                         unitPrice,
-                        command.Quantity);
+                        command.Quantity,
+                        normalizedOptions);
                     cart.Items.Add(item);
                     Db.CartItems.Add(item);
                 }
