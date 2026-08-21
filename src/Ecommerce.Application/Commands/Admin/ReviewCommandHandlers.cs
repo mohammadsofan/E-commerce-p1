@@ -41,26 +41,52 @@ namespace Ecommerce.Application.Commands.Admin
             var userName = _currentUser.UserName;
             var isAdmin = _currentUser.IsAdmin;
 
-            if (!userId.HasValue && !string.IsNullOrWhiteSpace(userName))
+            var candidateUserIds = new List<Guid>();
+            if (userId.HasValue && userId.Value != Guid.Empty)
+            {
+                candidateUserIds.Add(userId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(userName))
             {
                 var userDb = await _db.Users
                     .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.UserName == userName || u.Email == userName, cancellationToken);
-                if (userDb != null) userId = userDb.Id;
+                if (userDb != null && !candidateUserIds.Contains(userDb.Id))
+                {
+                    candidateUserIds.Add(userDb.Id);
+                }
             }
 
-            if (!userId.HasValue && !isAdmin)
+            if (!candidateUserIds.Any() && !isAdmin)
                 throw new DomainException("يجب تسجيل الدخول أولاً لكتابة تقييم.");
 
-            var effectiveUserId = userId ?? Guid.NewGuid();
+            var effectiveUserId = candidateUserIds.FirstOrDefault(Guid.NewGuid());
+
+            // Collect product ID and all related variant IDs
+            var variantIds = await _db.ProductVariants
+                .AsNoTracking()
+                .Where(v => v.ProductId == command.ProductId)
+                .Select(v => v.Id)
+                .ToListAsync(cancellationToken);
+            var allTargetIds = new List<Guid>(variantIds) { command.ProductId };
 
             // Verified Purchase Requirement: Customer must have ordered the product in a non-cancelled order, or be an Admin
             var hasPurchased = isAdmin;
-            if (!hasPurchased && userId.HasValue)
+            if (!hasPurchased && candidateUserIds.Any())
             {
-                hasPurchased = await _db.Orders
+                var orderIds = await _db.Orders
                     .AsNoTracking()
-                    .AnyAsync(o => o.UserId == effectiveUserId && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == command.ProductId), cancellationToken);
+                    .Where(o => o.UserId.HasValue && candidateUserIds.Contains(o.UserId.Value) && o.Status != OrderStatus.Cancelled)
+                    .Select(o => o.Id)
+                    .ToListAsync(cancellationToken);
+
+                if (orderIds.Any())
+                {
+                    hasPurchased = await _db.OrderItems
+                        .AsNoTracking()
+                        .AnyAsync(oi => orderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || allTargetIds.Contains(oi.ProductVariantId)), cancellationToken);
+                }
             }
 
             if (!hasPurchased)
@@ -70,7 +96,7 @@ namespace Ecommerce.Application.Commands.Admin
 
             var now = DateTimeOffset.UtcNow;
             var existingReview = await _db.ProductReviews
-                .FirstOrDefaultAsync(r => r.ProductId == command.ProductId && r.UserId == effectiveUserId, cancellationToken);
+                .FirstOrDefaultAsync(r => r.ProductId == command.ProductId && (candidateUserIds.Contains(r.UserId) || r.UserId == effectiveUserId), cancellationToken);
 
             ProductReview review;
             if (existingReview != null)
@@ -89,7 +115,7 @@ namespace Ecommerce.Application.Commands.Admin
                 {
                     Id = Guid.NewGuid(),
                     ProductId = command.ProductId,
-                    UserId = userId.Value,
+                    UserId = effectiveUserId,
                     Rating = command.Rating,
                     Title = command.Title ?? string.Empty,
                     Comment = command.Comment ?? string.Empty,

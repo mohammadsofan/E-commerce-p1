@@ -66,34 +66,54 @@ namespace Ecommerce.Application.Queries.Admin
                 };
             }
 
-            // Check if admin OR if user has any non-cancelled order containing this product
-            var hasPurchased = isAdmin;
-            if (!hasPurchased && userId.HasValue)
+            var candidateUserIds = new List<Guid>();
+            if (userId.HasValue && userId.Value != Guid.Empty)
             {
-                hasPurchased = await _db.Orders
-                    .AsNoTracking()
-                    .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == query.ProductId), cancellationToken);
+                candidateUserIds.Add(userId.Value);
             }
 
-            if (!hasPurchased && !string.IsNullOrWhiteSpace(userName))
+            if (!string.IsNullOrWhiteSpace(userName))
             {
-                var userDb = await _db.Users
+                var dbUser = await _db.Users
                     .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.UserName == userName || u.Email == userName, cancellationToken);
-                if (userDb != null)
+                if (dbUser != null && !candidateUserIds.Contains(dbUser.Id))
                 {
-                    hasPurchased = await _db.Orders
-                        .AsNoTracking()
-                        .AnyAsync(o => o.UserId == userDb.Id && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == query.ProductId), cancellationToken);
-                    if (userId == null) userId = userDb.Id;
+                    candidateUserIds.Add(dbUser.Id);
                 }
             }
 
-            var effectiveUserId = userId ?? Guid.Empty;
-            var existingReview = effectiveUserId != Guid.Empty
+            var primaryUserId = candidateUserIds.FirstOrDefault();
+
+            // Collect product ID and all related variant IDs
+            var variantIds = await _db.ProductVariants
+                .AsNoTracking()
+                .Where(v => v.ProductId == query.ProductId)
+                .Select(v => v.Id)
+                .ToListAsync(cancellationToken);
+            var allTargetIds = new List<Guid>(variantIds) { query.ProductId };
+
+            var hasPurchased = isAdmin;
+            if (!hasPurchased && candidateUserIds.Any())
+            {
+                var orderIds = await _db.Orders
+                    .AsNoTracking()
+                    .Where(o => o.UserId.HasValue && candidateUserIds.Contains(o.UserId.Value) && o.Status != OrderStatus.Cancelled)
+                    .Select(o => o.Id)
+                    .ToListAsync(cancellationToken);
+
+                if (orderIds.Any())
+                {
+                    hasPurchased = await _db.OrderItems
+                        .AsNoTracking()
+                        .AnyAsync(oi => orderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || allTargetIds.Contains(oi.ProductVariantId)), cancellationToken);
+                }
+            }
+
+            var existingReview = primaryUserId != Guid.Empty
                 ? await _db.ProductReviews
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.ProductId == query.ProductId && r.UserId == effectiveUserId, cancellationToken)
+                    .FirstOrDefaultAsync(r => r.ProductId == query.ProductId && (candidateUserIds.Contains(r.UserId) || r.UserId == primaryUserId), cancellationToken)
                 : null;
 
             ProductReviewDto? reviewDto = null;
