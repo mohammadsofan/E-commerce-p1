@@ -19,7 +19,6 @@ namespace Ecommerce.Domain.Entities
         public decimal CostPrice { get; set; }
         public decimal CompareAtPrice { get; set; }
         public string CurrencyCode { get; set; } = "USD";
-        public Guid? TaxCategoryId { get; set; }
         public decimal Weight { get; set; }
         public decimal Length { get; set; }
         public decimal Width { get; set; }

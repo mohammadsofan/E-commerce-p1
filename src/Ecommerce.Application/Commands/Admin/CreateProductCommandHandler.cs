@@ -64,7 +64,6 @@ namespace Ecommerce.Application.Commands.Admin
                 CostPrice = command.CostPrice,
                 CompareAtPrice = command.CompareAtPrice,
                 CurrencyCode = command.CurrencyCode,
-                TaxCategoryId = command.TaxCategoryId,
                 Weight = command.Weight,
                 Length = command.Length,
                 Width = command.Width,

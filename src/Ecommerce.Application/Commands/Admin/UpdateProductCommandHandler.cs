@@ -57,7 +57,6 @@ namespace Ecommerce.Application.Commands.Admin
             product.CostPrice = command.CostPrice;
             product.CompareAtPrice = command.CompareAtPrice;
             product.CurrencyCode = command.CurrencyCode;
-            product.TaxCategoryId = command.TaxCategoryId;
             product.Weight = command.Weight;
             product.Length = command.Length;
             product.Width = command.Width;
