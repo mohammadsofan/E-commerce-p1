@@ -23,9 +23,23 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<List<BrandDto>> Handle(GetBrandsQuery query, CancellationToken cancellationToken = default)
         {
-            var brands = await _db.Brands
+            var brandQuery = _db.Brands
                 .AsNoTracking()
-                .Where(b => b.IsActive && !b.IsDeleted)
+                .Where(b => b.IsActive && !b.IsDeleted);
+
+            if (query.CategoryId.HasValue)
+            {
+                var brandIdsInCategory = await _db.Products
+                    .AsNoTracking()
+                    .Where(p => p.CategoryId == query.CategoryId.Value && !p.IsDeleted && p.IsActive && p.BrandId.HasValue)
+                    .Select(p => p.BrandId!.Value)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                brandQuery = brandQuery.Where(b => brandIdsInCategory.Contains(b.Id));
+            }
+
+            var brands = await brandQuery
                 .OrderBy(b => b.Name)
                 .ToListAsync(cancellationToken);
 

@@ -316,23 +316,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed initial database data
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var seeder = scope.ServiceProvider.GetRequiredService<DbSeeder>();
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var roleManager = scope.ServiceProvider.GetService<RoleManager<ApplicationRole>>();
-        await seeder.SeedAsync(db, roleManager);
-    }
-    catch (Exception ex)
-    {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database on startup.");
-    }
-}
-
 app.Run();
 
 // Make Program accessible for integration tests

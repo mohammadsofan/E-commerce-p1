@@ -19,9 +19,9 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] Guid? categoryId = null)
         {
-            var query = new GetBrandsQuery();
+            var query = new GetBrandsQuery { CategoryId = categoryId };
             var result = await _queryDispatcher.Send<GetBrandsQuery, List<BrandDto>>(query);
             return Ok(result);
         }

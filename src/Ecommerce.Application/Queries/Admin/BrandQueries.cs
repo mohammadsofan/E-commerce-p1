@@ -6,6 +6,7 @@ namespace Ecommerce.Application.Queries.Admin
 {
     public class GetBrandsQuery : IQuery<List<BrandDto>>
     {
+        public System.Guid? CategoryId { get; set; }
     }
 
     public class GetBrandByIdQuery : IQuery<BrandDto>
