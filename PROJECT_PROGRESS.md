@@ -2,11 +2,22 @@
 
 ## Current Status
 
-- Phase: Remediation Roadmap - Phase 3: Code Cleanup & Efficiency (Complete)
+- Phase: Tax Removal & Database Migration (Completed 2026-08-21)
 - Feature: Full Clean Architecture E-Commerce Backend & React SPA Frontend
-- Last Completed: Phase 3: Code Cleanup & Efficiency (Optimized brand queries by category, deduplicated frontend service methods, eliminated redundant startup DB seeding, centralized auth state management)
-- Status: **Full-Stack Architectural, Security & Integration Remediation 100% Completed**
-- Overall Progress: ~100% (Production-hardened, fully aligned API contracts, zero type/build errors, all 264 automated tests passing)
+- Last Completed: Dropped Tax tables (`TaxRates`, `TaxCategories`), removed `TaxAmount` columns from `Orders` and `OrderItems`, dropped `TaxCategoryId` from `Products`, generated EF migration `RemoveTaxEntitiesAndFields` and executed `dotnet ef database update`.
+- Status: **Full-Stack Architectural, Security & Tax Removal Remediation 100% Completed**
+- Overall Progress: ~100% (Production-hardened, zero type/build errors, all 264 automated tests passing)
+
+### Tax System Removal & Database Migration (Completed 2026-08-21)
+- **Database Schema Migration**:
+  - Generated and applied EF Core migration `RemoveTaxEntitiesAndFields`.
+  - Dropped tables: `TaxRates`, `TaxCategories`.
+  - Dropped columns: `Orders.TaxAmount`, `OrderItems.TaxAmount`, `Products.TaxCategoryId`.
+- **Domain & Application**:
+  - Removed `TaxAmount` from `Order` entity, `RecalculateTotals()`, `CheckoutCommand`, `CheckoutCommandHandler`, and AutoMapper profiles. TotalAmount is now strictly `Subtotal - DiscountAmount + ShippingAmount`.
+  - Removed `TaxCategoryId` from `Product`, `CreateProductCommand`, `UpdateProductCommand`, and `AdminProductDto`.
+- **Frontend & Checkout**:
+  - Completely removed hardcoded `الضريبة التقديرية` and tax percentages from `Checkout.tsx`, `Cart.tsx`, `OrderDetail.tsx`, and Reports.
 
 ### Phase 3: Code Cleanup & Efficiency (Completed 2026-08-21)
 - **Optimized Brands Query by Category:**
