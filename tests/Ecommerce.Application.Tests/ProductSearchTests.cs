@@ -104,8 +104,8 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery { SearchTerm = "mouse" });
 
-            Assert.Single(result);
-            Assert.Equal("Wireless Mouse", result[0].Name);
+            Assert.Single(result.Items);
+            Assert.Equal("Wireless Mouse", result.Items[0].Name);
         }
 
         [Fact]
@@ -117,8 +117,8 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery { SearchTerm = "MK-002" });
 
-            Assert.Single(result);
-            Assert.Equal("Mechanical Keyboard", result[0].Name);
+            Assert.Single(result.Items);
+            Assert.Equal("Mechanical Keyboard", result.Items[0].Name);
         }
 
         [Fact]
@@ -131,8 +131,8 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery { CategoryId = electronicsId });
 
-            Assert.Equal(2, result.Count);
-            Assert.All(result, p => Assert.Contains(new[] { "Wireless Mouse", "Mechanical Keyboard" }, n => n == p.Name));
+            Assert.Equal(2, result.Items.Count);
+            Assert.All(result.Items, p => Assert.Contains(new[] { "Wireless Mouse", "Mechanical Keyboard" }, n => n == p.Name));
         }
 
         [Fact]
@@ -144,8 +144,8 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery { MinPrice = 40m, MaxPrice = 100m });
 
-            Assert.Single(result);
-            Assert.Equal("C# Programming Guide", result[0].Name);
+            Assert.Single(result.Items);
+            Assert.Equal("C# Programming Guide", result.Items[0].Name);
         }
 
         [Fact]
@@ -157,9 +157,9 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery { SortBy = "price_asc" });
 
-            Assert.Equal(4, result.Count);
-            Assert.Equal(10m, result[0].BasePrice);
-            Assert.Equal(120m, result[^1].BasePrice);
+            Assert.Equal(4, result.Items.Count);
+            Assert.Equal(10m, result.Items[0].BasePrice);
+            Assert.Equal(120m, result.Items[^1].BasePrice);
         }
 
         [Fact]
@@ -171,8 +171,8 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery { IsActive = false });
 
-            Assert.Single(result);
-            Assert.Equal("Retired Product", result[0].Name);
+            Assert.Single(result.Items);
+            Assert.Equal("Retired Product", result.Items[0].Name);
         }
 
         [Fact]
@@ -184,7 +184,7 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery { SortBy = "featured" });
 
-            Assert.Equal("Wireless Mouse", result[0].Name);
+            Assert.Equal("Wireless Mouse", result.Items[0].Name);
         }
 
         [Fact]
@@ -198,7 +198,7 @@ namespace Ecommerce.Application.Tests
 
             var result = await handler.Handle(new GetProductsQuery());
 
-            Assert.Equal(3, result.Count);
+            Assert.Equal(3, result.Items.Count);
         }
     }
 }

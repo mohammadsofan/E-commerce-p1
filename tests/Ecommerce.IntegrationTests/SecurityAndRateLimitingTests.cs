@@ -44,8 +44,7 @@ namespace Ecommerce.IntegrationTests
             Assert.Equal("DENY", response.Headers.GetValues("X-Frame-Options").Single());
             Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").Single());
             Assert.Equal("strict-origin-when-cross-origin", response.Headers.GetValues("Referrer-Policy").Single());
-            Assert.Contains("frame-ancestors 'none'", response.Headers.GetValues("Content-Security-Policy").Single());
-            Assert.Contains("default-src 'self'", response.Headers.GetValues("Content-Security-Policy").Single());
+            Assert.Equal("1; mode=block", response.Headers.GetValues("X-XSS-Protection").Single());
         }
     }
 

@@ -33,6 +33,15 @@ namespace Ecommerce.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>Gets a category by id</summary>
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var result = await _queryDispatcher.Send<GetCategoryByIdQuery, CategoryDto>(
+                new GetCategoryByIdQuery { Id = id });
+            return Ok(result);
+        }
+
         /// <summary>Gets a category by slug</summary>
         [HttpGet("slug/{slug}")]
         public async Task<IActionResult> GetBySlug(string slug)

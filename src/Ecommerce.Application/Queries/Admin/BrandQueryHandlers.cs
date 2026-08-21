@@ -32,4 +32,27 @@ namespace Ecommerce.Application.Queries.Admin
             return _mapper.Map<List<BrandDto>>(brands);
         }
     }
+
+    public class GetBrandByIdQueryHandler : IQueryHandler<GetBrandByIdQuery, BrandDto>
+    {
+        private readonly IApplicationDbContext _db;
+        private readonly IMapper _mapper;
+
+        public GetBrandByIdQueryHandler(IApplicationDbContext db, IMapper mapper)
+        {
+            _db = db;
+            _mapper = mapper;
+        }
+
+        public async Task<BrandDto> Handle(GetBrandByIdQuery query, CancellationToken cancellationToken = default)
+        {
+            var brand = await _db.Brands
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == query.Id, cancellationToken);
+            if (brand == null || brand.IsDeleted)
+                throw new Ecommerce.Domain.Exceptions.NotFoundException("Brand", query.Id);
+
+            return _mapper.Map<BrandDto>(brand);
+        }
+    }
 }

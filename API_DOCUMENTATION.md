@@ -242,32 +242,38 @@ All public product responses include these fields:
 
 **Response:** `200 OK`
 ```json
-[
-  {
-    "id": "guid",
-    "name": "string",
-    "slug": "string",
-    "description": "string",
-    "price": "decimal",
-    "categoryId": "guid",
-    "brandId": "guid",
-    "isActive": true,
-    "createdAt": "2026-08-18T00:00:00Z",
-    "availableStock": 100,
-    "images": [
-      {
-        "id": "guid",
-        "productId": "guid",
-        "productVariantId": "guid?",
-        "url": "string",
-        "altText": "string",
-        "isPrimary": true,
-        "sortOrder": 0,
-        "createdAt": "2026-08-18T00:00:00Z"
-      }
-    ]
-  }
-]
+{
+  "items": [
+    {
+      "id": "guid",
+      "name": "string",
+      "slug": "string",
+      "description": "string",
+      "price": "decimal",
+      "categoryId": "guid",
+      "brandId": "guid",
+      "isActive": true,
+      "createdAt": "2026-08-18T00:00:00Z",
+      "availableStock": 100,
+      "images": [
+        {
+          "id": "guid",
+          "productId": "guid",
+          "productVariantId": "guid?",
+          "url": "string",
+          "altText": "string",
+          "isPrimary": true,
+          "sortOrder": 0,
+          "createdAt": "2026-08-18T00:00:00Z"
+        }
+      ]
+    }
+  ],
+  "totalCount": 100,
+  "page": 1,
+  "pageSize": 20,
+  "totalPages": 5
+}
 ```
 
 ---
@@ -5629,6 +5635,34 @@ The response pagination metadata reflects the requested `page` and the full filt
 
 ---
 
+### Get Category By ID
+**GET** `/api/admin/categories/{id}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | guid | Category ID |
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "parentCategoryId": "guid?",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "displayOrder": 0,
+  "isActive": true,
+  "isFeatured": false,
+  "children": []
+}
+```
+
+---
+
 ### Get Category By Slug
 **GET** `/api/admin/categories/slug/{slug}`
 
@@ -5781,6 +5815,30 @@ The response pagination metadata reflects the requested `page` and the full filt
     "isActive": true
   }
 ]
+```
+
+---
+
+### Get Brand By ID
+**GET** `/api/admin/brands/{id}`
+
+**Headers:** `Authorization: Bearer <admin_token>`
+
+**Path Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | guid | Brand ID |
+
+**Response:** `200 OK`
+```json
+{
+  "id": "guid",
+  "name": "string",
+  "slug": "string",
+  "description": "string",
+  "imageUrl": "string",
+  "isActive": true
+}
 ```
 
 ---

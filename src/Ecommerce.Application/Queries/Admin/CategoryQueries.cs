@@ -12,4 +12,9 @@ namespace Ecommerce.Application.Queries.Admin
     {
         public string Slug { get; set; }
     }
+
+    public class GetCategoryByIdQuery : IQuery<CategoryDto>
+    {
+        public System.Guid Id { get; set; }
+    }
 }

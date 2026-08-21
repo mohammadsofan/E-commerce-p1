@@ -57,4 +57,27 @@ namespace Ecommerce.Application.Queries.Admin
             return _mapper.Map<CategoryDto>(category);
         }
     }
+
+    public class GetCategoryByIdQueryHandler : IQueryHandler<GetCategoryByIdQuery, CategoryDto>
+    {
+        private readonly IApplicationDbContext _db;
+        private readonly IMapper _mapper;
+
+        public GetCategoryByIdQueryHandler(IApplicationDbContext db, IMapper mapper)
+        {
+            _db = db;
+            _mapper = mapper;
+        }
+
+        public async Task<CategoryDto> Handle(GetCategoryByIdQuery query, CancellationToken cancellationToken = default)
+        {
+            var category = await _db.Categories
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == query.Id, cancellationToken);
+            if (category == null || category.IsDeleted)
+                throw new NotFoundException("Category", query.Id);
+
+            return _mapper.Map<CategoryDto>(category);
+        }
+    }
 }

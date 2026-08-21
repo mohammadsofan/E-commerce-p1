@@ -33,6 +33,15 @@ namespace Ecommerce.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>Gets a brand by id</summary>
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var result = await _queryDispatcher.Send<GetBrandByIdQuery, BrandDto>(
+                new GetBrandByIdQuery { Id = id });
+            return Ok(result);
+        }
+
         /// <summary>Creates a new brand</summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateBrandCommand command)

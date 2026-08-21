@@ -202,7 +202,7 @@ namespace Ecommerce.Infrastructure
 
             // Register query dispatcher and query handlers
             services.AddScoped<QueryDispatcher>();
-            services.AddScoped<IQueryHandler<GetProductsQuery, List<ProductDto>>, GetProductsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetProductsQuery, PagedResult<ProductDto>>, GetProductsQueryHandler>();
             services.AddScoped<IQueryHandler<GetFrequentlyBoughtTogetherQuery, List<ProductDto>>, GetFrequentlyBoughtTogetherQueryHandler>();
             services.AddScoped<IQueryHandler<GetProductByIdQuery, ProductDto>, GetProductByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetProductBySlugQuery, ProductDto>, GetProductBySlugQueryHandler>();
@@ -303,8 +303,10 @@ namespace Ecommerce.Infrastructure
 
             // Catalog query handlers (categories / brands)
             services.AddScoped<IQueryHandler<GetCategoriesQuery, List<CategoryDto>>, GetCategoriesQueryHandler>();
+            services.AddScoped<IQueryHandler<GetCategoryByIdQuery, CategoryDto>, GetCategoryByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetCategoryBySlugQuery, CategoryDto>, GetCategoryBySlugQueryHandler>();
             services.AddScoped<IQueryHandler<GetBrandsQuery, List<BrandDto>>, GetBrandsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetBrandByIdQuery, BrandDto>, GetBrandByIdQueryHandler>();
 
             // Warehouse query + command handlers
             services.AddScoped<IQueryHandler<GetAdminWarehousesQuery, PagedResult<WarehouseDto>>, GetAdminWarehousesQueryHandler>();

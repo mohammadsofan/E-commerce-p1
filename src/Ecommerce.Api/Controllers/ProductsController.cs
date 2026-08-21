@@ -46,7 +46,7 @@ namespace Ecommerce.Api.Controllers
                 IsActive = isActive,
                 SortBy = sortBy
             };
-            var result = await _queryDispatcher.Send<GetProductsQuery, List<ProductDto>>(query);
+            var result = await _queryDispatcher.Send<GetProductsQuery, Ecommerce.Application.Common.PagedResult<ProductDto>>(query);
             return Ok(result);
         }
 

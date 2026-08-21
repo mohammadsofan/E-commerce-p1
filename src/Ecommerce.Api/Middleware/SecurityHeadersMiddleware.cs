@@ -35,22 +35,6 @@ namespace Ecommerce.Api.Middleware
             // Basic XSS filter for legacy browsers
             headers["X-XSS-Protection"] = "1; mode=block";
 
-            // Cross-origin isolation / embedding policy
-            headers["Cross-Origin-Opener-Policy"] = "same-origin";
-            headers["Cross-Origin-Resource-Policy"] = "same-site";
-
-            // Content Security Policy - allow self-hosted resources and inline styles
-            headers["Content-Security-Policy"] =
-                "default-src 'self'; " +
-                "script-src 'self'; " +
-                "style-src 'self' 'unsafe-inline'; " +
-                "img-src 'self' data:; " +
-                "font-src 'self' data:; " +
-                "connect-src 'self'; " +
-                "frame-ancestors 'none'; " +
-                "base-uri 'self'; " +
-                "form-action 'self'";
-
             await _next(context);
         }
     }

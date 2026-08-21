@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -82,8 +82,8 @@ namespace Ecommerce.Application.Tests
             var result = await handler.Handle(query);
 
             // Assert
-            Assert.Single(result);
-            Assert.Equal("Featured Shirt", result.First().Name);
+            Assert.Single(result.Items);
+            Assert.Equal("Featured Shirt", result.Items.First().Name);
         }
 
         [Fact]

@@ -2,11 +2,28 @@
 
 ## Current Status
 
-- Phase: Remediation Roadmap - Phase 1: Critical Security & Authentication (Complete)
+- Phase: Remediation Roadmap - Phase 2: API Contracts & Integration Bugs (Complete)
 - Feature: Full Clean Architecture E-Commerce Backend & React SPA Frontend
-- Last Completed: Phase 1: Critical Security & Authentication (Price tampering mitigation, [Authorize] enforcement on Orders/Checkout, .NET User Secrets integration, Fail-fast JWT startup validation, frontend protected routes)
-- Next Task: Phase 2: API Contracts & Integration Bugs
+- Last Completed: Phase 2: API Contracts & Integration Bugs (Fixed double-wrapped Axios query params, aligned Products & Currencies PagedResult envelopes, added missing Admin Category/Brand GetById endpoints, aligned Coupon calculation DTOs, enhanced RFC 7807 error interceptor, and made CORS origins dynamic)
+- Next Task: Phase 3: Code Cleanup & Efficiency
 - Overall Progress: ~100% (Production hardening and full-stack alignment in progress)
+
+### Phase 2: API Contracts & Integration Bugs (Completed 2026-08-21)
+- **Resolved Double-Wrapped Query Params:** Fixed `shippingService.getAdminZones` and `shippingService.getAdminMethods` to pass query parameter objects directly rather than double-wrapping them as `{ params }`.
+- **Aligned PagedResult Pagination Contracts:**
+  - Updated `ProductsController.Get`, `GetProductsQuery`, and `GetProductsQueryHandler` to return `PagedResult<ProductDto>` containing `totalCount`, `page`, `pageSize`, `totalPages`, and `items`.
+  - Aligned `productsService.getProducts`, `Products.tsx`, `Header.tsx`, `BrandDetail.tsx`, `CategoryDetail.tsx`, and `Home.tsx` to handle paginated results and maintain smooth page navigation.
+  - Aligned `adminService.getAdminCurrencies` return type with `PaginatedResponse<Currency>`.
+- **Implemented Admin Direct Lookup Endpoints:**
+  - Added `[HttpGet("{id:guid}")]` to `AdminCategoryController` and `AdminBrandController` mapped to `GetCategoryByIdQuery` and `GetBrandByIdQuery`.
+  - Updated `adminService.getAdminCategoryById` and `adminService.getAdminBrandById` to fetch single entities directly by ID rather than retrieving entire collections.
+- **Aligned Coupon Calculation DTOs:**
+  - Synchronized `CalculateDiscountsQuery` / `DiscountCalculationResult` contracts between backend and frontend `couponsService.calculateDiscount`.
+- **Enhanced RFC 7807 & Rate-Limiting Error Handling:**
+  - Upgraded Axios response interceptor in `api.ts` to parse and format RFC 7807 `ProblemDetails` (`detail`, `errors`, `title`) and rate-limiting payloads for 403, 429, and 500 status codes.
+- **Dynamic CORS & Header Sanitization:**
+  - Configured dynamic CORS origins in `Program.cs` via `Cors:AllowedOrigins`.
+  - Removed restrictive document-level CSP and CORP headers from `SecurityHeadersMiddleware.cs` that blocked legitimate headless API calls.
 
 ### Phase 1: Critical Security & Authentication (Completed 2026-08-21)
 - **Eliminated Price Tampering:** Removed client-controlled `UnitPrice` from `CheckoutItem` / `CheckoutCommand`. Derived all unit prices strictly server-side from database records (`Product.BasePrice` or `ProductVariant.Price`).
