@@ -7,12 +7,14 @@ using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.Admin;
 using Ecommerce.Application.Queries.Orders;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class OrdersController : ControllerBase
     {
         private readonly QueryDispatcher _queryDispatcher;

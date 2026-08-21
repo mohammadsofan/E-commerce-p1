@@ -192,48 +192,46 @@ if (tracingEnabled)
 }
 
 
-// Configure Identity and JWT authentication (best-effort — requires Identity & JWT packages locally)
-try
+// Configure Identity and JWT authentication
+builder.Services.AddIdentity<Ecommerce.Infrastructure.Identity.ApplicationUser, Ecommerce.Infrastructure.Identity.ApplicationRole>()
+    .AddEntityFrameworkStores<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+var key = builder.Configuration["Jwt:Key"];
+var issuer = builder.Configuration["Jwt:Issuer"] ?? "ecommerce";
+
+if (string.IsNullOrWhiteSpace(key) || key == "change_this_dev_secret_to_a_long_random_value" || System.Text.Encoding.UTF8.GetByteCount(key) < 32)
 {
-    builder.Services.AddIdentity<Ecommerce.Infrastructure.Identity.ApplicationUser, Ecommerce.Infrastructure.Identity.ApplicationRole>()
-        .AddEntityFrameworkStores<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>()
-        .AddDefaultTokenProviders();
-
-    var key = builder.Configuration["Jwt:Key"] ?? "change_this_dev_secret_to_a_long_random_value";
-    var issuer = builder.Configuration["Jwt:Issuer"] ?? "ecommerce";
-
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = issuer,
-            ValidAudience = issuer,
-            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(key))
-        };
-    });
-
-    builder.Services.AddAuthorization(options =>
-    {
-        options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-        options.AddPolicy("CustomerOnly", policy => policy.RequireRole("Customer"));
-        options.AddPolicy("AdminOrCustomer", policy => policy.RequireRole("Admin", "Customer"));
-    });
+    throw new InvalidOperationException("Jwt:Key is not configured properly. A secure key of at least 256 bits (32 bytes) is required.");
 }
-catch
+
+builder.Services.AddAuthentication(options =>
 {
-    // Identity/JWT packages not available; skip runtime configuration. Run `scripts/setup.*` to install packages locally.
-}
+    options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = issuer,
+        ValidAudience = issuer,
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(key))
+    };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("CustomerOnly", policy => policy.RequireRole("Customer"));
+    options.AddPolicy("AdminOrCustomer", policy => policy.RequireRole("Admin", "Customer"));
+});
 
 // Register application handlers if not registered by other DI calls
 builder.Services.AddScoped<Ecommerce.Application.Common.Commands.ICommandHandler<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand, Ecommerce.Application.Common.Unit>, Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommandHandler>();

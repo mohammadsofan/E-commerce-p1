@@ -27,11 +27,15 @@ namespace Ecommerce.Application.Queries.Orders
         public async Task<OrderDto> Handle(GetOrderByIdQuery query, CancellationToken cancellationToken = default)
         {
             var userId = _currentUser.UserId;
+            var isAdmin = _currentUser.IsAdmin;
             var order = await _db.Orders
                 .Include(o => o.Items)
-                .FirstOrDefaultAsync(o => o.Id == query.Id && (userId == null || o.UserId == userId), cancellationToken);
+                .FirstOrDefaultAsync(o => o.Id == query.Id, cancellationToken);
 
             if (order == null)
+                throw new NotFoundException("Order", query.Id);
+
+            if (!isAdmin && (!userId.HasValue || order.UserId != userId.Value))
                 throw new NotFoundException("Order", query.Id);
 
             var dto = _mapper.Map<OrderDto>(order);

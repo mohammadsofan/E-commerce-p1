@@ -14,11 +14,13 @@ namespace Ecommerce.Application.Commands.Orders
     {
         private readonly IApplicationDbContext _db;
         private readonly IMapper _mapper;
+        private readonly ICurrentUserService _currentUser;
 
-        public MarkOrderPaidCommandHandler(IApplicationDbContext db, IMapper mapper)
+        public MarkOrderPaidCommandHandler(IApplicationDbContext db, IMapper mapper, ICurrentUserService currentUser)
         {
             _db = db;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<OrderDto> Handle(MarkOrderPaidCommand command, CancellationToken cancellationToken = default)
@@ -28,6 +30,11 @@ namespace Ecommerce.Application.Commands.Orders
                 .FirstOrDefaultAsync(o => o.Id == command.OrderId, cancellationToken);
 
             if (order == null) throw new NotFoundException("Order", command.OrderId);
+
+            var userId = _currentUser.UserId;
+            var isAdmin = _currentUser.IsAdmin;
+            if (!isAdmin && (!userId.HasValue || order.UserId != userId.Value))
+                throw new NotFoundException("Order", command.OrderId);
 
             // Transitions Placed -> Paid (enforced inside the aggregate).
             order.MarkPaid();

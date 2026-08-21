@@ -655,6 +655,8 @@ If a cart item was removed or became stale between reads, the API reloads the ca
 
 ## Orders
 
+**All endpoints require authentication (`Authorization: Bearer <token>`).**
+
 ### Get Orders
 **GET** `/api/orders`
 
@@ -719,6 +721,8 @@ If a cart item was removed or became stale between reads, the API reloads the ca
 **GET** `/api/orders/{id:guid}`
 
 **Headers:** `Authorization: Bearer <token>`
+
+*Note: Enforces strict authorization. Customers can only retrieve their own orders; administrators can view any order.*
 
 **Path Parameters:**
 | Parameter | Type | Description |
@@ -896,23 +900,39 @@ If a cart item was removed or became stale between reads, the API reloads the ca
 
 ## Checkout
 
+**All endpoints require authentication (`Authorization: Bearer <token>`).**
+
 ### Checkout
 **POST** `/api/checkout`
 
 **Headers:** `Authorization: Bearer <token>`
 
+*Security Note: Unit prices are derived exclusively server-side from product and variant catalog records in the database. `unitPrice` is not accepted from the client request payload to prevent price tampering.*
+
 **Request Body:**
 ```json
 {
-  "shippingAddressId": "guid (required)",
-  "billingAddressId": "guid (required)",
-  "shippingMethodId": "guid (required)",
+  "items": [
+    {
+      "productId": "guid (required)",
+      "productVariantId": "guid? (optional)",
+      "quantity": 1
+    }
+  ],
+  "currency": "USD",
+  "shippingAddress": "string (optional)",
+  "shippingAmount": 0.0,
+  "shippingAddressId": "guid? (optional)",
+  "billingAddressId": "guid? (optional)",
+  "shippingMethodId": "guid? (optional)",
+  "paymentMethod": "CashOnDelivery | CreditCard | PayPal",
   "couponCode": "string? (optional)",
+  "customerNotes": "string? (optional)",
   "idempotencyKey": "string (required)"
 }
 ```
 
-**Response:** `202 Accepted`
+**Response:** `200 OK`
 ```json
 {
   "orderId": "guid"

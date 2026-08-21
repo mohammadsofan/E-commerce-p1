@@ -22,6 +22,13 @@ namespace Ecommerce.Application.Tests
             return new ApplicationDbContext(options);
         }
 
+        private class TestCurrentUserService : Ecommerce.Application.Interfaces.ICurrentUserService
+        {
+            public Guid? UserId { get; set; }
+            public string? UserName { get; set; } = "TestUser";
+            public bool IsAdmin { get; set; } = true;
+        }
+
         private static IMapper CreateMapper()
         {
             var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>());
@@ -43,9 +50,10 @@ namespace Ecommerce.Application.Tests
         {
             using var context = CreateInMemoryContext();
             var mapper = CreateMapper();
+            var currentUser = new TestCurrentUserService();
             var order = await SeedPlacedOrderAsync(context);
 
-            var handler = new MarkOrderPaidCommandHandler(context, mapper);
+            var handler = new MarkOrderPaidCommandHandler(context, mapper, currentUser);
             var result = await handler.Handle(new MarkOrderPaidCommand { OrderId = order.Id });
 
             Assert.Equal("Paid", result.Status);
@@ -57,7 +65,8 @@ namespace Ecommerce.Application.Tests
         {
             using var context = CreateInMemoryContext();
             var mapper = CreateMapper();
-            var handler = new MarkOrderPaidCommandHandler(context, mapper);
+            var currentUser = new TestCurrentUserService();
+            var handler = new MarkOrderPaidCommandHandler(context, mapper, currentUser);
 
             await Assert.ThrowsAsync<NotFoundException>(() =>
                 handler.Handle(new MarkOrderPaidCommand { OrderId = Guid.NewGuid() }));
@@ -68,11 +77,12 @@ namespace Ecommerce.Application.Tests
         {
             using var context = CreateInMemoryContext();
             var mapper = CreateMapper();
+            var currentUser = new TestCurrentUserService();
             var order = await SeedPlacedOrderAsync(context);
 
-            await new MarkOrderPaidCommandHandler(context, mapper).Handle(new MarkOrderPaidCommand { OrderId = order.Id });
+            await new MarkOrderPaidCommandHandler(context, mapper, currentUser).Handle(new MarkOrderPaidCommand { OrderId = order.Id });
 
-            var result = await new CompleteOrderCommandHandler(context, mapper)
+            var result = await new CompleteOrderCommandHandler(context, mapper, currentUser)
                 .Handle(new CompleteOrderCommand { OrderId = order.Id });
 
             Assert.Equal("Completed", result.Status);
@@ -83,10 +93,11 @@ namespace Ecommerce.Application.Tests
         {
             using var context = CreateInMemoryContext();
             var mapper = CreateMapper();
+            var currentUser = new TestCurrentUserService();
             var order = await SeedPlacedOrderAsync(context);
 
             await Assert.ThrowsAsync<DomainException>(() =>
-                new CompleteOrderCommandHandler(context, mapper).Handle(new CompleteOrderCommand { OrderId = order.Id }));
+                new CompleteOrderCommandHandler(context, mapper, currentUser).Handle(new CompleteOrderCommand { OrderId = order.Id }));
         }
 
         [Fact]
@@ -94,11 +105,12 @@ namespace Ecommerce.Application.Tests
         {
             using var context = CreateInMemoryContext();
             var mapper = CreateMapper();
+            var currentUser = new TestCurrentUserService();
             var order = await SeedPlacedOrderAsync(context);
 
-            await new MarkOrderPaidCommandHandler(context, mapper).Handle(new MarkOrderPaidCommand { OrderId = order.Id });
+            await new MarkOrderPaidCommandHandler(context, mapper, currentUser).Handle(new MarkOrderPaidCommand { OrderId = order.Id });
 
-            var result = await new CancelOrderCommandHandler(context, mapper)
+            var result = await new CancelOrderCommandHandler(context, mapper, currentUser)
                 .Handle(new CancelOrderCommand { OrderId = order.Id, Reason = "changed mind" });
 
             Assert.Equal("Cancelled", result.Status);
@@ -109,13 +121,14 @@ namespace Ecommerce.Application.Tests
         {
             using var context = CreateInMemoryContext();
             var mapper = CreateMapper();
+            var currentUser = new TestCurrentUserService();
             var order = await SeedPlacedOrderAsync(context);
 
-            await new MarkOrderPaidCommandHandler(context, mapper).Handle(new MarkOrderPaidCommand { OrderId = order.Id });
-            await new CompleteOrderCommandHandler(context, mapper).Handle(new CompleteOrderCommand { OrderId = order.Id });
+            await new MarkOrderPaidCommandHandler(context, mapper, currentUser).Handle(new MarkOrderPaidCommand { OrderId = order.Id });
+            await new CompleteOrderCommandHandler(context, mapper, currentUser).Handle(new CompleteOrderCommand { OrderId = order.Id });
 
             await Assert.ThrowsAsync<DomainException>(() =>
-                new CancelOrderCommandHandler(context, mapper).Handle(new CancelOrderCommand { OrderId = order.Id }));
+                new CancelOrderCommandHandler(context, mapper, currentUser).Handle(new CancelOrderCommand { OrderId = order.Id }));
         }
 
         [Fact]

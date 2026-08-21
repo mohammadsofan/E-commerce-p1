@@ -79,7 +79,7 @@ namespace Ecommerce.Application.Commands.Checkout
                 }
 
                 var productName = product?.Name ?? "Product";
-                var unitPrice = it.UnitPrice ?? variant?.Price ?? product?.BasePrice ?? 10m;
+                var unitPrice = variant?.Price ?? product?.BasePrice ?? 10m;
                 var variantName = variant?.Name ?? string.Empty;
                 var sku = variant?.Sku ?? product?.Sku ?? string.Empty;
                 var imageUrl = product?.Images?.FirstOrDefault()?.Url ?? string.Empty;

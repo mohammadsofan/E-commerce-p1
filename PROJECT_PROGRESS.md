@@ -2,12 +2,18 @@
 
 ## Current Status
 
-- Phase: Phase 5 — API, Observability, and Testing (Complete)
-- Feature: Full Clean Architecture E-Commerce Backend with Clean Architecture
-- Current Task: Observability (OpenTelemetry tracing + correlation IDs)
-- Last Completed: Advanced features (SMS/push notifications, search index)
-- Next Task: Contract tests, load testing (k6), mutation testing, CI/CD enhancements, zero-downtime migrations
-- Overall Progress: ~100% (All core features complete, production-ready)
+- Phase: Remediation Roadmap - Phase 1: Critical Security & Authentication (Complete)
+- Feature: Full Clean Architecture E-Commerce Backend & React SPA Frontend
+- Last Completed: Phase 1: Critical Security & Authentication (Price tampering mitigation, [Authorize] enforcement on Orders/Checkout, .NET User Secrets integration, Fail-fast JWT startup validation, frontend protected routes)
+- Next Task: Phase 2: API Contracts & Integration Bugs
+- Overall Progress: ~100% (Production hardening and full-stack alignment in progress)
+
+### Phase 1: Critical Security & Authentication (Completed 2026-08-21)
+- **Eliminated Price Tampering:** Removed client-controlled `UnitPrice` from `CheckoutItem` / `CheckoutCommand`. Derived all unit prices strictly server-side from database records (`Product.BasePrice` or `ProductVariant.Price`).
+- **Secured Orders & Checkout Controllers:** Enforced `[Authorize]` attributes on `OrdersController` and `CheckoutController`. Added strict ownership validation (`o.UserId == userId || _currentUser.IsAdmin`) to `GetOrderByIdQueryHandler`, `CancelOrderCommandHandler`, `MarkOrderPaidCommandHandler`, and `CompleteOrderCommandHandler`.
+- **Sanitized Secrets & Configuration:** Replaced plaintext SMTP email passwords in `appsettings.Development.json` with secure development placeholders. Configured `<UserSecretsId>` in `Ecommerce.Api.csproj` for safe local secret management.
+- **Fail-Fast JWT Configuration:** Enforced runtime startup validation in `Program.cs` ensuring `Jwt:Key` is configured with a minimum of 256 bits (32 bytes), and removed silent `try-catch` exception swallowing around Identity/JWT registration.
+- **Protected Frontend Customer Routes:** Wrapped customer account routes (`/checkout`, `/orders`, `/orders/:id`, `/profile`, and `/wishlist`) inside `<ProtectedRoute requireAuth={true}>` in `App.tsx`. Updated frontend checkout payload to eliminate `unitPrice`.
 
 ## Previously Completed Work
 
