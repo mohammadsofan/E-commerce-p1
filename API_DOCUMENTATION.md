@@ -676,13 +676,36 @@ If a cart item was removed or became stale between reads, the API reloads the ca
     "status": "Placed",
     "paymentStatus": "Pending",
     "fulfillmentStatus": "Pending",
+    "currencyCode": "USD",
     "subtotal": "decimal",
     "discount": "decimal",
+    "discountAmount": "decimal",
     "shipping": "decimal",
+    "shippingAmount": "decimal",
     "tax": "decimal",
+    "taxAmount": "decimal",
     "total": "decimal",
-    "items": [...],
-    "createdAt": "2026-08-18T00:00:00Z"
+    "totalAmount": "decimal",
+    "couponCode": "string",
+    "notes": "string",
+    "customerNotes": "string",
+    "createdAt": "2026-08-21T00:00:00Z",
+    "items": [
+      {
+        "id": "guid",
+        "productId": "guid",
+        "productVariantId": "guid",
+        "productName": "string",
+        "variantName": "string",
+        "sku": "string",
+        "quantity": 1,
+        "unitPrice": "decimal",
+        "totalPrice": "decimal",
+        "totalAmount": "decimal",
+        "imageUrl": "string",
+        "productImageUrl": "string"
+      }
+    ]
   }
 ]
 ```
@@ -708,13 +731,36 @@ If a cart item was removed or became stale between reads, the API reloads the ca
   "status": "Placed",
   "paymentStatus": "Pending",
   "fulfillmentStatus": "Pending",
+  "currencyCode": "USD",
   "subtotal": "decimal",
   "discount": "decimal",
+  "discountAmount": "decimal",
   "shipping": "decimal",
+  "shippingAmount": "decimal",
   "tax": "decimal",
+  "taxAmount": "decimal",
   "total": "decimal",
-  "items": [...],
-  "createdAt": "2026-08-18T00:00:00Z"
+  "totalAmount": "decimal",
+  "couponCode": "string",
+  "notes": "string",
+  "customerNotes": "string",
+  "createdAt": "2026-08-21T00:00:00Z",
+  "items": [
+    {
+      "id": "guid",
+      "productId": "guid",
+      "productVariantId": "guid",
+      "productName": "string",
+      "variantName": "string",
+      "sku": "string",
+      "quantity": 1,
+      "unitPrice": "decimal",
+      "totalPrice": "decimal",
+      "totalAmount": "decimal",
+      "imageUrl": "string",
+      "productImageUrl": "string"
+    }
+  ]
 }
 ```
 

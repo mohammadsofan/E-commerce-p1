@@ -730,8 +730,16 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - Added support for shipping amounts, customer order notes, and claims-based `UserId` resolution in `CheckoutController`.
   - Added unit test validation across application, architecture, and integration suites (230/230 tests passing).
 
+### 2026-08-21 — Order DTO Enrichment & Totals / Product Thumbnails Synchronization
+- Enriched `OrderDto` and `OrderItemDto` with complete financial breakdowns and item metadata:
+  - `OrderDto`: `Subtotal`, `Discount`, `DiscountAmount`, `Shipping`, `ShippingAmount`, `Tax`, `TaxAmount`, `Total`, `TotalAmount`, `CouponCode`, `Notes`, `CustomerNotes`, `CreatedAt`, `CurrencyCode`.
+  - `OrderItemDto`: `Id`, `ProductId`, `ProductVariantId`, `ProductName`, `VariantName`, `Sku`, `Quantity`, `UnitPrice`, `TotalPrice`, `TotalAmount`, `DiscountAmount`, `TaxAmount`, `ImageUrl`, `ProductImageUrl`.
+- Updated AutoMapper `MappingProfile` to map all order financial totals and line-item details.
+- Verified all 230 tests pass (196 Application, 14 Architecture, 20 Integration; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — End-to-End Checkout & Order Creation complete and verified. Total 196 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Order DTO Enrichment & Totals Synchronization complete and verified. Total 196 application unit tests passing (100% pass rate).*
+
 
 

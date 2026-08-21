@@ -9,15 +9,37 @@ namespace Ecommerce.Application.Mappings
         public MappingProfile()
         {
             CreateMap<Order, OrderDto>()
+                .ForMember(d => d.Subtotal, opt => opt.MapFrom(s => s.Subtotal))
+                .ForMember(d => d.Discount, opt => opt.MapFrom(s => s.DiscountAmount))
+                .ForMember(d => d.DiscountAmount, opt => opt.MapFrom(s => s.DiscountAmount))
+                .ForMember(d => d.Shipping, opt => opt.MapFrom(s => s.ShippingAmount))
+                .ForMember(d => d.ShippingAmount, opt => opt.MapFrom(s => s.ShippingAmount))
+                .ForMember(d => d.Tax, opt => opt.MapFrom(s => s.TaxAmount))
+                .ForMember(d => d.TaxAmount, opt => opt.MapFrom(s => s.TaxAmount))
+                .ForMember(d => d.Total, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.TotalAmount, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.OrderNumber, opt => opt.MapFrom(s => s.OrderNumber))
+                .ForMember(d => d.CouponCode, opt => opt.MapFrom(s => s.CouponCode))
+                .ForMember(d => d.Notes, opt => opt.MapFrom(s => s.Notes))
+                .ForMember(d => d.CustomerNotes, opt => opt.MapFrom(s => s.CustomerNotes))
+                .ForMember(d => d.CreatedAt, opt => opt.MapFrom(s => s.CreatedAt))
                 .ForMember(d => d.Items, opt => opt.MapFrom(s => s.Items));
 
             CreateMap<OrderItem, OrderItemDto>()
+                .ForMember(d => d.Id, opt => opt.MapFrom(s => s.Id))
                 .ForMember(d => d.ProductId, opt => opt.MapFrom(s => s.ProductId))
                 .ForMember(d => d.ProductVariantId, opt => opt.MapFrom(s => s.ProductVariantId))
+                .ForMember(d => d.ProductName, opt => opt.MapFrom(s => s.ProductName))
+                .ForMember(d => d.VariantName, opt => opt.MapFrom(s => s.VariantName))
+                .ForMember(d => d.Sku, opt => opt.MapFrom(s => s.Sku))
                 .ForMember(d => d.Quantity, opt => opt.MapFrom(s => s.Quantity))
-                .ForMember(d => d.UnitPrice, opt => opt.MapFrom(s => s.UnitPrice));
+                .ForMember(d => d.UnitPrice, opt => opt.MapFrom(s => s.UnitPrice))
+                .ForMember(d => d.TotalPrice, opt => opt.MapFrom(s => s.TotalAmount))
+                .ForMember(d => d.TotalAmount, opt => opt.MapFrom(s => s.TotalAmount))
+                .ForMember(d => d.DiscountAmount, opt => opt.MapFrom(s => s.DiscountAmount))
+                .ForMember(d => d.TaxAmount, opt => opt.MapFrom(s => s.TaxAmount))
+                .ForMember(d => d.ImageUrl, opt => opt.MapFrom(s => s.ProductImageUrl))
+                .ForMember(d => d.ProductImageUrl, opt => opt.MapFrom(s => s.ProductImageUrl));
 
             CreateMap<Product, ProductDto>()
                 .ForMember(d => d.Id, opt => opt.MapFrom(s => s.Id))
