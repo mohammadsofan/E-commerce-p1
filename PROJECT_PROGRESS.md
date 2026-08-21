@@ -759,9 +759,17 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Enabled customer order cancellation via `POST /api/orders/{id}/cancel` across both `OrderDetail.tsx` and the `Orders.tsx` listing with confirmation modals.
 - All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
 
+### 2026-08-21 — Cash on Delivery Status Lifecycle (Delivered before Paid)
+- Updated `Order.cs` entity:
+  - Allowed Cash on Delivery orders to transition to `Shipped` while payment status remains `Pending`.
+  - Configured `MarkDelivered()` and `Complete()` to automatically transition payment status to `Paid` upon package delivery / cash collection.
+- Updated customer order tracking timeline in `OrderDetail.tsx`:
+  - Positioned **تم التوصيل (Delivered)** before **تم الدفع / الدفع عند الاستلام (Cash Collected upon Delivery)** for Cash on Delivery orders.
+- All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Required Contact Phone on Checkout & Customer Order Cancellation complete and verified. Total 197 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Cash on Delivery Status Lifecycle complete and verified. Total 197 application unit tests passing (100% pass rate).*
 
 
 

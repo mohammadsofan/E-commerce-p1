@@ -125,12 +125,21 @@ namespace Ecommerce.Domain.Entities
 
         /// <summary>
         /// Marks the order as completed. Only a paid order can be completed.
+        /// For Cash on Delivery, completing the order confirms payment collection.
         /// </summary>
         public void Complete()
         {
+            if (Status != OrderStatus.Paid && (Notes.Contains("CashOnDelivery") || CustomerNotes.Contains("CashOnDelivery")))
+            {
+                Status = OrderStatus.Paid;
+                PaymentStatus = PaymentStatus.Paid;
+                PaidAt = DateTimeOffset.UtcNow;
+            }
+
             if (Status != OrderStatus.Paid) throw new DomainException("Only a paid order can be completed");
 
             Status = OrderStatus.Completed;
+            FulfillmentStatus = FulfillmentStatus.Delivered;
             CompletedAt = DateTimeOffset.UtcNow;
             UpdatedAt = CompletedAt.Value;
         }
@@ -154,18 +163,20 @@ namespace Ecommerce.Domain.Entities
         /// </summary>
         public void MarkShipped(string trackingNumber, string carrier)
         {
-            if (Status != OrderStatus.Paid) throw new DomainException("Only paid orders can be shipped");
+            if (Status != OrderStatus.Paid && !Notes.Contains("CashOnDelivery") && !CustomerNotes.Contains("CashOnDelivery"))
+                throw new DomainException("Only paid or Cash on Delivery orders can be shipped");
             if (FulfillmentStatus == FulfillmentStatus.Shipped || FulfillmentStatus == FulfillmentStatus.Delivered)
                 throw new DomainException("Order is already shipped or delivered");
 
             FulfillmentStatus = FulfillmentStatus.Shipped;
             UpdatedAt = DateTimeOffset.UtcNow;
-            // In a real implementation, you'd store tracking info in a Shipment entity
-            Notes = $"Shipped via {carrier} with tracking: {trackingNumber}";
+            var shipNote = $"Shipped via {carrier} with tracking: {trackingNumber}";
+            Notes = string.IsNullOrWhiteSpace(Notes) ? shipNote : $"{Notes} | {shipNote}";
         }
 
         /// <summary>
         /// Marks the order as delivered.
+        /// For Cash on Delivery, marking as delivered automatically marks the payment as collected (Paid).
         /// </summary>
         public void MarkDelivered()
         {
@@ -174,6 +185,13 @@ namespace Ecommerce.Domain.Entities
 
             FulfillmentStatus = FulfillmentStatus.Delivered;
             UpdatedAt = DateTimeOffset.UtcNow;
+
+            if (Notes.Contains("CashOnDelivery") || CustomerNotes.Contains("CashOnDelivery"))
+            {
+                Status = OrderStatus.Paid;
+                PaymentStatus = PaymentStatus.Paid;
+                PaidAt = DateTimeOffset.UtcNow;
+            }
         }
 
         /// <summary>
