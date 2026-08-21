@@ -52,31 +52,45 @@ namespace Ecommerce.Application.Commands.Checkout
             var order = new Order
             {
                 Id = Guid.NewGuid(),
-                OrderNumber = $"ORD-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString().Substring(0,6)}",
-                CurrencyCode = command.Currency,
-                ShippingAmount = 0m,
-                UserId = command.UserId
+                OrderNumber = $"ORD-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString().Substring(0, 6).ToUpperInvariant()}",
+                CurrencyCode = string.IsNullOrWhiteSpace(command.Currency) ? "USD" : command.Currency,
+                ShippingAmount = command.ShippingAmount >= 0 ? command.ShippingAmount : 0m,
+                CustomerNotes = command.CustomerNotes ?? string.Empty,
+                Notes = !string.IsNullOrWhiteSpace(command.ShippingAddress) ? $"Address: {command.ShippingAddress}" : string.Empty,
+                UserId = command.UserId == Guid.Empty ? null : command.UserId
             };
 
             foreach (var it in command.Items)
             {
-                // In a full implementation, lookup product details
-                order.AddItem(it.ProductId, it.ProductVariantId, "Product", 10m, it.Quantity);
+                var product = await _db.Products
+                    .Include(p => p.Images)
+                    .FirstOrDefaultAsync(p => p.Id == it.ProductId, cancellationToken);
 
-                // Reserve inventory
-                var inventory = await _db.InventoryItems.FindAsync(new object[] { it.ProductVariantId }, cancellationToken);
-                if (inventory == null)
+                ProductVariant? variant = null;
+                if (it.ProductVariantId.HasValue && it.ProductVariantId.Value != Guid.Empty)
                 {
-                    // Try by product id
-                    inventory = await _db.InventoryItems.FindAsync(new object[] { it.ProductId }, cancellationToken);
+                    variant = await _db.ProductVariants
+                        .FirstOrDefaultAsync(v => v.Id == it.ProductVariantId.Value, cancellationToken);
                 }
 
-                if (inventory == null)
-                {
-                    throw new InventoryException("Inventory item not found for product/variant");
-                }
+                var productName = product?.Name ?? "Product";
+                var unitPrice = it.UnitPrice ?? variant?.Price ?? product?.BasePrice ?? 10m;
+                var variantName = variant?.Name ?? string.Empty;
+                var sku = variant?.Sku ?? product?.Sku ?? string.Empty;
+                var imageUrl = product?.Images?.FirstOrDefault()?.Url ?? string.Empty;
+                var variantId = it.ProductVariantId ?? Guid.Empty;
 
-                inventory.Reserve(it.Quantity);
+                order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, 0m, 0m, variantName, sku, imageUrl);
+
+                // Reserve inventory if exists
+                var inventory = await _db.InventoryItems
+                    .FirstOrDefaultAsync(inv => (it.ProductVariantId.HasValue && it.ProductVariantId.Value != Guid.Empty && inv.ProductVariantId == it.ProductVariantId.Value)
+                                             || (inv.ProductId == it.ProductId), cancellationToken);
+
+                if (inventory != null)
+                {
+                    inventory.Reserve(it.Quantity);
+                }
             }
 
             // Apply coupon discount if provided

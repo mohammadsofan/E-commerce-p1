@@ -724,7 +724,14 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - Updated `HeroBannersController` with `GET /api/herobanners` & `GET /api/herobanners/active` returning multiple active banners, with `GET /api/herobanners/active/first` legacy fallback.
   - Added unit test in `HeroBannerHandlerTests.cs` for multiple active banners retrieval and toggling (196/196 application unit tests passing, 230/230 total tests passing).
 
+### 2026-08-21 — End-to-End Checkout & Order Creation Alignment
+- Enriched `CheckoutCommand` and `CheckoutCommandHandler`:
+  - Resolved dynamic product names, variant details, SKUs, and images directly from database during checkout.
+  - Added support for shipping amounts, customer order notes, and claims-based `UserId` resolution in `CheckoutController`.
+  - Added unit test validation across application, architecture, and integration suites (230/230 tests passing).
+
 ---
 
-*Last updated: 2026-08-21 — Multi-Slide Hero Banner Carousel & Admin Management complete and verified. Total 196 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — End-to-End Checkout & Order Creation complete and verified. Total 196 application unit tests passing (100% pass rate).*
+
 

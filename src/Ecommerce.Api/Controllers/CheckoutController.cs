@@ -19,8 +19,18 @@ namespace Ecommerce.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CheckoutCommand command)
         {
+            if (command.UserId == System.Guid.Empty)
+            {
+                var sub = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                       ?? User.FindFirst("sub")?.Value;
+                if (!string.IsNullOrEmpty(sub) && System.Guid.TryParse(sub, out var userId))
+                {
+                    command.UserId = userId;
+                }
+            }
+
             var orderId = await _dispatcher.Send<CheckoutCommand, System.Guid>(command);
-            return Accepted(new { orderId });
+            return Ok(new { orderId });
         }
     }
 }

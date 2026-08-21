@@ -36,7 +36,7 @@ namespace Ecommerce.Domain.Entities
 
         public ICollection<OrderItem> Items { get; private set; } = new List<OrderItem>();
 
-        public void AddItem(Guid productId, Guid productVariantId, string productName, decimal unitPrice, int quantity, decimal discount = 0m, decimal tax = 0m)
+        public void AddItem(Guid productId, Guid productVariantId, string productName, decimal unitPrice, int quantity, decimal discount = 0m, decimal tax = 0m, string variantName = "", string sku = "", string productImageUrl = "")
         {
             if (quantity <= 0) throw new DomainException("Quantity must be positive");
             if (unitPrice < 0) throw new DomainException("Unit price cannot be negative");
@@ -47,13 +47,13 @@ namespace Ecommerce.Domain.Entities
                 ProductId = productId,
                 ProductVariantId = productVariantId,
                 ProductName = productName,
-                VariantName = string.Empty,
-                Sku = string.Empty,
+                VariantName = variantName,
+                Sku = sku,
                 UnitPrice = unitPrice,
                 Quantity = quantity,
                 DiscountAmount = discount,
                 TaxAmount = tax,
-                ProductImageUrl = string.Empty
+                ProductImageUrl = productImageUrl
             };
 
             item.TotalAmount = item.UnitPrice * item.Quantity - item.DiscountAmount + item.TaxAmount;
