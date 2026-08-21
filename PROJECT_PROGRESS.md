@@ -780,6 +780,9 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - Automatically marked verified reviews with `IsVerifiedPurchase = true` and `IsApproved = true`.
   - Added support for updating existing reviews seamlessly.
 - Implemented `GetProductReviewEligibilityQuery` and `GetProductReviewEligibilityQueryHandler` returning user purchase verification and existing review state.
+- Updated `CurrentUserService`:
+  - Resolved JWT claims across standard and XML claim types (`JwtRegisteredClaimNames.Sub`, `ClaimTypes.NameIdentifier`, `ClaimTypes.Name`, `ClaimTypes.Email`).
+  - Added `IsAdmin` detection supporting both role claim schemas and default admin account.
 - Updated `ReviewsController`:
   - Enabled public anonymous access on `GET /api/products/{productId}/reviews`.
   - Added authenticated endpoint `GET /api/products/{productId}/reviews/eligibility`.
@@ -788,7 +791,7 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 
 ---
 
-*Last updated: 2026-08-21 — Verified Purchase Product Reviews Enforcement & Eligibility API complete and verified. Total 200 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Verified Purchase Product Reviews Enforcement & Admin Eligibility complete and verified. Total 200 application unit tests passing (100% pass rate).*
 
 
 

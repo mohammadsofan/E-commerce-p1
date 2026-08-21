@@ -35,6 +35,7 @@ namespace Ecommerce.Application.Tests
         {
             public Guid? UserId { get; }
             public string UserName => "test-user";
+            public bool IsAdmin => false;
 
             public FakeCurrentUserService(Guid userId) => UserId = userId;
         }

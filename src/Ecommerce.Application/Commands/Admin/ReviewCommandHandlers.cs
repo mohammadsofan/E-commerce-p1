@@ -41,8 +41,9 @@ namespace Ecommerce.Application.Commands.Admin
             if (!userId.HasValue)
                 throw new DomainException("يجب تسجيل الدخول أولاً لكتابة تقييم.");
 
-            // Verified Purchase Requirement: Customer must have ordered the product in a non-cancelled order
-            var hasPurchased = await _db.Orders
+            // Verified Purchase Requirement: Customer must have ordered the product in a non-cancelled order, or be an Admin
+            var isAdmin = _currentUser.IsAdmin;
+            var hasPurchased = isAdmin || await _db.Orders
                 .AsNoTracking()
                 .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == command.ProductId), cancellationToken);
 

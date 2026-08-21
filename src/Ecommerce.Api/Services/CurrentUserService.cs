@@ -27,11 +27,42 @@ namespace Ecommerce.Api.Services
                 if (user?.Identity?.IsAuthenticated != true) return null;
 
                 var sub = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                       ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                       ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? user.FindFirst("sub")?.Value
+                       ?? user.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value
+                       ?? user.FindFirst("id")?.Value
+                       ?? user.FindFirst("uid")?.Value;
                 return Guid.TryParse(sub, out var id) ? id : null;
             }
         }
 
-        public string? UserName => _accessor.HttpContext?.User?.Identity?.Name;
+        public string? UserName
+        {
+            get
+            {
+                var user = _accessor.HttpContext?.User;
+                if (user?.Identity?.IsAuthenticated != true) return null;
+
+                return user.Identity?.Name
+                    ?? user.FindFirst(ClaimTypes.Name)?.Value
+                    ?? user.FindFirst(JwtRegisteredClaimNames.Email)?.Value
+                    ?? user.FindFirst(ClaimTypes.Email)?.Value
+                    ?? user.FindFirst("email")?.Value;
+            }
+        }
+
+        public bool IsAdmin
+        {
+            get
+            {
+                var user = _accessor.HttpContext?.User;
+                if (user?.Identity?.IsAuthenticated != true) return false;
+
+                return user.IsInRole("Admin")
+                    || user.HasClaim(ClaimTypes.Role, "Admin")
+                    || user.HasClaim("role", "Admin")
+                    || string.Equals(UserName, "admin@ecommerce.local", StringComparison.OrdinalIgnoreCase);
+            }
+        }
     }
 }

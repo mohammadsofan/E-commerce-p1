@@ -20,6 +20,7 @@ namespace Ecommerce.Application.Tests
         {
             public Guid? UserId { get; set; }
             public string? UserName { get; set; }
+            public bool IsAdmin { get; set; }
         }
 
         private static ApplicationDbContext CreateInMemoryContext()

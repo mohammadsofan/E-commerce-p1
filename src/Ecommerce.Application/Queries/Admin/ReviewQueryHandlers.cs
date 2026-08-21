@@ -63,7 +63,8 @@ namespace Ecommerce.Application.Queries.Admin
                 };
             }
 
-            var hasPurchased = await _db.Orders
+            var isAdmin = _currentUser.IsAdmin;
+            var hasPurchased = isAdmin || await _db.Orders
                 .AsNoTracking()
                 .AnyAsync(o => o.UserId == userId.Value && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == query.ProductId), cancellationToken);
 
