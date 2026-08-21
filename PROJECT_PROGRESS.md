@@ -753,9 +753,15 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Integrated dynamic delivery zone selection and Cash on Delivery (COD) review breakdown inside `Checkout.tsx`.
 - All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
 
+### 2026-08-21 — Required Contact Phone on Checkout & Customer Order Cancellation
+- Enhanced `CheckoutCommandHandler` to persist payment methods and phone numbers in Order notes.
+- Added required Palestinian contact phone input (`contactPhone`) and delivery notes in frontend `Checkout.tsx` with validation before proceeding to payment or placing orders.
+- Enabled customer order cancellation via `POST /api/orders/{id}/cancel` across both `OrderDetail.tsx` and the `Orders.tsx` listing with confirmation modals.
+- All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Palestinian Delivery Zones & Admin Shipping Management complete and verified. Total 197 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Required Contact Phone on Checkout & Customer Order Cancellation complete and verified. Total 197 application unit tests passing (100% pass rate).*
 
 
 

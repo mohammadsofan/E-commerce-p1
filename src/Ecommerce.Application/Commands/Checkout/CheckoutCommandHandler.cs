@@ -49,6 +49,11 @@ namespace Ecommerce.Application.Commands.Checkout
             if (command.Items == null || !command.Items.Any()) throw new DomainException("No items to checkout");
 
             // Build order
+            var paymentMethodText = !string.IsNullOrWhiteSpace(command.PaymentMethod) ? command.PaymentMethod : "CashOnDelivery";
+            var notesParts = new System.Collections.Generic.List<string>();
+            if (!string.IsNullOrWhiteSpace(command.ShippingAddress)) notesParts.Add($"Address: {command.ShippingAddress}");
+            notesParts.Add($"PaymentMethod: {paymentMethodText}");
+
             var order = new Order
             {
                 Id = Guid.NewGuid(),
@@ -56,7 +61,7 @@ namespace Ecommerce.Application.Commands.Checkout
                 CurrencyCode = string.IsNullOrWhiteSpace(command.Currency) ? "USD" : command.Currency,
                 ShippingAmount = command.ShippingAmount >= 0 ? command.ShippingAmount : 0m,
                 CustomerNotes = command.CustomerNotes ?? string.Empty,
-                Notes = !string.IsNullOrWhiteSpace(command.ShippingAddress) ? $"Address: {command.ShippingAddress}" : string.Empty,
+                Notes = string.Join(" | ", notesParts),
                 UserId = command.UserId == Guid.Empty ? null : command.UserId
             };
 
