@@ -6367,30 +6367,37 @@ The response pagination metadata reflects the requested `page` and the full filt
 
 ---
 
-## Hero Banners (بانرات الصفحة الرئيسية)
+## Hero Banners (بانرات وسلايدر الصفحة الرئيسية)
 
-### Get Active Hero Banner (Public)
-**GET** `/api/herobanners/active`
+### Get Active Hero Banners for Slider (Public)
+**GET** `/api/herobanners` or **GET** `/api/herobanners/active`
 
-**Description:** Returns the currently active Home Page Hero Banner.
+**Description:** Returns the list of all active Home Page Hero Banners to display in the interactive multi-slide rotating carousel.
 
 **Response:** `200 OK`
 ```json
-{
-  "id": "guid",
-  "badgeText": "مجموعة جديدة 2024",
-  "title": "اكتشف منتجات مذهلة بأسعار لا تُقاوم",
-  "subtitle": "تسوق أحدث الصيحات في الإلكترونيات والأزياء والمنزل والمزيد. شحن مجاني للطلبات فوق ₪50. إرجاع سهل خلال 30 يوماً.",
-  "primaryButtonText": "تسوق الآن",
-  "primaryButtonLink": "/products",
-  "secondaryButtonText": "تصفح التصنيفات",
-  "secondaryButtonLink": "/categories",
-  "imageUrl": null,
-  "isActive": true,
-  "createdAt": "2026-08-21T00:00:00Z",
-  "updatedAt": null
-}
+[
+  {
+    "id": "guid",
+    "badgeText": "مجموعة جديدة 2024",
+    "title": "اكتشف منتجات مذهلة بأسعار لا تُقاوم",
+    "subtitle": "تسوق أحدث الصيحات في الإلكترونيات والأزياء والمنزل والمزيد. شحن مجاني للطلبات فوق ₪50. إرجاع سهل خلال 30 يوماً.",
+    "primaryButtonText": "تسوق الآن",
+    "primaryButtonLink": "/products",
+    "secondaryButtonText": "تصفح التصنيفات",
+    "secondaryButtonLink": "/categories",
+    "imageUrl": null,
+    "isActive": true,
+    "createdAt": "2026-08-21T00:00:00Z",
+    "updatedAt": null
+  }
+]
 ```
+
+### Get Single Active Hero Banner (Public - Legacy Fallback)
+**GET** `/api/herobanners/active/first`
+
+**Response:** `200 OK` (Single `HeroBannerDto` or `null`)
 
 ---
 

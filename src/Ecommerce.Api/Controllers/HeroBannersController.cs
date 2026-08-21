@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.HeroBanners;
@@ -17,9 +17,19 @@ namespace Ecommerce.Api.Controllers
             _queryDispatcher = queryDispatcher;
         }
 
-        /// <summary>Gets the current active home page hero banner</summary>
+        /// <summary>Gets all active home page hero banners for slider</summary>
+        [HttpGet]
         [HttpGet("active")]
-        public async Task<IActionResult> GetActive()
+        public async Task<IActionResult> GetActiveBanners()
+        {
+            var query = new GetActiveHeroBannersQuery();
+            var result = await _queryDispatcher.Send<GetActiveHeroBannersQuery, List<HeroBannerDto>>(query);
+            return Ok(result);
+        }
+
+        /// <summary>Gets the single latest active home page hero banner (legacy fallback)</summary>
+        [HttpGet("active/first")]
+        public async Task<IActionResult> GetActiveFirst()
         {
             var query = new GetActiveHeroBannerQuery();
             var result = await _queryDispatcher.Send<GetActiveHeroBannerQuery, HeroBannerDto?>(query);

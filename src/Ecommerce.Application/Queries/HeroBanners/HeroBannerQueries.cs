@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Ecommerce.Application.Common;
 using Ecommerce.Application.Common.Queries;
@@ -7,6 +7,10 @@ using Ecommerce.Application.DTOs;
 namespace Ecommerce.Application.Queries.HeroBanners
 {
     public class GetActiveHeroBannerQuery : IQuery<HeroBannerDto?>
+    {
+    }
+
+    public class GetActiveHeroBannersQuery : IQuery<List<HeroBannerDto>>
     {
     }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.HeroBanners;
@@ -129,7 +129,7 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
-        public async Task SetActiveHeroBanner_SetsTargetActiveAndOthersInactive()
+        public async Task SetActiveHeroBanner_TogglesTargetActiveStatus()
         {
             // Arrange
             using var db = CreateInMemoryContext();
@@ -148,7 +148,7 @@ namespace Ecommerce.Application.Tests
             Assert.True(result.IsActive);
             var b1 = await db.HeroBanners.FindAsync(banner1.Id);
             var b2 = await db.HeroBanners.FindAsync(banner2.Id);
-            Assert.False(b1!.IsActive);
+            Assert.True(b1!.IsActive);
             Assert.True(b2!.IsActive);
         }
 
@@ -175,6 +175,30 @@ namespace Ecommerce.Application.Tests
             // Assert
             var inDb = await db.HeroBanners.FindAsync(banner.Id);
             Assert.Null(inDb);
+        }
+
+        [Fact]
+        public async Task GetActiveHeroBanners_ReturnsAllActiveBannersInOrder()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var b1 = new HeroBanner { Id = Guid.NewGuid(), Title = "Active 1", IsActive = true, CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-5) };
+            var b2 = new HeroBanner { Id = Guid.NewGuid(), Title = "Active 2", IsActive = true, CreatedAt = DateTimeOffset.UtcNow };
+            var b3 = new HeroBanner { Id = Guid.NewGuid(), Title = "Inactive", IsActive = false, CreatedAt = DateTimeOffset.UtcNow };
+            db.HeroBanners.AddRange(b1, b2, b3);
+            await db.SaveChangesAsync();
+
+            var handler = new GetActiveHeroBannersQueryHandler(db);
+            var query = new GetActiveHeroBannersQuery();
+
+            // Act
+            var result = await handler.Handle(query);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count);
+            Assert.Equal("Active 2", result[0].Title);
+            Assert.Equal("Active 1", result[1].Title);
         }
 
         [Fact]

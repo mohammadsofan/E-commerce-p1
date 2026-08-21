@@ -716,6 +716,15 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
   - Enriched `DbSeeder.cs` with sample completed orders containing realistic complementary product pairs.
 - Integrated frontend `productsService.getRecommendations` with the Cart page "قد يعجبك أيضاً" (You May Also Like) section.
 
+### 2026-08-21 — Multi-Slide Hero Banner Carousel & Admin Management
+- Expanded Hero Banner architecture to support concurrent active banners for rotating customer home slider:
+  - Created `GetActiveHeroBannersQuery` & `GetActiveHeroBannersQueryHandler` returning `List<HeroBannerDto>` of all active banners ordered chronologically.
+  - Updated `CreateHeroBannerCommandHandler` and `UpdateHeroBannerCommandHandler` to allow multiple active slides.
+  - Updated `SetActiveHeroBannerCommandHandler` to toggle single banner active status (`banner.IsActive = !banner.IsActive`).
+  - Updated `HeroBannersController` with `GET /api/herobanners` & `GET /api/herobanners/active` returning multiple active banners, with `GET /api/herobanners/active/first` legacy fallback.
+  - Added unit test in `HeroBannerHandlerTests.cs` for multiple active banners retrieval and toggling (196/196 application unit tests passing, 230/230 total tests passing).
+
 ---
 
-*Last updated: 2026-08-21 — Frequently Bought Together Recommendation Engine with 8 unit tests complete and verified. Total 195 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Multi-Slide Hero Banner Carousel & Admin Management complete and verified. Total 196 application unit tests passing (100% pass rate).*
+

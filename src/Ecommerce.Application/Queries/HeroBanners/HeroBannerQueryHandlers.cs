@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -47,6 +47,40 @@ namespace Ecommerce.Application.Queries.HeroBanners
                 CreatedAt = banner.CreatedAt,
                 UpdatedAt = banner.UpdatedAt
             };
+        }
+    }
+
+    public class GetActiveHeroBannersQueryHandler : IQueryHandler<GetActiveHeroBannersQuery, List<HeroBannerDto>>
+    {
+        private readonly IApplicationDbContext _db;
+
+        public GetActiveHeroBannersQueryHandler(IApplicationDbContext db)
+        {
+            _db = db;
+        }
+
+        public async Task<List<HeroBannerDto>> Handle(GetActiveHeroBannersQuery query, CancellationToken cancellationToken = default)
+        {
+            return await _db.HeroBanners
+                .AsNoTracking()
+                .Where(b => b.IsActive)
+                .OrderByDescending(b => b.UpdatedAt ?? b.CreatedAt)
+                .Select(banner => new HeroBannerDto
+                {
+                    Id = banner.Id,
+                    BadgeText = banner.BadgeText,
+                    Title = banner.Title,
+                    Subtitle = banner.Subtitle,
+                    PrimaryButtonText = banner.PrimaryButtonText,
+                    PrimaryButtonLink = banner.PrimaryButtonLink,
+                    SecondaryButtonText = banner.SecondaryButtonText,
+                    SecondaryButtonLink = banner.SecondaryButtonLink,
+                    ImageUrl = banner.ImageUrl,
+                    IsActive = banner.IsActive,
+                    CreatedAt = banner.CreatedAt,
+                    UpdatedAt = banner.UpdatedAt
+                })
+                .ToListAsync(cancellationToken);
         }
     }
 

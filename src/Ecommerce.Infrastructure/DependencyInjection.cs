@@ -220,6 +220,7 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetAdminFeaturesQuery, PagedResult<StoreFeatureDto>>, GetAdminFeaturesQueryHandler>();
             services.AddScoped<IQueryHandler<GetFeatureByIdQuery, StoreFeatureDto>, GetFeatureByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetActiveHeroBannerQuery, HeroBannerDto?>, GetActiveHeroBannerQueryHandler>();
+            services.AddScoped<IQueryHandler<GetActiveHeroBannersQuery, List<HeroBannerDto>>, GetActiveHeroBannersQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminHeroBannersQuery, PagedResult<HeroBannerDto>>, GetAdminHeroBannersQueryHandler>();
             services.AddScoped<IQueryHandler<GetHeroBannerByIdQuery, HeroBannerDto>, GetHeroBannerByIdQueryHandler>();
 

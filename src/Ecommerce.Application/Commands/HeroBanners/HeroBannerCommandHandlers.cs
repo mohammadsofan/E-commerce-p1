@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Ecommerce.Application.Common;
@@ -22,17 +22,6 @@ namespace Ecommerce.Application.Commands.HeroBanners
 
         public async Task<HeroBannerDto> Handle(CreateHeroBannerCommand command, CancellationToken cancellationToken = default)
         {
-            // If setting this banner as active, we can deactivate others or let the latest active take precedence
-            if (command.IsActive)
-            {
-                var existingActive = await _db.HeroBanners.Where(b => b.IsActive).ToListAsync(cancellationToken);
-                foreach (var b in existingActive)
-                {
-                    b.IsActive = false;
-                    b.UpdatedAt = DateTimeOffset.UtcNow;
-                }
-            }
-
             var banner = new HeroBanner
             {
                 Id = Guid.NewGuid(),
@@ -89,18 +78,6 @@ namespace Ecommerce.Application.Commands.HeroBanners
                 throw new NotFoundException("HeroBanner", command.Id);
             }
 
-            if (command.IsActive && !banner.IsActive)
-            {
-                var existingActive = await _db.HeroBanners
-                    .Where(b => b.Id != command.Id && b.IsActive)
-                    .ToListAsync(cancellationToken);
-                foreach (var b in existingActive)
-                {
-                    b.IsActive = false;
-                    b.UpdatedAt = DateTimeOffset.UtcNow;
-                }
-            }
-
             banner.BadgeText = command.BadgeText?.Trim() ?? string.Empty;
             banner.Title = command.Title?.Trim() ?? string.Empty;
             banner.Subtitle = command.Subtitle?.Trim() ?? string.Empty;
@@ -151,12 +128,8 @@ namespace Ecommerce.Application.Commands.HeroBanners
                 throw new NotFoundException("HeroBanner", command.Id);
             }
 
-            var allBanners = await _db.HeroBanners.ToListAsync(cancellationToken);
-            foreach (var b in allBanners)
-            {
-                b.IsActive = (b.Id == command.Id);
-                b.UpdatedAt = DateTimeOffset.UtcNow;
-            }
+            banner.IsActive = !banner.IsActive;
+            banner.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _db.SaveChangesAsync(cancellationToken);
 
