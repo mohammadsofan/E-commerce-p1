@@ -40,7 +40,8 @@ namespace Ecommerce.Api.Controllers
             {
                 ProductId = request.ProductId,
                 ProductVariantId = request.ProductVariantId,
-                Quantity = request.Quantity
+                Quantity = request.Quantity,
+                SelectedOptions = request.SelectedOptions
             };
             var result = await _commandDispatcher.Send<AddToCartCommand, CartDto>(command);
             return Ok(result);
@@ -78,6 +79,7 @@ namespace Ecommerce.Api.Controllers
         public Guid ProductId { get; set; }
         public Guid? ProductVariantId { get; set; }
         public int Quantity { get; set; }
+        public string? SelectedOptions { get; set; }
     }
 
     public class UpdateCartItemRequest
