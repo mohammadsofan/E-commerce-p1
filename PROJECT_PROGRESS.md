@@ -742,9 +742,20 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Updated frontend `Checkout.tsx` to call `clearCart()` after successful order creation.
 - Verified all 230 tests pass (196 Application, 14 Architecture, 20 Integration; 100% pass rate).
 
+### 2026-08-21 — Palestinian Delivery Zones (West Bank / 1948 Areas / Jerusalem) & Admin Management
+- Added public delivery/shipping endpoints in `ShippingController`: `GET /api/shipping/methods` and `GET /api/shipping/zones`.
+- Implemented `GetActiveShippingMethodsQuery` and `GetActiveShippingZonesQuery` with dedicated query handlers in `Ecommerce.Application`.
+- Seeded standard Palestinian delivery regions and rates in `DbSeeder`:
+  - **الضفة الغربية (West Bank)**: Flat rate $5.50 (~20 ₪), 1-3 business days.
+  - **القدس وضواحيها (Jerusalem)**: Flat rate $8.00 (~30 ₪), 1-2 business days.
+  - **أراضي الـ 48 والداخل المحتل (1948 Areas)**: Flat rate $14.00 (~50 ₪), 2-4 business days.
+- Built full-featured admin management screen (`AdminShipping.tsx`) under `/admin/shipping` allowing the store admin to view, create, edit delivery prices, and toggle active status in real time.
+- Integrated dynamic delivery zone selection and Cash on Delivery (COD) review breakdown inside `Checkout.tsx`.
+- All 231 tests passing (197 Application, 14 Architecture, 20 Integration; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Cart Auto-Clear on Checkout complete and verified. Total 196 application unit tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Palestinian Delivery Zones & Admin Shipping Management complete and verified. Total 197 application unit tests passing (100% pass rate).*
 
 
 

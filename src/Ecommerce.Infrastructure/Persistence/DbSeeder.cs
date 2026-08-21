@@ -30,6 +30,7 @@ namespace Ecommerce.Infrastructure.Persistence
                 await SeedCurrenciesAsync(db);
                 await SeedWarehousesAsync(db);
                 await SeedTaxCategoriesAsync(db);
+                await SeedShippingZonesAsync(db);
                 await SeedHeroBannersAsync(db);
                 await SeedStoreFeaturesAsync(db);
                 await SeedCategoriesAsync(db);
@@ -188,6 +189,108 @@ namespace Ecommerce.Infrastructure.Persistence
             await db.StoreFeatures.AddRangeAsync(features);
             await db.SaveChangesAsync();
             _logger.LogInformation("Seeded {Count} store features", features.Count);
+        }
+
+        private async Task SeedShippingZonesAsync(ApplicationDbContext db)
+        {
+            if (await db.ShippingZones.AnyAsync()) return;
+
+            var westBankZone = new ShippingZone
+            {
+                Id = Guid.NewGuid(),
+                Name = "الضفة الغربية",
+                Description = "جميع مدن وقرى ومحافظات الضفة الغربية (رام الله، نابلس، الخليل، جنين، طولكرم، قلقيلية، بيت لحم، أريحا، سلفيت، طوباس)",
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                Locations = new List<ShippingZoneLocation>
+                {
+                    new ShippingZoneLocation { Id = Guid.NewGuid(), CountryCode = "PS", RegionCode = "WEST_BANK" }
+                },
+                Methods = new List<ShippingMethod>
+                {
+                    new ShippingMethod
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = "توصيل الضفة الغربية",
+                        Description = "توصيل سريع لباب المنزل خلال 1 إلى 3 أيام عمل",
+                        Type = "flat_rate",
+                        BaseRate = 5.50m, // ~20 ₪
+                        EstimatedDaysMin = 1,
+                        EstimatedDaysMax = 3,
+                        IsActive = true,
+                        DisplayOrder = 1,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow,
+                    }
+                }
+            };
+
+            var jerusalemZone = new ShippingZone
+            {
+                Id = Guid.NewGuid(),
+                Name = "القدس وضواحيها",
+                Description = "مدينة القدس وضواحيها وقرى القدس",
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                Locations = new List<ShippingZoneLocation>
+                {
+                    new ShippingZoneLocation { Id = Guid.NewGuid(), CountryCode = "PS", RegionCode = "JERUSALEM" }
+                },
+                Methods = new List<ShippingMethod>
+                {
+                    new ShippingMethod
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = "توصيل القدس وضواحيها",
+                        Description = "توصيل مباشر إلى مناطق القدس وضواحيها خلال 1 إلى 2 أيام",
+                        Type = "flat_rate",
+                        BaseRate = 8.00m, // ~30 ₪
+                        EstimatedDaysMin = 1,
+                        EstimatedDaysMax = 2,
+                        IsActive = true,
+                        DisplayOrder = 2,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow,
+                    }
+                }
+            };
+
+            var inside48Zone = new ShippingZone
+            {
+                Id = Guid.NewGuid(),
+                Name = "أراضي الـ 48 والداخل المحتل",
+                Description = "جميع مناطق ومدن الداخل المحتل وأراضي الـ 48 (الجليل، المثلث، النقب، يافا، حيفا، عكا، تل أبيب، الناصرة، والمناطق المحيطة)",
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+                Locations = new List<ShippingZoneLocation>
+                {
+                    new ShippingZoneLocation { Id = Guid.NewGuid(), CountryCode = "IL", RegionCode = "INSIDE_48" }
+                },
+                Methods = new List<ShippingMethod>
+                {
+                    new ShippingMethod
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = "توصيل أراضي الـ 48 والداخل",
+                        Description = "توصيل آمن إلى كافة مناطق ومدن الداخل وأراضي 48 خلال 2 إلى 4 أيام عمل",
+                        Type = "flat_rate",
+                        BaseRate = 14.00m, // ~50 ₪
+                        EstimatedDaysMin = 2,
+                        EstimatedDaysMax = 4,
+                        IsActive = true,
+                        DisplayOrder = 3,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        UpdatedAt = DateTimeOffset.UtcNow,
+                    }
+                }
+            };
+
+            await db.ShippingZones.AddRangeAsync(westBankZone, jerusalemZone, inside48Zone);
+            await db.SaveChangesAsync();
+            _logger.LogInformation("Seeded Palestinian shipping zones and methods (West Bank, Jerusalem, Inside 48)");
         }
 
         private async Task SeedCategoriesAsync(ApplicationDbContext db)

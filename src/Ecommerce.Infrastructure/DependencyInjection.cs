@@ -268,7 +268,9 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetAdminRefundsQuery, PagedResult<AdminRefundDto>>, GetAdminRefundsQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminRefundByIdQuery, AdminRefundDto>, GetAdminRefundByIdQueryHandler>();
 
-            // Admin shipping query handlers
+            // Shipping query handlers (Public & Admin)
+            services.AddScoped<IQueryHandler<Ecommerce.Application.Queries.Shipping.GetActiveShippingMethodsQuery, List<ShippingMethodDto>>, Ecommerce.Application.Queries.Shipping.GetActiveShippingMethodsQueryHandler>();
+            services.AddScoped<IQueryHandler<Ecommerce.Application.Queries.Shipping.GetActiveShippingZonesQuery, List<ShippingZoneDto>>, Ecommerce.Application.Queries.Shipping.GetActiveShippingZonesQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminShippingZonesQuery, PagedResult<AdminShippingZoneDto>>, GetAdminShippingZonesQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminShippingZoneByIdQuery, AdminShippingZoneDto>, GetAdminShippingZoneByIdQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminShippingMethodsQuery, PagedResult<AdminShippingMethodDto>>, GetAdminShippingMethodsQueryHandler>();

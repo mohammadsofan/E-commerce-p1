@@ -144,5 +144,83 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(0.0825m, rateEntity.Rate);
             Assert.Equal("CA", rateEntity.RegionCode);
         }
+
+        [Fact]
+        public async Task GetActiveShippingMethods_ReturnsOnlyActiveMethodsAndZones()
+        {
+            using var ctx = CreateInMemoryContext();
+
+            var activeZone = new ShippingZone
+            {
+                Id = Guid.NewGuid(),
+                Name = "الضفة الغربية",
+                Description = "مدن الضفة الغربية",
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            };
+
+            var inactiveZone = new ShippingZone
+            {
+                Id = Guid.NewGuid(),
+                Name = "منطقة غير مفعلة",
+                Description = "وصف",
+                IsActive = false,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await ctx.ShippingZones.AddRangeAsync(activeZone, inactiveZone);
+
+            var method1 = new ShippingMethod
+            {
+                Id = Guid.NewGuid(),
+                ShippingZoneId = activeZone.Id,
+                Name = "توصيل الضفة الغربية",
+                Type = "flat_rate",
+                BaseRate = 5.50m,
+                IsActive = true,
+                DisplayOrder = 1,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            };
+
+            var methodInactive = new ShippingMethod
+            {
+                Id = Guid.NewGuid(),
+                ShippingZoneId = activeZone.Id,
+                Name = "شحن معطل",
+                Type = "flat_rate",
+                BaseRate = 10m,
+                IsActive = false,
+                DisplayOrder = 2,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            };
+
+            var methodInInactiveZone = new ShippingMethod
+            {
+                Id = Guid.NewGuid(),
+                ShippingZoneId = inactiveZone.Id,
+                Name = "شحن في منطقة معطلة",
+                Type = "flat_rate",
+                BaseRate = 12m,
+                IsActive = true,
+                DisplayOrder = 3,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            };
+
+            await ctx.ShippingMethods.AddRangeAsync(method1, methodInactive, methodInInactiveZone);
+            await ctx.SaveChangesAsync();
+
+            var handler = new Ecommerce.Application.Queries.Shipping.GetActiveShippingMethodsQueryHandler(ctx);
+            var result = await handler.Handle(new Ecommerce.Application.Queries.Shipping.GetActiveShippingMethodsQuery());
+
+            Assert.Single(result);
+            Assert.Equal("توصيل الضفة الغربية", result[0].Name);
+            Assert.Equal("الضفة الغربية", result[0].ZoneName);
+            Assert.Equal(5.50m, result[0].BaseRate);
+        }
     }
 }

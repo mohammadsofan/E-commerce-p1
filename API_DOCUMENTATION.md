@@ -1350,6 +1350,53 @@ If a cart item was removed or became stale between reads, the API reloads the ca
 
 ---
 
+## Shipping (Public Client)
+
+### Get Active Shipping Delivery Methods
+**GET** `/api/shipping/methods`
+
+Returns all active shipping and delivery options configured for the store (e.g. West Bank, Jerusalem, Inside 48) with base rates and delivery windows.
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "guid",
+    "shippingZoneId": "guid",
+    "zoneName": "الضفة الغربية",
+    "name": "توصيل الضفة الغربية (West Bank)",
+    "description": "توصيل سريع لباب المنزل خلال 1 إلى 3 أيام عمل",
+    "type": "flat_rate",
+    "baseRate": 5.50,
+    "freeShippingThreshold": null,
+    "estimatedDaysMin": 1,
+    "estimatedDaysMax": 3,
+    "isActive": true,
+    "displayOrder": 1
+  }
+]
+```
+
+---
+
+### Get Active Shipping Delivery Zones
+**GET** `/api/shipping/zones`
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "guid",
+    "name": "الضفة الغربية",
+    "description": "مدن ومحافظات الضفة الغربية",
+    "isActive": true,
+    "methods": [...]
+  }
+]
+```
+
+---
+
 ## Support Tickets
 
 **All endpoints require authentication (AdminOrCustomer policy).**
