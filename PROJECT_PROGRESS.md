@@ -825,11 +825,16 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Added Unit and Integration Test Suite:
   - `AdminReportingHandlerTests.cs`: Full handler test coverage for `GetSalesReportQueryHandler`, `GetRevenueReportQueryHandler`, `GetInventoryReportQueryHandler`, `GetCustomerReportQueryHandler`, and `ExportReportQueryHandler`.
   - `AdminReportControllerIntegrationTests.cs`: End-to-end integration tests for sales, revenue, inventory, customer, and export HTTP endpoints.
+- Resolved Real-Data & Date-Filtering Issues:
+  - Fixed EndDate boundary cutoff: EndDate is now normalized to include the entire day (23:59:59.9999999) so orders placed on the current day are properly captured.
+  - Implemented open-ended date queries when no dates are passed or "All Time" preset is active, ensuring all historical store orders are aggregated.
+  - Fixed Top Categories resolution using Product category navigation properties.
+  - Added "كل الفترات (All Time)" and "هذا العام (This Year)" presets and `formatLocalDate` for timezone-safe frontend date selection.
 - All 271 tests passing (207 Application, 26 Integration, 24 Domain, 14 Architecture; 100% pass rate).
 
 ---
 
-*Last updated: 2026-08-21 — Admin Reports Suite and comprehensive test suite complete and verified. Total 271 tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Admin Reports Suite and real-data queries complete and verified. Total 271 tests passing (100% pass rate).*
 
 
 

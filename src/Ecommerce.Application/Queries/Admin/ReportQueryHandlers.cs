@@ -28,12 +28,31 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<SalesReportDto> Handle(GetSalesReportQuery query, CancellationToken cancellationToken = default)
         {
-            var endDate = query.EndDate ?? DateTimeOffset.UtcNow;
-            var startDate = query.StartDate ?? endDate.AddDays(-30);
+            DateTimeOffset? endDate = query.EndDate.HasValue
+                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
+                : null;
 
-            var orders = await _db.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status != OrderStatus.Cancelled)
-                .ToListAsync(cancellationToken);
+            DateTimeOffset? startDate = query.StartDate.HasValue
+                ? query.StartDate.Value.Date
+                : null;
+
+            var ordersQuery = _db.Orders
+                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled);
+
+            if (startDate.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
+            }
+
+            var orders = await ordersQuery.ToListAsync(cancellationToken);
+
+            var effectiveStart = startDate ?? (orders.Any() ? orders.Min(o => o.CreatedAt) : DateTimeOffset.UtcNow.AddDays(-30));
+            var effectiveEnd = endDate ?? (orders.Any() ? orders.Max(o => o.CreatedAt) : DateTimeOffset.UtcNow);
 
             var orderIds = orders.Select(o => o.Id).ToList();
             var orderItems = await _db.OrderItems
@@ -42,9 +61,9 @@ namespace Ecommerce.Application.Queries.Admin
 
             var customerIds = orders.Where(o => o.UserId.HasValue).Select(o => o.UserId!.Value).Distinct().ToList();
             var newCustomerIds = await _db.Orders
-                .Where(o => o.UserId.HasValue && customerIds.Contains(o.UserId.Value) && o.CreatedAt >= startDate && o.CreatedAt <= endDate)
+                .Where(o => o.UserId.HasValue && customerIds.Contains(o.UserId.Value))
                 .GroupBy(o => o.UserId!.Value)
-                .Where(g => g.Min(o => o.CreatedAt) >= startDate)
+                .Where(g => g.Min(o => o.CreatedAt) >= effectiveStart)
                 .Select(g => g.Key)
                 .ToListAsync(cancellationToken);
 
@@ -74,17 +93,23 @@ namespace Ecommerce.Application.Queries.Admin
                 .ToList();
 
             var productIds = orderItems.Select(oi => oi.ProductId).Distinct().ToList();
-            var productsWithCategory = await _db.Products
+            var products = await _db.Products
+                .Include(p => p.Category)
                 .Where(p => productIds.Contains(p.Id))
-                .ToDictionaryAsync(p => p.Id, p => p.CategoryId, cancellationToken);
+                .ToListAsync(cancellationToken);
+
+            var productCategoryMap = products.ToDictionary(
+                p => p.Id,
+                p => new { CategoryId = p.CategoryId, CategoryName = p.Category?.Name ?? "General" }
+            );
 
             var topCategories = orderItems
-                .Where(oi => productsWithCategory.ContainsKey(oi.ProductId) && productsWithCategory[oi.ProductId] != null)
-                .GroupBy(oi => productsWithCategory[oi.ProductId]!.Value)
+                .Where(oi => productCategoryMap.ContainsKey(oi.ProductId) && productCategoryMap[oi.ProductId].CategoryId.HasValue)
+                .GroupBy(oi => productCategoryMap[oi.ProductId].CategoryId!.Value)
                 .Select(g => new TopCategoryDto
                 {
                     CategoryId = g.Key,
-                    CategoryName = g.First().ProductName,
+                    CategoryName = productCategoryMap.Values.FirstOrDefault(c => c.CategoryId == g.Key)?.CategoryName ?? "General",
                     OrderCount = g.Select(oi => oi.OrderId).Distinct().Count(),
                     Revenue = g.Sum(oi => oi.TotalAmount)
                 })
@@ -92,21 +117,10 @@ namespace Ecommerce.Application.Queries.Admin
                 .Take(10)
                 .ToList();
 
-            var categoryIds = topCategories.Select(c => c.CategoryId).ToList();
-            var categories = await _db.Categories
-                .Where(c => categoryIds.Contains(c.Id))
-                .ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
-
-            foreach (var cat in topCategories)
-            {
-                if (categories.TryGetValue(cat.CategoryId, out var name))
-                    cat.CategoryName = name;
-            }
-
             return new SalesReportDto
             {
-                PeriodStart = startDate,
-                PeriodEnd = endDate,
+                PeriodStart = effectiveStart,
+                PeriodEnd = effectiveEnd,
                 TotalOrders = orders.Count,
                 TotalRevenue = orders.Sum(o => o.TotalAmount),
                 AverageOrderValue = orders.Any() ? orders.Average(o => o.TotalAmount) : 0,
@@ -121,7 +135,7 @@ namespace Ecommerce.Application.Queries.Admin
 
         private string GetPeriodKey(DateTimeOffset date, string groupBy)
         {
-            return groupBy switch
+            return groupBy?.ToLowerInvariant() switch
             {
                 "week" => $"{date.Year}-W{GetWeekOfYear(date):D2}",
                 "month" => date.ToString("yyyy-MM"),
@@ -148,16 +162,37 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<RevenueReportDto> Handle(GetRevenueReportQuery query, CancellationToken cancellationToken = default)
         {
-            var endDate = query.EndDate ?? DateTimeOffset.UtcNow;
-            var startDate = query.StartDate ?? endDate.AddDays(-30);
+            DateTimeOffset? endDate = query.EndDate.HasValue
+                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
+                : null;
 
-            var orders = await _db.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status != OrderStatus.Cancelled)
-                .ToListAsync(cancellationToken);
+            DateTimeOffset? startDate = query.StartDate.HasValue
+                ? query.StartDate.Value.Date
+                : null;
 
-            var refunds = await _db.Refunds
-                .Where(r => r.ProcessedAt >= startDate && r.ProcessedAt <= endDate && r.Status == "succeeded")
-                .ToListAsync(cancellationToken);
+            var ordersQuery = _db.Orders
+                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled);
+
+            var refundsQuery = _db.Refunds
+                .Where(r => r.Status == "succeeded");
+
+            if (startDate.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
+                refundsQuery = refundsQuery.Where(r => r.ProcessedAt >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
+                refundsQuery = refundsQuery.Where(r => r.ProcessedAt <= endDate.Value);
+            }
+
+            var orders = await ordersQuery.ToListAsync(cancellationToken);
+            var refunds = await refundsQuery.ToListAsync(cancellationToken);
+
+            var effectiveStart = startDate ?? (orders.Any() ? orders.Min(o => o.CreatedAt) : DateTimeOffset.UtcNow.AddDays(-30));
+            var effectiveEnd = endDate ?? (orders.Any() ? orders.Max(o => o.CreatedAt) : DateTimeOffset.UtcNow);
 
             var totalDiscounts = orders.Sum(o => o.DiscountAmount);
             var totalTax = orders.Sum(o => o.TaxAmount);
@@ -177,6 +212,7 @@ namespace Ecommerce.Application.Queries.Admin
                 .ToList();
 
             var refundsByPeriod = refunds
+                .Where(r => r.ProcessedAt.HasValue)
                 .GroupBy(r => GetPeriodKey(r.ProcessedAt!.Value, query.GroupBy))
                 .ToDictionary(g => g.Key, g => g.Sum(r => r.Amount));
 
@@ -199,8 +235,8 @@ namespace Ecommerce.Application.Queries.Admin
 
             return new RevenueReportDto
             {
-                PeriodStart = startDate,
-                PeriodEnd = endDate,
+                PeriodStart = effectiveStart,
+                PeriodEnd = effectiveEnd,
                 GrossRevenue = grossRevenue,
                 NetRevenue = grossRevenue - totalRefunds,
                 TotalDiscounts = totalDiscounts,
@@ -214,7 +250,7 @@ namespace Ecommerce.Application.Queries.Admin
 
         private string GetPeriodKey(DateTimeOffset date, string groupBy)
         {
-            return groupBy switch
+            return groupBy?.ToLowerInvariant() switch
             {
                 "week" => $"{date.Year}-W{GetWeekOfYear(date):D2}",
                 "month" => date.ToString("yyyy-MM"),
@@ -329,17 +365,36 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<CustomerReportDto> Handle(GetCustomerReportQuery query, CancellationToken cancellationToken = default)
         {
-            var endDate = query.EndDate ?? DateTimeOffset.UtcNow;
-            var startDate = query.StartDate ?? endDate.AddDays(-30);
+            DateTimeOffset? endDate = query.EndDate.HasValue
+                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
+                : null;
+
+            DateTimeOffset? startDate = query.StartDate.HasValue
+                ? query.StartDate.Value.Date
+                : null;
+
+            var ordersQuery = _db.Orders
+                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled);
+
+            if (startDate.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
+            }
 
             var customers = await _db.Users.ToListAsync(cancellationToken);
-            var orders = await _db.Orders
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate && o.Status != OrderStatus.Cancelled)
-                .ToListAsync(cancellationToken);
+            var orders = await ordersQuery.ToListAsync(cancellationToken);
+
+            var effectiveStart = startDate ?? (orders.Any() ? orders.Min(o => o.CreatedAt) : DateTimeOffset.UtcNow.AddDays(-30));
+            var effectiveEnd = endDate ?? (orders.Any() ? orders.Max(o => o.CreatedAt) : DateTimeOffset.UtcNow);
 
             var customerOrders = orders
                 .Where(o => o.UserId.HasValue)
-                .GroupBy(o => o.UserId.Value)
+                .GroupBy(o => o.UserId!.Value)
                 .Select(g => new
                 {
                     UserId = g.Key,
@@ -350,9 +405,9 @@ namespace Ecommerce.Application.Queries.Admin
                 })
                 .ToList();
 
-            var newCustomers = customerOrders.Count(c => c.FirstOrder >= startDate);
-            var activeCustomers = customerOrders.Count(c => c.LastOrder >= startDate.AddDays(-30));
-            var totalCustomers = customers.Count;
+            var newCustomers = customerOrders.Count(c => c.FirstOrder >= effectiveStart);
+            var activeCustomers = customerOrders.Count;
+            var totalCustomers = Math.Max(customers.Count, customerOrders.Count);
 
             var segments = new List<CustomerSegmentDto>
             {
@@ -360,29 +415,29 @@ namespace Ecommerce.Application.Queries.Admin
                 {
                     SegmentName = "New",
                     CustomerCount = newCustomers,
-                    TotalRevenue = customerOrders.Where(c => c.FirstOrder >= startDate).Sum(c => c.TotalSpent),
-                    AverageOrderValue = newCustomers > 0 ? customerOrders.Where(c => c.FirstOrder >= startDate).Average(c => c.TotalSpent / c.OrderCount) : 0
+                    TotalRevenue = customerOrders.Where(c => c.FirstOrder >= effectiveStart).Sum(c => c.TotalSpent),
+                    AverageOrderValue = newCustomers > 0 ? customerOrders.Where(c => c.FirstOrder >= effectiveStart).Average(c => c.TotalSpent / c.OrderCount) : 0
                 },
                 new CustomerSegmentDto
                 {
                     SegmentName = "Returning",
                     CustomerCount = customerOrders.Count - newCustomers,
-                    TotalRevenue = customerOrders.Where(c => c.FirstOrder < startDate).Sum(c => c.TotalSpent),
-                    AverageOrderValue = customerOrders.Count > newCustomers ? customerOrders.Where(c => c.FirstOrder < startDate).Average(c => c.TotalSpent / c.OrderCount) : 0
+                    TotalRevenue = customerOrders.Where(c => c.FirstOrder < effectiveStart).Sum(c => c.TotalSpent),
+                    AverageOrderValue = customerOrders.Count > newCustomers ? customerOrders.Where(c => c.FirstOrder < effectiveStart).Average(c => c.TotalSpent / c.OrderCount) : 0
                 },
                 new CustomerSegmentDto
                 {
                     SegmentName = "VIP",
-                    CustomerCount = customerOrders.Count(c => c.TotalSpent > 1000),
-                    TotalRevenue = customerOrders.Where(c => c.TotalSpent > 1000).Sum(c => c.TotalSpent),
-                    AverageOrderValue = customerOrders.Count(c => c.TotalSpent > 1000) > 0 ? customerOrders.Where(c => c.TotalSpent > 1000).Average(c => c.TotalSpent / c.OrderCount) : 0
+                    CustomerCount = customerOrders.Count(c => c.TotalSpent >= 500),
+                    TotalRevenue = customerOrders.Where(c => c.TotalSpent >= 500).Sum(c => c.TotalSpent),
+                    AverageOrderValue = customerOrders.Count(c => c.TotalSpent >= 500) > 0 ? customerOrders.Where(c => c.TotalSpent >= 500).Average(c => c.TotalSpent / c.OrderCount) : 0
                 }
             };
 
             return new CustomerReportDto
             {
-                PeriodStart = startDate,
-                PeriodEnd = endDate,
+                PeriodStart = effectiveStart,
+                PeriodEnd = effectiveEnd,
                 TotalCustomers = totalCustomers,
                 NewCustomers = newCustomers,
                 ActiveCustomers = activeCustomers,
