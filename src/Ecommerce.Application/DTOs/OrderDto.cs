@@ -25,6 +25,11 @@ namespace Ecommerce.Application.DTOs
         public string CouponCode { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
         public string CustomerNotes { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public string CustomerEmail { get; set; } = string.Empty;
+        public string CustomerPhone { get; set; } = string.Empty;
+        public string ShippingAddress { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty;
         public DateTimeOffset CreatedAt { get; set; }
         public List<OrderItemDto> Items { get; set; } = new List<OrderItemDto>();
     }

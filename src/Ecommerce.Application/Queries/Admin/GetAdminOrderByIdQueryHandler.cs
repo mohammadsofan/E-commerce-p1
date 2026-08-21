@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -30,7 +31,45 @@ namespace Ecommerce.Application.Queries.Admin
             if (order == null)
                 throw new NotFoundException("Order", query.Id);
 
-            return _mapper.Map<OrderDto>(order);
+            var dto = _mapper.Map<OrderDto>(order);
+
+            var (address, paymentMethod) = ParseOrderNotes(order.Notes);
+            dto.ShippingAddress = address;
+            dto.PaymentMethod = paymentMethod;
+
+            if (order.UserId.HasValue)
+            {
+                var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == order.UserId.Value, cancellationToken);
+                if (user != null)
+                {
+                    var fullName = $"{user.FirstName} {user.LastName}".Trim();
+                    dto.CustomerName = !string.IsNullOrWhiteSpace(fullName)
+                        ? fullName
+                        : (!string.IsNullOrWhiteSpace(user.DisplayName)
+                            ? user.DisplayName
+                            : (!string.IsNullOrWhiteSpace(user.UserName) ? user.UserName : user.Email));
+                    dto.CustomerEmail = user.Email ?? string.Empty;
+                    dto.CustomerPhone = user.PhoneNumber ?? string.Empty;
+                }
+            }
+
+            return dto;
+        }
+
+        private static (string address, string paymentMethod) ParseOrderNotes(string notes)
+        {
+            if (string.IsNullOrWhiteSpace(notes)) return (string.Empty, string.Empty);
+            var parts = notes.Split(" | ", StringSplitOptions.RemoveEmptyEntries);
+            string address = string.Empty;
+            string paymentMethod = string.Empty;
+            foreach (var part in parts)
+            {
+                if (part.StartsWith("Address: ", StringComparison.OrdinalIgnoreCase))
+                    address = part.Substring("Address: ".Length).Trim();
+                else if (part.StartsWith("PaymentMethod: ", StringComparison.OrdinalIgnoreCase))
+                    paymentMethod = part.Substring("PaymentMethod: ".Length).Trim();
+            }
+            return (address, paymentMethod);
         }
     }
 }

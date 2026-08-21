@@ -38,9 +38,36 @@ namespace Ecommerce.Application.Queries.Orders
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize);
 
-            return await q
-                .Select(o => _mapper.Map<OrderDto>(o))
-                .ToListAsync(cancellationToken);
+            var orders = await q.ToListAsync(cancellationToken);
+            var dtos = _mapper.Map<List<OrderDto>>(orders);
+            foreach (var dto in dtos)
+            {
+                var matchingOrder = orders.FirstOrDefault(o => o.Id == dto.Id);
+                if (matchingOrder != null)
+                {
+                    var (address, paymentMethod) = ParseOrderNotes(matchingOrder.Notes);
+                    dto.ShippingAddress = address;
+                    dto.PaymentMethod = paymentMethod;
+                }
+            }
+
+            return dtos;
+        }
+
+        private static (string address, string paymentMethod) ParseOrderNotes(string notes)
+        {
+            if (string.IsNullOrWhiteSpace(notes)) return (string.Empty, string.Empty);
+            var parts = notes.Split(" | ", StringSplitOptions.RemoveEmptyEntries);
+            string address = string.Empty;
+            string paymentMethod = string.Empty;
+            foreach (var part in parts)
+            {
+                if (part.StartsWith("Address: ", StringComparison.OrdinalIgnoreCase))
+                    address = part.Substring("Address: ".Length).Trim();
+                else if (part.StartsWith("PaymentMethod: ", StringComparison.OrdinalIgnoreCase))
+                    paymentMethod = part.Substring("PaymentMethod: ".Length).Trim();
+            }
+            return (address, paymentMethod);
         }
     }
 }

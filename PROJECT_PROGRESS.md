@@ -797,9 +797,23 @@ docker run -p 8080:8080 -p 9090:9090 ecommerce-api
 - Added unit tests in `HeroBannerHandlerTests.cs` (201/201 application unit tests passing, 259/259 total tests passing, 100% pass rate).
 - Updated Admin UI (`HeroBanners.tsx` & `HeroBannerForm.tsx`) with Move Up / Move Down reordering controls, position index indicators (`#1`, `#2`), and instant reactive state updates.
 
+### 2026-08-21 — Customer Identification & Details in Admin Orders Page
+- Extended `OrderDto`:
+  - Added `CustomerName`, `CustomerEmail`, `CustomerPhone`, `ShippingAddress`, and `PaymentMethod` fields.
+- Updated `GetAdminOrdersQueryHandler`:
+  - Enriched paginated admin orders with associated customer identities from `_db.Users` (Full name, Email, Phone number).
+  - Parsed and extracted structured `ShippingAddress` and `PaymentMethod` from order notes.
+  - Enhanced search capability: admins can now filter and search orders by Customer Name, Email, or Phone number in addition to Order Number.
+- Updated `GetAdminOrderByIdQueryHandler`, `GetOrderByIdQueryHandler`, and `GetOrdersQueryHandler` to populate customer contact information and shipping address breakdown.
+- Added comprehensive unit tests in `OrderLifecycleHandlerTests.cs` verifying customer population and customer email search.
+- Updated Admin Frontend UI:
+  - `Orders.tsx`: Replaced raw GUID slice with rich customer presentation (Customer Name, Email, Phone badge).
+  - `OrderDetail.tsx`: Added dedicated **Customer Profile Card (بيانات العميل)** displaying customer name, clickable email & phone links, user account link, and delivery address card.
+- All 262 tests passing (204 Application, 14 Architecture, 24 Domain, 20 Integration; 100% pass rate).
+
 ---
 
-*Last updated: 2026-08-21 — Hero Banners Card Ordering & Dynamic Slider Reordering complete and verified. Total 259 tests passing (100% pass rate).*
+*Last updated: 2026-08-21 — Customer Identification in Admin Orders complete and verified. Total 262 tests passing (100% pass rate).*
 
 
 

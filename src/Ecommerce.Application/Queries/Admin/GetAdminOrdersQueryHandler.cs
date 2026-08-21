@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,8 +32,20 @@ namespace Ecommerce.Application.Queries.Admin
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                q = q.Where(o => o.OrderNumber.Contains(query.Search) ||
-                                o.UserId.ToString().Contains(query.Search));
+                var term = query.Search.Trim();
+                var matchingUserIds = await _db.Users
+                    .Where(u => u.Email.Contains(term) ||
+                                u.FirstName.Contains(term) ||
+                                u.LastName.Contains(term) ||
+                                u.DisplayName.Contains(term) ||
+                                u.PhoneNumber.Contains(term))
+                    .Select(u => (Guid?)u.Id)
+                    .ToListAsync(cancellationToken);
+
+                q = q.Where(o => o.OrderNumber.Contains(term) ||
+                                (o.UserId.HasValue && matchingUserIds.Contains(o.UserId)) ||
+                                o.Notes.Contains(term) ||
+                                o.CustomerNotes.Contains(term));
             }
 
             if (!string.IsNullOrWhiteSpace(query.Status))
@@ -60,7 +74,36 @@ namespace Ecommerce.Application.Queries.Admin
                 .Take(query.PageSize)
                 .ToListAsync(cancellationToken);
 
+            var userIds = orders.Where(o => o.UserId.HasValue).Select(o => o.UserId!.Value).Distinct().ToList();
+            var users = userIds.Any()
+                ? await _db.Users.Where(u => userIds.Contains(u.Id)).ToListAsync(cancellationToken)
+                : new List<IApplicationUser>();
+
+            var userDict = users.ToDictionary(u => u.Id);
+
             var items = _mapper.Map<List<OrderDto>>(orders);
+            foreach (var item in items)
+            {
+                var matchingOrder = orders.FirstOrDefault(o => o.Id == item.Id);
+                if (matchingOrder != null)
+                {
+                    var (address, paymentMethod) = ParseOrderNotes(matchingOrder.Notes);
+                    item.ShippingAddress = address;
+                    item.PaymentMethod = paymentMethod;
+                }
+
+                if (item.UserId.HasValue && userDict.TryGetValue(item.UserId.Value, out var u))
+                {
+                    var fullName = $"{u.FirstName} {u.LastName}".Trim();
+                    item.CustomerName = !string.IsNullOrWhiteSpace(fullName)
+                        ? fullName
+                        : (!string.IsNullOrWhiteSpace(u.DisplayName)
+                            ? u.DisplayName
+                            : (!string.IsNullOrWhiteSpace(u.UserName) ? u.UserName : u.Email));
+                    item.CustomerEmail = u.Email ?? string.Empty;
+                    item.CustomerPhone = u.PhoneNumber ?? string.Empty;
+                }
+            }
 
             return new PagedResult<OrderDto>
             {
@@ -69,6 +112,22 @@ namespace Ecommerce.Application.Queries.Admin
                 Page = query.Page,
                 PageSize = query.PageSize
             };
+        }
+
+        private static (string address, string paymentMethod) ParseOrderNotes(string notes)
+        {
+            if (string.IsNullOrWhiteSpace(notes)) return (string.Empty, string.Empty);
+            var parts = notes.Split(" | ", StringSplitOptions.RemoveEmptyEntries);
+            string address = string.Empty;
+            string paymentMethod = string.Empty;
+            foreach (var part in parts)
+            {
+                if (part.StartsWith("Address: ", StringComparison.OrdinalIgnoreCase))
+                    address = part.Substring("Address: ".Length).Trim();
+                else if (part.StartsWith("PaymentMethod: ", StringComparison.OrdinalIgnoreCase))
+                    paymentMethod = part.Substring("PaymentMethod: ".Length).Trim();
+            }
+            return (address, paymentMethod);
         }
     }
 }
