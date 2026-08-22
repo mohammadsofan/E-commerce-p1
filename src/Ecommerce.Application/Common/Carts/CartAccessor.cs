@@ -70,11 +70,25 @@ namespace Ecommerce.Application.Common.Carts
             var productIds = result.Items.Select(item => item.ProductId).Distinct().ToList();
             if (productIds.Count == 0) return result;
 
+            var variantIds = result.Items
+                .Where(item => item.ProductVariantId.HasValue && item.ProductVariantId.Value != Guid.Empty)
+                .Select(item => item.ProductVariantId!.Value)
+                .Distinct()
+                .ToList();
+
             var products = await Db.Products
                 .AsNoTracking()
                 .Where(product => productIds.Contains(product.Id))
-                .Select(product => new { product.Id, product.Slug, product.CategoryId, product.BasePrice })
+                .Select(product => new { product.Id, product.Name, product.Slug, product.CategoryId, product.BasePrice })
                 .ToListAsync(cancellationToken);
+
+            var variants = variantIds.Any()
+                ? await Db.ProductVariants
+                    .AsNoTracking()
+                    .Where(v => variantIds.Contains(v.Id))
+                    .Select(v => new { v.Id, v.Name, v.Price, v.Sku })
+                    .ToListAsync(cancellationToken)
+                : null;
 
             var images = await Db.ProductImages
                 .AsNoTracking()
@@ -98,7 +112,24 @@ namespace Ecommerce.Application.Common.Carts
             foreach (var item in result.Items)
             {
                 var prod = products.FirstOrDefault(product => product.Id == item.ProductId);
-                item.ProductSlug = prod?.Slug ?? string.Empty;
+                if (prod != null)
+                {
+                    if (string.IsNullOrWhiteSpace(item.ProductName))
+                    {
+                        item.ProductName = prod.Name;
+                    }
+                    item.ProductSlug = prod.Slug ?? string.Empty;
+                }
+
+                if (item.ProductVariantId.HasValue && variants != null)
+                {
+                    var variant = variants.FirstOrDefault(v => v.Id == item.ProductVariantId.Value);
+                    if (variant != null && !string.IsNullOrWhiteSpace(variant.Name))
+                    {
+                        item.VariantName = variant.Name;
+                    }
+                }
+
                 item.ImageUrl = images
                     .Where(image => image.ProductId == item.ProductId && image.ProductVariantId == item.ProductVariantId)
                     .Select(image => image.Url)
@@ -108,9 +139,10 @@ namespace Ecommerce.Application.Common.Carts
                         .Select(image => image.Url)
                         .FirstOrDefault();
 
+                item.OriginalPrice = prod?.BasePrice ?? item.UnitPrice;
+
                 if (promoEvaluations != null && promoEvaluations.TryGetValue(item.ProductId, out var eval) && eval.HasActivePromotion)
                 {
-                    item.OriginalPrice = prod?.BasePrice ?? item.UnitPrice;
                     item.PromotionalPrice = eval.PromotionalPrice;
                     item.PromotionName = eval.PromotionName;
                     item.PromotionBadge = eval.PromotionBadge;
