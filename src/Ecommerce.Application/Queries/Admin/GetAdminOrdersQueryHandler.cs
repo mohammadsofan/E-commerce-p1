@@ -30,6 +30,7 @@ namespace Ecommerce.Application.Queries.Admin
         {
             var q = _db.Orders
                 .Include(o => o.Items)
+                .AsSplitQuery()
                 .AsQueryable();
 
             var effectiveSearch = !string.IsNullOrWhiteSpace(query.Search) ? query.Search : query.SearchTerm;

@@ -90,7 +90,7 @@ namespace Ecommerce.Domain.Entities
 
         public void RecalculateTotals()
         {
-            Subtotal = Items.Sum(i => i.UnitPrice * i.Quantity);
+            Subtotal = Items.Sum(i => Math.Round(i.UnitPrice * i.Quantity, 2, MidpointRounding.AwayFromZero));
             DiscountAmount = Math.Max(0m, Math.Min(Subtotal, DiscountAmount));
             TotalAmount = Math.Max(0m, Subtotal - DiscountAmount + ShippingAmount);
         }
