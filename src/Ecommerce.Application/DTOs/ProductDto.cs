@@ -21,7 +21,7 @@ namespace Ecommerce.Application.DTOs
         public int? DiscountPercentage { get; set; }
         public string? PromotionName { get; set; }
         public string? PromotionBadge { get; set; }
-        public bool IsOnSale => PromotionalPrice.HasValue && PromotionalPrice.Value < BasePrice;
+        public bool IsOnSale => (PromotionalPrice.HasValue && PromotionalPrice.Value < BasePrice) || !string.IsNullOrWhiteSpace(PromotionBadge);
     }
 
     public class ProductAttributeOptionDto

@@ -30,11 +30,22 @@ namespace Ecommerce.Infrastructure.Services
             decimal basePrice,
             CancellationToken cancellationToken = default)
         {
+            return await EvaluateProductAsync(productId, categoryId, basePrice, 1, cancellationToken);
+        }
+
+        public async Task<ProductPromotionEvaluation> EvaluateProductAsync(
+            Guid productId,
+            Guid? categoryId,
+            decimal basePrice,
+            int quantity,
+            CancellationToken cancellationToken = default)
+        {
             var target = new ProductPromotionTarget
             {
                 ProductId = productId,
                 CategoryId = categoryId,
-                BasePrice = basePrice
+                BasePrice = basePrice,
+                Quantity = quantity
             };
 
             var dict = await EvaluateProductsAsync(new[] { target }, cancellationToken);
@@ -95,21 +106,22 @@ namespace Ecommerce.Infrastructure.Services
                     if (!IsPromotionApplicableToProduct(promo, target.ProductId, target.CategoryId))
                         continue;
 
-                    var (hasDiscount, promoPrice, discountAmount, discountPercent, badge) =
-                        CalculateDiscount(promo, target.BasePrice);
+                    var (hasDiscount, promoPrice, unitDiscount, totalDiscount, discountPercent, badge) =
+                        CalculateDiscount(promo, target.BasePrice, target.Quantity);
 
-                    if (hasDiscount && discountAmount > 0)
+                    if (hasDiscount && totalDiscount > 0)
                     {
                         results[target.ProductId] = new ProductPromotionEvaluation
                         {
                             ProductId = target.ProductId,
                             BasePrice = target.BasePrice,
                             PromotionalPrice = promoPrice,
-                            DiscountAmount = discountAmount,
+                            DiscountAmount = unitDiscount,
+                            TotalDiscount = totalDiscount,
                             DiscountPercentage = discountPercent,
                             HasActivePromotion = true,
                             PromotionName = promo.Name,
-                            PromotionBadge = badge ?? (discountPercent > 0 ? $"خصم {discountPercent}%" : $"وفر {discountAmount:G29} ₪"),
+                            PromotionBadge = badge ?? (discountPercent > 0 ? $"خصم {discountPercent}%" : $"وفر {unitDiscount:G29} ₪"),
                             PromotionId = promo.Id
                         };
                         break; // Highest priority matching promotion takes effect
@@ -122,6 +134,7 @@ namespace Ecommerce.Infrastructure.Services
                             BasePrice = target.BasePrice,
                             PromotionalPrice = target.BasePrice,
                             DiscountAmount = 0,
+                            TotalDiscount = 0,
                             DiscountPercentage = 0,
                             HasActivePromotion = true,
                             PromotionName = promo.Name,
@@ -180,14 +193,15 @@ namespace Ecommerce.Infrastructure.Services
             return false;
         }
 
-        private static (bool hasDiscount, decimal promoPrice, decimal discountAmount, int discountPercent, string? badge)
-            CalculateDiscount(Promotion promo, decimal basePrice)
+        private static (bool hasDiscount, decimal promoPrice, decimal unitDiscount, decimal totalDiscount, int discountPercent, string? badge)
+            CalculateDiscount(Promotion promo, decimal basePrice, int quantity = 1)
         {
             if (basePrice <= 0)
-                return (false, basePrice, 0, 0, null);
+                return (false, basePrice, 0, 0, 0, null);
 
             var type = promo.Type?.ToLowerInvariant().Trim() ?? "percentage";
             var rules = ParseRules(promo.RulesJson);
+            int qty = Math.Max(1, quantity);
 
             decimal percentage = 0;
             decimal fixedAmount = 0;
@@ -200,6 +214,16 @@ namespace Ecommerce.Infrastructure.Services
                     percentage = p.GetDecimal();
                 else if (rules.TryGetValue("value", out var v) && v.ValueKind == JsonValueKind.Number)
                     percentage = v.GetDecimal();
+
+                if (percentage > 0)
+                {
+                    percentage = Math.Min(100m, Math.Max(0m, percentage));
+                    var unitDiscount = Math.Round(basePrice * (percentage / 100m), 2);
+                    var promoPrice = Math.Max(0m, basePrice - unitDiscount);
+                    var discountPercent = (int)Math.Round(percentage);
+                    var totalDiscount = unitDiscount * qty;
+                    return (true, promoPrice, unitDiscount, totalDiscount, discountPercent, $"خصم {discountPercent}%");
+                }
             }
             else if (type is "fixed_amount" or "fixed_discount")
             {
@@ -209,37 +233,72 @@ namespace Ecommerce.Infrastructure.Services
                     fixedAmount = a.GetDecimal();
                 else if (rules.TryGetValue("value", out var v) && v.ValueKind == JsonValueKind.Number)
                     fixedAmount = v.GetDecimal();
-            }
-            else if (type is "buy_x_get_y" or "bundle" or "tiered_discount" or "free_gift")
-            {
-                string badgeText = promo.Name;
-                if (type == "buy_x_get_y")
+
+                if (fixedAmount > 0)
                 {
-                    int buyQty = rules.TryGetValue("buyQuantity", out var bq) && bq.ValueKind == JsonValueKind.Number ? bq.GetInt32() : 2;
-                    int getQty = rules.TryGetValue("getQuantity", out var gq) && gq.ValueKind == JsonValueKind.Number ? gq.GetInt32() : 1;
-                    badgeText = $"اشتر {buyQty} واحصل على {getQty} مجاناً";
+                    var unitDiscount = Math.Min(basePrice, fixedAmount);
+                    var promoPrice = Math.Max(0m, basePrice - unitDiscount);
+                    var discountPercent = basePrice > 0 ? (int)Math.Round((unitDiscount / basePrice) * 100m) : 0;
+                    var totalDiscount = unitDiscount * qty;
+                    return (true, promoPrice, unitDiscount, totalDiscount, discountPercent, $"وفر {unitDiscount:G29} ₪");
                 }
-                return (false, basePrice, 0, 0, badgeText);
             }
-
-            if (percentage > 0)
+            else if (type is "buy_x_get_y")
             {
-                percentage = Math.Min(100m, Math.Max(0m, percentage));
-                var discountAmount = Math.Round(basePrice * (percentage / 100m), 2);
-                var promoPrice = Math.Max(0m, basePrice - discountAmount);
-                var discountPercent = (int)Math.Round(percentage);
-                return (true, promoPrice, discountAmount, discountPercent, $"خصم {discountPercent}%");
-            }
+                int buyQty = 2;
+                if (rules.TryGetValue("buyQuantity", out var bq) && bq.ValueKind == JsonValueKind.Number)
+                    buyQty = bq.GetInt32();
+                else if (rules.TryGetValue("buy_quantity", out var bq2) && bq2.ValueKind == JsonValueKind.Number)
+                    buyQty = bq2.GetInt32();
+                else if (rules.TryGetValue("buy", out var bq3) && bq3.ValueKind == JsonValueKind.Number)
+                    buyQty = bq3.GetInt32();
 
-            if (fixedAmount > 0)
+                int getQty = 1;
+                if (rules.TryGetValue("getQuantity", out var gq) && gq.ValueKind == JsonValueKind.Number)
+                    getQty = gq.GetInt32();
+                else if (rules.TryGetValue("get_quantity", out var gq2) && gq2.ValueKind == JsonValueKind.Number)
+                    getQty = gq2.GetInt32();
+                else if (rules.TryGetValue("get", out var gq3) && gq3.ValueKind == JsonValueKind.Number)
+                    getQty = gq3.GetInt32();
+
+                decimal getDiscountPercent = 100m;
+                if (rules.TryGetValue("discountPercentage", out var dp) && dp.ValueKind == JsonValueKind.Number)
+                    getDiscountPercent = dp.GetDecimal();
+                else if (rules.TryGetValue("discount_percentage", out var dp2) && dp2.ValueKind == JsonValueKind.Number)
+                    getDiscountPercent = dp2.GetDecimal();
+                else if (rules.TryGetValue("percentage", out var dp3) && dp3.ValueKind == JsonValueKind.Number)
+                    getDiscountPercent = dp3.GetDecimal();
+
+                string badgeText = promo.Name;
+                if (string.IsNullOrWhiteSpace(badgeText) || badgeText.Length > 40)
+                {
+                    badgeText = getDiscountPercent >= 100m
+                        ? $"اشتر {buyQty} واحصل على {getQty} مجاناً"
+                        : $"اشتر {buyQty} واحصل على {getQty} بخصم {getDiscountPercent:0}%";
+                }
+
+                int bundleSize = buyQty + getQty;
+                if (bundleSize > 0 && qty >= bundleSize)
+                {
+                    int sets = qty / bundleSize;
+                    int freeItemCount = sets * getQty;
+                    decimal discountPerFreeItem = Math.Round(basePrice * (getDiscountPercent / 100m), 2);
+                    decimal totalDiscount = freeItemCount * discountPerFreeItem;
+                    decimal effectiveTotal = Math.Max(0m, (qty * basePrice) - totalDiscount);
+                    decimal effectiveUnitPrice = Math.Round(effectiveTotal / qty, 2);
+                    int effectiveDiscountPercent = (int)Math.Round((totalDiscount / (qty * basePrice)) * 100m);
+
+                    return (true, effectiveUnitPrice, Math.Round(totalDiscount / qty, 2), totalDiscount, effectiveDiscountPercent, badgeText);
+                }
+
+                return (false, basePrice, 0, 0, 0, badgeText);
+            }
+            else if (type is "bundle" or "tiered_discount" or "free_gift")
             {
-                var discountAmount = Math.Min(basePrice, fixedAmount);
-                var promoPrice = Math.Max(0m, basePrice - discountAmount);
-                var discountPercent = basePrice > 0 ? (int)Math.Round((discountAmount / basePrice) * 100m) : 0;
-                return (true, promoPrice, discountAmount, discountPercent, $"وفر {discountAmount:G29} ₪");
+                return (false, basePrice, 0, 0, 0, promo.Name);
             }
 
-            return (false, basePrice, 0, 0, null);
+            return (false, basePrice, 0, 0, 0, null);
         }
 
         private static Dictionary<string, JsonElement> ParseRules(string? rulesJson)

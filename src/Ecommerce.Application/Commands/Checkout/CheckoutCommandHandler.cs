@@ -125,19 +125,31 @@ namespace Ecommerce.Application.Commands.Checkout
                     }
 
                     var productName = product?.Name ?? "Product";
-                    var unitPrice = variant?.Price ?? product?.BasePrice ?? 10m;
+                    var baseUnitPrice = variant?.Price ?? product?.BasePrice ?? 10m;
+                    var unitPrice = baseUnitPrice;
+                    decimal lineDiscount = 0m;
 
                     if (_promotionEvaluator != null && product != null)
                     {
                         var promoEval = await _promotionEvaluator.EvaluateProductAsync(
                             product.Id,
                             product.CategoryId,
-                            unitPrice,
+                            baseUnitPrice,
+                            it.Quantity,
                             cancellationToken);
 
-                        if (promoEval.HasActivePromotion && promoEval.PromotionalPrice < unitPrice)
+                        if (promoEval.HasActivePromotion)
                         {
-                            unitPrice = promoEval.PromotionalPrice;
+                            if (promoEval.TotalDiscount > 0)
+                            {
+                                lineDiscount = promoEval.TotalDiscount;
+                                unitPrice = Math.Round(((baseUnitPrice * it.Quantity) - lineDiscount) / it.Quantity, 2);
+                            }
+                            else if (promoEval.PromotionalPrice < baseUnitPrice && promoEval.DiscountAmount > 0)
+                            {
+                                lineDiscount = (baseUnitPrice - promoEval.PromotionalPrice) * it.Quantity;
+                                unitPrice = promoEval.PromotionalPrice;
+                            }
                         }
                     }
 
@@ -146,7 +158,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     var imageUrl = product?.Images?.FirstOrDefault()?.Url ?? string.Empty;
                     var variantId = it.ProductVariantId ?? Guid.Empty;
 
-                    order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, 0m, variantName, sku, imageUrl, it.SelectedOptions);
+                    order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, lineDiscount, variantName, sku, imageUrl, it.SelectedOptions);
 
                     // Reserve inventory if exists
                     var inventory = inventoryItems.FirstOrDefault(inv =>

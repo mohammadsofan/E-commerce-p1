@@ -63,7 +63,7 @@ namespace Ecommerce.Application.Commands.Carts
                     unitPrice,
                     cancellationToken);
 
-                if (promoEval.HasActivePromotion && promoEval.PromotionalPrice < unitPrice)
+                if (promoEval.HasActivePromotion && promoEval.DiscountAmount > 0 && promoEval.PromotionalPrice < unitPrice)
                 {
                     unitPrice = promoEval.PromotionalPrice;
                 }
