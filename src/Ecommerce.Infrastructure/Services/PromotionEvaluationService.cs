@@ -70,38 +70,7 @@ namespace Ecommerce.Infrastructure.Services
             if (targetList.Count == 0)
                 return results;
 
-            var now = DateTimeOffset.UtcNow;
-
-            List<Promotion> activePromotions;
-            if (_cache != null)
-            {
-                activePromotions = await _cache.GetOrCreateAsync(CacheKey, async entry =>
-                {
-                    entry.AbsoluteExpirationRelativeToNow = CacheTtl;
-                    return await _db.Promotions
-                        .AsNoTracking()
-                        .Where(p => p.IsActive &&
-                                   (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
-                                   (!p.EndAt.HasValue || p.EndAt.Value >= now) &&
-                                   (!p.UsageLimit.HasValue || p.UsedCount < p.UsageLimit.Value))
-                        .OrderByDescending(p => p.Priority)
-                        .ThenByDescending(p => p.CreatedAt)
-                        .ToListAsync(cancellationToken);
-                }) ?? new List<Promotion>();
-            }
-            else
-            {
-                activePromotions = await _db.Promotions
-                    .AsNoTracking()
-                    .Where(p => p.IsActive &&
-                               (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
-                               (!p.EndAt.HasValue || p.EndAt.Value >= now) &&
-                               (!p.UsageLimit.HasValue || p.UsedCount < p.UsageLimit.Value))
-                    .OrderByDescending(p => p.Priority)
-                    .ThenByDescending(p => p.CreatedAt)
-                    .ToListAsync(cancellationToken);
-            }
-
+            var activePromotions = await GetActivePromotionsAsync(cancellationToken);
             if (activePromotions.Count == 0)
                 return results;
 
@@ -153,6 +122,154 @@ namespace Ecommerce.Infrastructure.Services
             }
 
             return results;
+        }
+
+        private async Task<List<Promotion>> GetActivePromotionsAsync(CancellationToken cancellationToken)
+        {
+            var now = DateTimeOffset.UtcNow;
+
+            List<Promotion> activePromotions;
+            if (_cache != null)
+            {
+                activePromotions = await _cache.GetOrCreateAsync(CacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+                    return await _db.Promotions
+                        .AsNoTracking()
+                        .Where(p => p.IsActive &&
+                                   (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
+                                   (!p.EndAt.HasValue || p.EndAt.Value >= now) &&
+                                   (!p.UsageLimit.HasValue || p.UsedCount < p.UsageLimit.Value))
+                        .OrderByDescending(p => p.Priority)
+                        .ThenByDescending(p => p.CreatedAt)
+                        .ToListAsync(cancellationToken);
+                }) ?? new List<Promotion>();
+            }
+            else
+            {
+                activePromotions = await _db.Promotions
+                    .AsNoTracking()
+                    .Where(p => p.IsActive &&
+                               (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
+                               (!p.EndAt.HasValue || p.EndAt.Value >= now) &&
+                               (!p.UsageLimit.HasValue || p.UsedCount < p.UsageLimit.Value))
+                    .OrderByDescending(p => p.Priority)
+                    .ThenByDescending(p => p.CreatedAt)
+                    .ToListAsync(cancellationToken);
+            }
+            
+            return activePromotions;
+        }
+
+        public async Task<CartLevelPromotionResult> EvaluateCartLevelPromotionsAsync(List<CartLevelPromotionTarget> cartItems, decimal currentSubtotal, CancellationToken cancellationToken = default)
+        {
+            var promotions = await GetActivePromotionsAsync(cancellationToken);
+            var cartPromos = promotions.Where(p => 
+                p.Type == "bundle" || 
+                p.Type == "tiered_discount" || 
+                p.Type == "free_gift").ToList();
+
+            var result = new CartLevelPromotionResult
+            {
+                HasCartLevelPromotion = false,
+                TotalCartDiscount = 0,
+                PromotionName = null,
+                PromotionId = null,
+                SuggestedFreeGiftProductId = null
+            };
+
+            foreach (var promo in cartPromos.OrderByDescending(p => p.Priority))
+            {
+                var rules = ParseRules(promo.RulesJson);
+                var type = promo.Type?.ToLowerInvariant().Trim();
+
+                if (type == "tiered_discount")
+                {
+                    if (rules.TryGetValue("tiers", out var tiers) && tiers.ValueKind == JsonValueKind.Array)
+                    {
+                        decimal bestDiscount = 0;
+                        foreach (var tier in tiers.EnumerateArray())
+                        {
+                            if (tier.TryGetProperty("minSpend", out var ms) && tier.TryGetProperty("discount", out var d))
+                            {
+                                decimal minSpend = ms.GetDecimal();
+                                decimal discountVal = d.GetDecimal();
+                                if (currentSubtotal >= minSpend)
+                                {
+                                    // Could be percentage or fixed based on another flag, but assuming percentage if <= 100, else fixed
+                                    decimal calculatedDiscount = discountVal <= 100m ? Math.Round(currentSubtotal * (discountVal / 100m), 2) : discountVal;
+                                    if (calculatedDiscount > bestDiscount)
+                                        bestDiscount = calculatedDiscount;
+                                }
+                            }
+                        }
+
+                        if (bestDiscount > 0)
+                        {
+                            result.HasCartLevelPromotion = true;
+                            result.TotalCartDiscount = bestDiscount;
+                            result.PromotionName = promo.Name;
+                            result.PromotionId = promo.Id;
+                            break;
+                        }
+                    }
+                }
+                else if (type == "bundle")
+                {
+                    if (rules.TryGetValue("bundlePrice", out var bp) && bp.ValueKind == JsonValueKind.Number)
+                    {
+                        decimal bundlePrice = bp.GetDecimal();
+                        // Wait, a bundle usually requires specific product IDs to be present.
+                        var reqIds = ParseGuidList(promo.ApplicableProductIds ?? "");
+                        if (reqIds.Count > 0)
+                        {
+                            bool hasAll = reqIds.All(id => cartItems.Any(ci => ci.ProductId == id));
+                            if (hasAll)
+                            {
+                                decimal sumOfBundleItems = cartItems.Where(ci => reqIds.Contains(ci.ProductId)).Sum(ci => ci.UnitPrice); // Just 1 of each for the bundle
+                                if (sumOfBundleItems > bundlePrice)
+                                {
+                                    result.HasCartLevelPromotion = true;
+                                    result.TotalCartDiscount = sumOfBundleItems - bundlePrice;
+                                    result.PromotionName = promo.Name;
+                                    result.PromotionId = promo.Id;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (type == "free_gift")
+                {
+                    decimal minSpend = 0;
+                    if (rules.TryGetValue("minSpend", out var ms) && ms.ValueKind == JsonValueKind.Number)
+                        minSpend = ms.GetDecimal();
+
+                    string giftIdStr = string.Empty;
+                    if (rules.TryGetValue("giftProductId", out var gid))
+                        giftIdStr = gid.GetString() ?? "";
+
+                    if (currentSubtotal >= minSpend && Guid.TryParse(giftIdStr, out var giftProductId))
+                    {
+                        var giftItem = cartItems.FirstOrDefault(ci => ci.ProductId == giftProductId);
+                        if (giftItem != null)
+                        {
+                            result.HasCartLevelPromotion = true;
+                            result.TotalCartDiscount = giftItem.UnitPrice; // 1 free gift
+                            result.PromotionName = promo.Name;
+                            result.PromotionId = promo.Id;
+                            break;
+                        }
+                        else
+                        {
+                            // Eligible but not in cart
+                            result.SuggestedFreeGiftProductId = giftProductId;
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
         private static bool IsPromotionApplicableToProduct(Promotion promo, Guid productId, Guid? categoryId)
@@ -275,12 +392,16 @@ namespace Ecommerce.Infrastructure.Services
                 else if (rules.TryGetValue("percentage", out var dp3) && dp3.ValueKind == JsonValueKind.Number)
                     getDiscountPercent = dp3.GetDecimal();
 
-                string badgeText = promo.Name;
-                if (string.IsNullOrWhiteSpace(badgeText) || badgeText.Length > 40)
+                string badgeText = getDiscountPercent >= 100m
+                    ? $"اشتر {buyQty} واحصل على {getQty} مجاناً"
+                    : $"اشتر {buyQty} واحصل على {getQty} بخصم {getDiscountPercent:0}%";
+                
+                if (!string.IsNullOrWhiteSpace(promo.Name) && 
+                    !promo.Name.Contains("اشتر") && 
+                    !promo.Name.Contains("Buy") &&
+                    promo.Name.Trim() != badgeText.Trim())
                 {
-                    badgeText = getDiscountPercent >= 100m
-                        ? $"اشتر {buyQty} واحصل على {getQty} مجاناً"
-                        : $"اشتر {buyQty} واحصل على {getQty} بخصم {getDiscountPercent:0}%";
+                    badgeText = $"{badgeText} - {promo.Name}";
                 }
 
                 int bundleSize = buyQty + getQty;

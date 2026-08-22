@@ -14,6 +14,8 @@ namespace Ecommerce.Application.DTOs
         public decimal DiscountAmount { get; set; }
         public decimal Total { get; set; }
         public decimal TotalAmount { get; set; }
+        public decimal CartLevelDiscountAmount { get; set; }
+        public string? CartLevelPromotionName { get; set; }
         public string? AppliedCouponCode { get; set; }
         public List<CartItemDto> Items { get; set; } = new List<CartItemDto>();
     }

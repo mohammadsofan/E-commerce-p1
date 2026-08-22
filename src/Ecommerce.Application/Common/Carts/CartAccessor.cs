@@ -180,7 +180,25 @@ namespace Ecommerce.Application.Common.Carts
             }
 
             result.Subtotal = result.Items.Sum(i => i.LineTotal);
-            result.Total = Math.Max(0, result.Subtotal - result.DiscountAmount);
+
+            if (PromotionEvaluator != null)
+            {
+                var cartTargets = result.Items.Select(i => new CartLevelPromotionTarget
+                {
+                    ProductId = i.ProductId,
+                    UnitPrice = i.Quantity > 0 ? (i.LineTotal / i.Quantity) : i.UnitPrice,
+                    Quantity = i.Quantity
+                }).ToList();
+
+                var cartLevelEval = await PromotionEvaluator.EvaluateCartLevelPromotionsAsync(cartTargets, result.Subtotal, cancellationToken);
+                if (cartLevelEval.HasCartLevelPromotion)
+                {
+                    result.CartLevelDiscountAmount = cartLevelEval.TotalCartDiscount;
+                    result.CartLevelPromotionName = cartLevelEval.PromotionName;
+                }
+            }
+
+            result.Total = Math.Max(0, result.Subtotal - result.CartLevelDiscountAmount - result.DiscountAmount);
             result.TotalAmount = result.Total;
 
             return result;

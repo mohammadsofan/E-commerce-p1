@@ -27,10 +27,27 @@ namespace Ecommerce.Application.Interfaces
         public Guid? PromotionId { get; set; }
     }
 
+    public class CartLevelPromotionTarget
+    {
+        public Guid ProductId { get; set; }
+        public decimal UnitPrice { get; set; }
+        public int Quantity { get; set; }
+    }
+
+    public class CartLevelPromotionResult
+    {
+        public bool HasCartLevelPromotion { get; set; }
+        public decimal TotalCartDiscount { get; set; }
+        public string? PromotionName { get; set; }
+        public Guid? PromotionId { get; set; }
+        public Guid? SuggestedFreeGiftProductId { get; set; }
+    }
+
     public interface IPromotionEvaluationService
     {
         Task<ProductPromotionEvaluation> EvaluateProductAsync(Guid productId, Guid? categoryId, decimal basePrice, CancellationToken cancellationToken = default);
         Task<ProductPromotionEvaluation> EvaluateProductAsync(Guid productId, Guid? categoryId, decimal basePrice, int quantity, CancellationToken cancellationToken = default);
         Task<Dictionary<Guid, ProductPromotionEvaluation>> EvaluateProductsAsync(IEnumerable<ProductPromotionTarget> targets, CancellationToken cancellationToken = default);
+        Task<CartLevelPromotionResult> EvaluateCartLevelPromotionsAsync(List<CartLevelPromotionTarget> cartItems, decimal currentSubtotal, CancellationToken cancellationToken = default);
     }
 }

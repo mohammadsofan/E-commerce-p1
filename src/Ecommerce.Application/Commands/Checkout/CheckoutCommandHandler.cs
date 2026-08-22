@@ -143,12 +143,10 @@ namespace Ecommerce.Application.Commands.Checkout
                             if (promoEval.TotalDiscount > 0)
                             {
                                 lineDiscount = promoEval.TotalDiscount;
-                                unitPrice = Math.Round(((baseUnitPrice * it.Quantity) - lineDiscount) / it.Quantity, 2);
                             }
                             else if (promoEval.PromotionalPrice < baseUnitPrice && promoEval.DiscountAmount > 0)
                             {
                                 lineDiscount = (baseUnitPrice - promoEval.PromotionalPrice) * it.Quantity;
-                                unitPrice = promoEval.PromotionalPrice;
                             }
                         }
                     }
@@ -178,6 +176,24 @@ namespace Ecommerce.Application.Commands.Checkout
                         }
                     }
                 }
+
+                // --- CART LEVEL PROMOTIONS ---
+                if (_promotionEvaluator != null)
+                {
+                    var cartTargets = order.Items.Select(i => new Ecommerce.Application.Interfaces.CartLevelPromotionTarget
+                    {
+                        ProductId = i.ProductId,
+                        UnitPrice = i.Quantity > 0 ? (i.TotalAmount / i.Quantity) : i.UnitPrice,
+                        Quantity = i.Quantity
+                    }).ToList();
+
+                    var cartLevelEval = await _promotionEvaluator.EvaluateCartLevelPromotionsAsync(cartTargets, order.Subtotal, cancellationToken);
+                    if (cartLevelEval.HasCartLevelPromotion && !string.IsNullOrWhiteSpace(cartLevelEval.PromotionName))
+                    {
+                        order.ApplyCartLevelPromotion(cartLevelEval.PromotionName, cartLevelEval.TotalCartDiscount);
+                    }
+                }
+                // -----------------------------
 
                 // Retrieve active cart(s) for the user if exists
                 var userCarts = new System.Collections.Generic.List<Cart>();

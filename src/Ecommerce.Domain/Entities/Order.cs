@@ -21,6 +21,8 @@ namespace Ecommerce.Domain.Entities
         public decimal DiscountAmount { get; private set; }
         public decimal ShippingAmount { get; set; }
         public decimal TotalAmount { get; private set; }
+        public decimal CartLevelDiscountAmount { get; private set; }
+        public string CartLevelPromotionName { get; private set; } = string.Empty;
         public decimal RefundedAmount { get; set; }
         public string CouponCode { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
@@ -83,16 +85,26 @@ namespace Ecommerce.Domain.Entities
         public void ApplyCoupon(string couponCode, decimal discountAmount)
         {
             CouponCode = couponCode;
-            DiscountAmount = Math.Max(0m, Math.Min(Subtotal, discountAmount));
+            DiscountAmount = Math.Max(0m, discountAmount);
+            RecalculateTotals();
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        public void ApplyCartLevelPromotion(string promotionName, decimal discountAmount)
+        {
+            CartLevelPromotionName = promotionName;
+            CartLevelDiscountAmount = Math.Max(0m, discountAmount);
             RecalculateTotals();
             UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         public void RecalculateTotals()
         {
-            Subtotal = Items.Sum(i => Math.Round(i.UnitPrice * i.Quantity, 2, MidpointRounding.AwayFromZero));
-            DiscountAmount = Math.Max(0m, Math.Min(Subtotal, DiscountAmount));
-            TotalAmount = Math.Max(0m, Subtotal - DiscountAmount + ShippingAmount);
+            Subtotal = Items.Sum(i => Math.Max(0m, Math.Round((i.UnitPrice * i.Quantity) - i.DiscountAmount, 2, MidpointRounding.AwayFromZero)));
+            CartLevelDiscountAmount = Math.Max(0m, Math.Min(Subtotal, CartLevelDiscountAmount));
+            var afterCartDiscount = Subtotal - CartLevelDiscountAmount;
+            DiscountAmount = Math.Max(0m, Math.Min(afterCartDiscount, DiscountAmount));
+            TotalAmount = Math.Max(0m, afterCartDiscount - DiscountAmount + ShippingAmount);
         }
 
         public void PlaceOrder()
