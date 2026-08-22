@@ -318,7 +318,7 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<DeleteWarehouseCommand, Unit>, DeleteWarehouseCommandHandler>();
 
             // Review query + command handlers
-            services.AddScoped<IQueryHandler<GetProductReviewsQuery, List<ProductReviewDto>>, GetProductReviewsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetProductReviewsQuery, PagedResult<ProductReviewDto>>, GetProductReviewsQueryHandler>();
             services.AddScoped<IQueryHandler<GetProductReviewEligibilityQuery, ProductReviewEligibilityDto>, GetProductReviewEligibilityQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminReviewsQuery, PagedResult<ProductReviewDto>>, GetAdminReviewsQueryHandler>();
             services.AddScoped<ICommandHandler<SubmitProductReviewCommand, ProductReviewDto>, SubmitProductReviewCommandHandler>();

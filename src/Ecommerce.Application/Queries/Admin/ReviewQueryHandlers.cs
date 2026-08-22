@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Queries.Admin
 {
-    public class GetProductReviewsQueryHandler : IQueryHandler<GetProductReviewsQuery, List<ProductReviewDto>>
+    public class GetProductReviewsQueryHandler : IQueryHandler<GetProductReviewsQuery, PagedResult<ProductReviewDto>>
     {
         private readonly IApplicationDbContext _db;
         private readonly IMapper _mapper;
@@ -24,15 +24,32 @@ namespace Ecommerce.Application.Queries.Admin
             _mapper = mapper;
         }
 
-        public async Task<List<ProductReviewDto>> Handle(GetProductReviewsQuery query, CancellationToken cancellationToken = default)
+        public async Task<PagedResult<ProductReviewDto>> Handle(GetProductReviewsQuery query, CancellationToken cancellationToken = default)
         {
-            var reviews = await _db.ProductReviews
+            var page = Math.Max(1, query.Page);
+            var pageSize = Math.Clamp(query.PageSize, 1, 20);
+
+            var q = _db.ProductReviews
                 .AsNoTracking()
-                .Where(r => r.ProductId == query.ProductId && r.IsApproved)
+                .Where(r => r.ProductId == query.ProductId && r.IsApproved);
+
+            var totalCount = await q.CountAsync(cancellationToken);
+
+            var reviews = await q
                 .OrderByDescending(r => r.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync(cancellationToken);
 
-            return await ReviewMapper.MapWithDisplayNamesAsync(_db, _mapper, reviews, cancellationToken);
+            var items = await ReviewMapper.MapWithDisplayNamesAsync(_db, _mapper, reviews, cancellationToken);
+
+            return new PagedResult<ProductReviewDto>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 

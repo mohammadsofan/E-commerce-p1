@@ -6,9 +6,11 @@ using Ecommerce.Application.DTOs;
 
 namespace Ecommerce.Application.Queries.Admin
 {
-    public class GetProductReviewsQuery : IQuery<List<ProductReviewDto>>
+    public class GetProductReviewsQuery : IQuery<PagedResult<ProductReviewDto>>
     {
         public Guid ProductId { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 20;
     }
 
     public class GetProductReviewEligibilityQuery : IQuery<ProductReviewEligibilityDto>

@@ -351,7 +351,7 @@ namespace Ecommerce.Application.Queries.Admin
                 }
             }
 
-            // Apply active promotions
+            // Apply active promotions (only highest-priority promotion applies, matching checkout engine)
             var promotions = await _db.Promotions
                 .Where(p => p.IsActive &&
                            (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
@@ -365,7 +365,7 @@ namespace Ecommerce.Application.Queries.Admin
                 var promoDiscount = await CalculatePromotionDiscount(promo, query.Items, query.Subtotal, cancellationToken);
                 if (promoDiscount > 0)
                 {
-                    result.PromotionDiscount += promoDiscount;
+                    result.PromotionDiscount = promoDiscount;
                     result.TotalDiscount += promoDiscount;
                     result.AppliedDiscounts.Add(new AppliedDiscount
                     {
@@ -375,6 +375,7 @@ namespace Ecommerce.Application.Queries.Admin
                         Amount = promoDiscount,
                         Description = $"Promotion: {promo.Name}"
                     });
+                    break;
                 }
             }
 

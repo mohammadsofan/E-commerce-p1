@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.Admin;
+using Ecommerce.Application.Common;
 using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
@@ -27,10 +28,10 @@ namespace Ecommerce.Api.Controllers
         /// <summary>Gets approved reviews for a product (public view)</summary>
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAll(Guid productId)
+        public async Task<IActionResult> GetAll(Guid productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var query = new GetProductReviewsQuery { ProductId = productId };
-            var result = await _queryDispatcher.Send<GetProductReviewsQuery, List<ProductReviewDto>>(query);
+            var query = new GetProductReviewsQuery { ProductId = productId, Page = page, PageSize = pageSize };
+            var result = await _queryDispatcher.Send<GetProductReviewsQuery, PagedResult<ProductReviewDto>>(query);
             return Ok(result);
         }
 

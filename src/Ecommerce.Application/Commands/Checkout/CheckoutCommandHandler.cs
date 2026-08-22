@@ -110,7 +110,12 @@ namespace Ecommerce.Application.Commands.Checkout
                                   (inv.ProductVariantId.HasValue && variantIds.Contains(inv.ProductVariantId.Value)))
                     .ToListAsync(cancellationToken);
 
-                foreach (var it in command.Items)
+                var orderedItems = command.Items
+                    .OrderBy(i => i.ProductId)
+                    .ThenBy(i => i.ProductVariantId ?? Guid.Empty)
+                    .ToList();
+
+                foreach (var it in orderedItems)
                 {
                     var product = products.FirstOrDefault(p => p.Id == it.ProductId);
                     ProductVariant? variant = null;
@@ -372,6 +377,11 @@ namespace Ecommerce.Application.Commands.Checkout
             {
                 if (tx != null) await tx.RollbackAsync(cancellationToken);
                 throw new DomainException("المنتج المطلوب نفد من المخزون. يرجى تحديث السلة والمحاولة مرة أخرى.");
+            }
+            catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 1205)
+            {
+                if (tx != null) await tx.RollbackAsync(cancellationToken);
+                throw new DomainException("حدث تعارض مؤقت في الطلب. يرجى المحاولة مرة أخرى.");
             }
             catch
             {

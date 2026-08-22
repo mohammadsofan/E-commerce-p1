@@ -28,36 +28,26 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<SalesReportDto> Handle(GetSalesReportQuery query, CancellationToken cancellationToken = default)
         {
-            DateTimeOffset? endDate = query.EndDate.HasValue
-                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
-                : null;
-
-            DateTimeOffset? startDate = query.StartDate.HasValue
+            DateTimeOffset effectiveStart = query.StartDate.HasValue
                 ? query.StartDate.Value.Date
-                : null;
+                : DateTimeOffset.UtcNow.AddDays(-30);
+
+            DateTimeOffset effectiveEnd = query.EndDate.HasValue
+                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
+                : DateTimeOffset.UtcNow;
 
             var ordersQuery = _db.Orders
-                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled);
-
-            if (startDate.HasValue)
-            {
-                ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
-            }
-
-            if (endDate.HasValue)
-            {
-                ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
-            }
+                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled
+                         && o.CreatedAt >= effectiveStart && o.CreatedAt <= effectiveEnd);
 
             var orders = await ordersQuery.ToListAsync(cancellationToken);
 
-            var effectiveStart = startDate ?? (orders.Any() ? orders.Min(o => o.CreatedAt) : DateTimeOffset.UtcNow.AddDays(-30));
-            var effectiveEnd = endDate ?? (orders.Any() ? orders.Max(o => o.CreatedAt) : DateTimeOffset.UtcNow);
-
             var orderIds = orders.Select(o => o.Id).ToList();
-            var orderItems = await _db.OrderItems
-                .Where(oi => orderIds.Contains(oi.OrderId))
-                .ToListAsync(cancellationToken);
+            var orderItems = orderIds.Any()
+                ? await _db.OrderItems
+                    .Where(oi => orderIds.Contains(oi.OrderId))
+                    .ToListAsync(cancellationToken)
+                : new List<OrderItem>();
 
             var customerIds = orders.Where(o => o.UserId.HasValue).Select(o => o.UserId!.Value).Distinct().ToList();
             var newCustomerIds = await _db.Orders
@@ -162,37 +152,23 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<RevenueReportDto> Handle(GetRevenueReportQuery query, CancellationToken cancellationToken = default)
         {
-            DateTimeOffset? endDate = query.EndDate.HasValue
-                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
-                : null;
-
-            DateTimeOffset? startDate = query.StartDate.HasValue
+            DateTimeOffset effectiveStart = query.StartDate.HasValue
                 ? query.StartDate.Value.Date
-                : null;
+                : DateTimeOffset.UtcNow.AddDays(-30);
+
+            DateTimeOffset effectiveEnd = query.EndDate.HasValue
+                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
+                : DateTimeOffset.UtcNow;
 
             var ordersQuery = _db.Orders
-                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled);
+                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled
+                         && o.CreatedAt >= effectiveStart && o.CreatedAt <= effectiveEnd);
 
             var refundsQuery = _db.Refunds
-                .Where(r => r.Status == "succeeded");
-
-            if (startDate.HasValue)
-            {
-                ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
-                refundsQuery = refundsQuery.Where(r => r.ProcessedAt >= startDate.Value);
-            }
-
-            if (endDate.HasValue)
-            {
-                ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
-                refundsQuery = refundsQuery.Where(r => r.ProcessedAt <= endDate.Value);
-            }
+                .Where(r => r.Status == "succeeded" && r.ProcessedAt >= effectiveStart && r.ProcessedAt <= effectiveEnd);
 
             var orders = await ordersQuery.ToListAsync(cancellationToken);
             var refunds = await refundsQuery.ToListAsync(cancellationToken);
-
-            var effectiveStart = startDate ?? (orders.Any() ? orders.Min(o => o.CreatedAt) : DateTimeOffset.UtcNow.AddDays(-30));
-            var effectiveEnd = endDate ?? (orders.Any() ? orders.Max(o => o.CreatedAt) : DateTimeOffset.UtcNow);
 
             var totalDiscounts = orders.Sum(o => o.DiscountAmount);
             var totalShipping = orders.Sum(o => o.ShippingAmount);
@@ -363,32 +339,20 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<CustomerReportDto> Handle(GetCustomerReportQuery query, CancellationToken cancellationToken = default)
         {
-            DateTimeOffset? endDate = query.EndDate.HasValue
-                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
-                : null;
-
-            DateTimeOffset? startDate = query.StartDate.HasValue
+            DateTimeOffset effectiveStart = query.StartDate.HasValue
                 ? query.StartDate.Value.Date
-                : null;
+                : DateTimeOffset.UtcNow.AddDays(-30);
+
+            DateTimeOffset effectiveEnd = query.EndDate.HasValue
+                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
+                : DateTimeOffset.UtcNow;
 
             var ordersQuery = _db.Orders
-                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled);
+                .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled
+                         && o.CreatedAt >= effectiveStart && o.CreatedAt <= effectiveEnd);
 
-            if (startDate.HasValue)
-            {
-                ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
-            }
-
-            if (endDate.HasValue)
-            {
-                ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
-            }
-
-            var customers = await _db.Users.ToListAsync(cancellationToken);
+            var totalUsersCount = await _db.Users.CountAsync(cancellationToken);
             var orders = await ordersQuery.ToListAsync(cancellationToken);
-
-            var effectiveStart = startDate ?? (orders.Any() ? orders.Min(o => o.CreatedAt) : DateTimeOffset.UtcNow.AddDays(-30));
-            var effectiveEnd = endDate ?? (orders.Any() ? orders.Max(o => o.CreatedAt) : DateTimeOffset.UtcNow);
 
             var customerOrders = orders
                 .Where(o => o.UserId.HasValue)
@@ -405,7 +369,7 @@ namespace Ecommerce.Application.Queries.Admin
 
             var newCustomers = customerOrders.Count(c => c.FirstOrder >= effectiveStart);
             var activeCustomers = customerOrders.Count;
-            var totalCustomers = Math.Max(customers.Count, customerOrders.Count);
+            var totalCustomers = Math.Max(totalUsersCount, customerOrders.Count);
 
             var segments = new List<CustomerSegmentDto>
             {
