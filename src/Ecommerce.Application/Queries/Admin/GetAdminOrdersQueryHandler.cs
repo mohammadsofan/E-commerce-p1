@@ -11,6 +11,8 @@ using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.Queries.Admin;
 using Microsoft.EntityFrameworkCore;
 
+using Ecommerce.Domain.Enums;
+
 namespace Ecommerce.Application.Queries.Admin
 {
     public class GetAdminOrdersQueryHandler : IQueryHandler<GetAdminOrdersQuery, PagedResult<OrderDto>>
@@ -30,9 +32,10 @@ namespace Ecommerce.Application.Queries.Admin
                 .Include(o => o.Items)
                 .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(query.Search))
+            var effectiveSearch = !string.IsNullOrWhiteSpace(query.Search) ? query.Search : query.SearchTerm;
+            if (!string.IsNullOrWhiteSpace(effectiveSearch))
             {
-                var term = query.Search.Trim();
+                var term = effectiveSearch.Trim();
                 var matchingUserIds = await _db.Users
                     .Where(u => u.Email.Contains(term) ||
                                 u.FirstName.Contains(term) ||
@@ -48,23 +51,57 @@ namespace Ecommerce.Application.Queries.Admin
                                 o.CustomerNotes.Contains(term));
             }
 
-            if (!string.IsNullOrWhiteSpace(query.Status))
-                q = q.Where(o => o.Status.ToString() == query.Status);
+            if (query.OrderStatus.HasValue)
+            {
+                q = q.Where(o => o.Status == query.OrderStatus.Value);
+            }
+            else if (!string.IsNullOrWhiteSpace(query.Status) && !query.Status.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Enum.TryParse<OrderStatus>(query.Status.Trim(), true, out var parsedStatus))
+                {
+                    q = q.Where(o => o.Status == parsedStatus);
+                }
+                else if (int.TryParse(query.Status.Trim(), out var statusInt) && Enum.IsDefined(typeof(OrderStatus), statusInt))
+                {
+                    q = q.Where(o => o.Status == (OrderStatus)statusInt);
+                }
+            }
 
-            if (!string.IsNullOrWhiteSpace(query.PaymentStatus))
-                q = q.Where(o => o.PaymentStatus.ToString() == query.PaymentStatus);
+            if (!string.IsNullOrWhiteSpace(query.PaymentStatus) && !query.PaymentStatus.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Enum.TryParse<PaymentStatus>(query.PaymentStatus.Trim(), true, out var parsedPaymentStatus))
+                {
+                    q = q.Where(o => o.PaymentStatus == parsedPaymentStatus);
+                }
+            }
 
-            if (!string.IsNullOrWhiteSpace(query.FulfillmentStatus))
-                q = q.Where(o => o.FulfillmentStatus.ToString() == query.FulfillmentStatus);
+            if (!string.IsNullOrWhiteSpace(query.FulfillmentStatus) && !query.FulfillmentStatus.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Enum.TryParse<FulfillmentStatus>(query.FulfillmentStatus.Trim(), true, out var parsedFulfillmentStatus))
+                {
+                    q = q.Where(o => o.FulfillmentStatus == parsedFulfillmentStatus);
+                }
+            }
 
             if (query.UserId.HasValue)
                 q = q.Where(o => o.UserId == query.UserId);
 
-            if (query.FromDate.HasValue)
-                q = q.Where(o => o.CreatedAt >= query.FromDate.Value);
+            var effectiveStartDate = query.StartDate ?? query.FromDate;
+            if (effectiveStartDate.HasValue)
+            {
+                q = q.Where(o => o.CreatedAt >= effectiveStartDate.Value);
+            }
 
-            if (query.ToDate.HasValue)
-                q = q.Where(o => o.CreatedAt <= query.ToDate.Value);
+            var effectiveEndDate = query.EndDate ?? query.ToDate;
+            if (effectiveEndDate.HasValue)
+            {
+                var end = effectiveEndDate.Value;
+                if (end.TimeOfDay == TimeSpan.Zero)
+                {
+                    end = end.AddDays(1).AddTicks(-1);
+                }
+                q = q.Where(o => o.CreatedAt <= end);
+            }
 
             var totalCount = await q.CountAsync(cancellationToken);
 

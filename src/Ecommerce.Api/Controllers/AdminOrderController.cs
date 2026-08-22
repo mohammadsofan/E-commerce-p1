@@ -31,24 +31,30 @@ namespace Ecommerce.Api.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20,
             [FromQuery] string? search = null,
+            [FromQuery] string? searchTerm = null,
             [FromQuery] string? status = null,
             [FromQuery] string? paymentStatus = null,
             [FromQuery] string? fulfillmentStatus = null,
             [FromQuery] Guid? userId = null,
             [FromQuery] DateTimeOffset? fromDate = null,
-            [FromQuery] DateTimeOffset? toDate = null)
+            [FromQuery] DateTimeOffset? toDate = null,
+            [FromQuery] DateTimeOffset? startDate = null,
+            [FromQuery] DateTimeOffset? endDate = null)
         {
             var query = new GetAdminOrdersQuery
             {
                 Page = page,
                 PageSize = pageSize,
-                Search = search,
+                Search = search ?? searchTerm,
+                SearchTerm = searchTerm ?? search,
                 Status = status,
                 PaymentStatus = paymentStatus,
                 FulfillmentStatus = fulfillmentStatus,
                 UserId = userId,
-                FromDate = fromDate,
-                ToDate = toDate
+                FromDate = fromDate ?? startDate,
+                ToDate = toDate ?? endDate,
+                StartDate = startDate ?? fromDate,
+                EndDate = endDate ?? toDate
             };
 
             var result = await _queryDispatcher.Send<GetAdminOrdersQuery, PagedResult<OrderDto>>(query);
