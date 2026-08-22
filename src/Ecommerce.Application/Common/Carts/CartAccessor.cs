@@ -141,13 +141,26 @@ namespace Ecommerce.Application.Common.Carts
 
                 item.OriginalPrice = prod?.BasePrice ?? item.UnitPrice;
 
+                if (item.UnitPrice == 0 && prod != null && prod.BasePrice > 0)
+                {
+                    item.UnitPrice = prod.BasePrice;
+                    item.LineTotal = item.UnitPrice * item.Quantity;
+                }
+
                 if (promoEvaluations != null && promoEvaluations.TryGetValue(item.ProductId, out var eval) && eval.HasActivePromotion)
                 {
-                    item.PromotionalPrice = eval.PromotionalPrice;
+                    if (eval.DiscountAmount > 0 && eval.PromotionalPrice < item.OriginalPrice)
+                    {
+                        item.PromotionalPrice = eval.PromotionalPrice;
+                    }
                     item.PromotionName = eval.PromotionName;
                     item.PromotionBadge = eval.PromotionBadge;
                 }
             }
+
+            result.Subtotal = result.Items.Sum(i => i.LineTotal);
+            result.Total = Math.Max(0, result.Subtotal - result.DiscountAmount);
+            result.TotalAmount = result.Total;
 
             return result;
         }

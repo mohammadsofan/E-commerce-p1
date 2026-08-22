@@ -114,6 +114,22 @@ namespace Ecommerce.Infrastructure.Services
                         };
                         break; // Highest priority matching promotion takes effect
                     }
+                    else if (!string.IsNullOrWhiteSpace(badge))
+                    {
+                        results[target.ProductId] = new ProductPromotionEvaluation
+                        {
+                            ProductId = target.ProductId,
+                            BasePrice = target.BasePrice,
+                            PromotionalPrice = target.BasePrice,
+                            DiscountAmount = 0,
+                            DiscountPercentage = 0,
+                            HasActivePromotion = true,
+                            PromotionName = promo.Name,
+                            PromotionBadge = badge,
+                            PromotionId = promo.Id
+                        };
+                        break;
+                    }
                 }
             }
 
@@ -196,10 +212,14 @@ namespace Ecommerce.Infrastructure.Services
             }
             else if (type is "buy_x_get_y" or "bundle" or "tiered_discount" or "free_gift")
             {
-                if (rules.TryGetValue("discountPercentage", out var dp) && dp.ValueKind == JsonValueKind.Number)
-                    percentage = dp.GetDecimal();
-                else
-                    return (true, basePrice, 0, 0, promo.Name);
+                string badgeText = promo.Name;
+                if (type == "buy_x_get_y")
+                {
+                    int buyQty = rules.TryGetValue("buyQuantity", out var bq) && bq.ValueKind == JsonValueKind.Number ? bq.GetInt32() : 2;
+                    int getQty = rules.TryGetValue("getQuantity", out var gq) && gq.ValueKind == JsonValueKind.Number ? gq.GetInt32() : 1;
+                    badgeText = $"اشتر {buyQty} واحصل على {getQty} مجاناً";
+                }
+                return (false, basePrice, 0, 0, badgeText);
             }
 
             if (percentage > 0)
