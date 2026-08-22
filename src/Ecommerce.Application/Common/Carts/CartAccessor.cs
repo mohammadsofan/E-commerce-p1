@@ -106,11 +106,22 @@ namespace Ecommerce.Application.Common.Carts
                     {
                         var prod = products.FirstOrDefault(p => p.Id == g.Key);
                         var firstItem = g.First();
+                        decimal targetBasePrice = firstItem.UnitPrice;
+                        if (firstItem.ProductVariantId.HasValue && variants != null)
+                        {
+                            var variant = variants.FirstOrDefault(v => v.Id == firstItem.ProductVariantId.Value);
+                            if (variant != null) targetBasePrice = variant.Price;
+                        }
+                        else if (prod != null)
+                        {
+                            targetBasePrice = prod.BasePrice;
+                        }
+
                         return new ProductPromotionTarget
                         {
                             ProductId = g.Key,
                             CategoryId = prod?.CategoryId,
-                            BasePrice = prod?.BasePrice ?? firstItem.UnitPrice,
+                            BasePrice = targetBasePrice,
                             Quantity = g.Sum(i => i.Quantity)
                         };
                     })
@@ -149,12 +160,19 @@ namespace Ecommerce.Application.Common.Carts
                         .Select(image => image.Url)
                         .FirstOrDefault();
 
-                decimal basePrice = prod?.BasePrice ?? item.UnitPrice;
-                item.OriginalPrice = basePrice;
-                if (item.UnitPrice <= 0 && basePrice > 0)
+                decimal basePrice = item.UnitPrice;
+                if (item.ProductVariantId.HasValue && variants != null)
                 {
-                    item.UnitPrice = basePrice;
+                    var variant = variants.FirstOrDefault(v => v.Id == item.ProductVariantId.Value);
+                    if (variant != null) basePrice = variant.Price;
                 }
+                else if (prod != null)
+                {
+                    basePrice = prod.BasePrice;
+                }
+
+                item.OriginalPrice = basePrice;
+                item.UnitPrice = basePrice;
                 item.LineTotal = item.UnitPrice * item.Quantity;
 
                 if (promoEvaluations != null && promoEvaluations.TryGetValue(item.ProductId, out var eval) && eval.HasActivePromotion)

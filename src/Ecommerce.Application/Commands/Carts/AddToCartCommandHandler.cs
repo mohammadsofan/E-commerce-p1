@@ -54,21 +54,6 @@ namespace Ecommerce.Application.Commands.Carts
                 productName = string.IsNullOrWhiteSpace(variant.Name) ? product.Name : variant.Name;
             }
 
-            // Evaluate automatic promotional discount
-            if (PromotionEvaluator != null)
-            {
-                var promoEval = await PromotionEvaluator.EvaluateProductAsync(
-                    product.Id,
-                    product.CategoryId,
-                    unitPrice,
-                    cancellationToken);
-
-                if (promoEval.HasActivePromotion && promoEval.DiscountAmount > 0 && promoEval.PromotionalPrice < unitPrice)
-                {
-                    unitPrice = promoEval.PromotionalPrice;
-                }
-            }
-
             var normalizedOptions = string.IsNullOrWhiteSpace(command.SelectedOptions) ? null : command.SelectedOptions.Trim();
 
             await CartWriteLock.WaitAsync(cancellationToken);
