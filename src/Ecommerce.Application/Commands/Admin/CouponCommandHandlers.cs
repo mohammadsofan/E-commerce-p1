@@ -141,8 +141,8 @@ namespace Ecommerce.Application.Commands.Admin
             if (coupon == null)
                 throw new Domain.Exceptions.NotFoundException("Coupon", command.Id);
 
-            if (coupon.Usages.Any())
-                throw new Domain.Exceptions.DomainException("Cannot delete coupon that has been used");
+            if (coupon.Usages.Any() || coupon.UsedCount > 0)
+                throw new Domain.Exceptions.DomainException("لا يمكن حذف كوبون تم استخدامه في طلبات سابقة. يمكنك تعطيل الكوبون بدلاً من ذلك.");
 
             _db.Coupons.Remove(coupon);
             await _db.SaveChangesAsync(cancellationToken);
