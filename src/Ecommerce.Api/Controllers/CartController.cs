@@ -72,6 +72,28 @@ namespace Ecommerce.Api.Controllers
             var result = await _commandDispatcher.Send<ClearCartCommand, CartDto>(new ClearCartCommand());
             return Ok(result);
         }
+
+        /// <summary>Applies a coupon code to the current user's cart.</summary>
+        [HttpPost("coupon")]
+        public async Task<IActionResult> ApplyCoupon([FromBody] ApplyCouponToCartRequest request)
+        {
+            var command = new ApplyCouponToCartCommand { Code = request.Code };
+            var result = await _commandDispatcher.Send<ApplyCouponToCartCommand, CartDto>(command);
+            return Ok(result);
+        }
+
+        /// <summary>Removes the applied coupon code from the current user's cart.</summary>
+        [HttpDelete("coupon")]
+        public async Task<IActionResult> RemoveCoupon()
+        {
+            var result = await _commandDispatcher.Send<RemoveCouponFromCartCommand, CartDto>(new RemoveCouponFromCartCommand());
+            return Ok(result);
+        }
+    }
+
+    public class ApplyCouponToCartRequest
+    {
+        public string Code { get; set; } = string.Empty;
     }
 
     public class AddToCartRequest

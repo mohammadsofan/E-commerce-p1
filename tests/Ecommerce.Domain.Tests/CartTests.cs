@@ -174,5 +174,63 @@ namespace Ecommerce.Domain.Tests
 
             Assert.Equal(CartStatus.Ordered, cart.Status);
         }
+
+        [Fact]
+        public void ApplyCoupon_PercentageDiscount_CalculatesDiscountAndSubtotal()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Chair", 100m, 2); // Subtotal = 200
+
+            // 15% discount = 30
+            cart.ApplyCoupon("SAVE15", 30m);
+
+            Assert.Equal("SAVE15", cart.AppliedCouponCode);
+            Assert.Equal(200m, cart.Subtotal);
+            Assert.Equal(30m, cart.DiscountAmount);
+            Assert.Equal(170m, cart.TotalAmount);
+        }
+
+        [Fact]
+        public void ApplyCoupon_FixedAmountDiscount_CalculatesCorrectTotal()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Sofa", 250m, 1); // Subtotal = 250
+
+            cart.ApplyCoupon("FIXED50", 50m);
+
+            Assert.Equal("FIXED50", cart.AppliedCouponCode);
+            Assert.Equal(250m, cart.Subtotal);
+            Assert.Equal(50m, cart.DiscountAmount);
+            Assert.Equal(200m, cart.TotalAmount);
+        }
+
+        [Fact]
+        public void ApplyCoupon_DiscountExceedsSubtotal_ClampsToZeroTotal()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Lamp", 40m, 1); // Subtotal = 40
+
+            cart.ApplyCoupon("MEGA100", 100m);
+
+            Assert.Equal(40m, cart.Subtotal);
+            Assert.Equal(40m, cart.DiscountAmount);
+            Assert.Equal(0m, cart.TotalAmount);
+        }
+
+        [Fact]
+        public void RemoveCoupon_ResetsDiscountAndTotal()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Table", 300m, 1);
+            cart.ApplyCoupon("PROMO20", 60m);
+
+            Assert.Equal(240m, cart.TotalAmount);
+
+            cart.RemoveCoupon();
+
+            Assert.Null(cart.AppliedCouponCode);
+            Assert.Equal(0m, cart.DiscountAmount);
+            Assert.Equal(300m, cart.TotalAmount);
+        }
     }
 }

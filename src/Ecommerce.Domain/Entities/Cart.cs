@@ -17,14 +17,19 @@ namespace Ecommerce.Domain.Entities
         public string? SessionId { get; set; }
         public required string CurrencyCode { get; set; } = "USD";
         public CartStatus Status { get; private set; }
+        public string? AppliedCouponCode { get; set; }
+        public decimal DiscountAmount { get; set; }
         public DateTimeOffset CreatedAt { get; private set; }
         public DateTimeOffset UpdatedAt { get; private set; }
         public DateTimeOffset? ExpiresAt { get; set; }
 
         public ICollection<CartItem> Items { get; private set; } = new List<CartItem>();
 
-        /// <summary>Computed cart total; not persisted.</summary>
-        public decimal TotalAmount => Items.Sum(i => i.LineTotal);
+        /// <summary>Subtotal of all line items before discounts; not persisted.</summary>
+        public decimal Subtotal => Items.Sum(i => i.LineTotal);
+
+        /// <summary>Computed cart total after discount; not persisted. Never drops below zero.</summary>
+        public decimal TotalAmount => Math.Max(0m, Subtotal - DiscountAmount);
 
         public static Cart Create(Guid? userId, string? sessionId, string? currencyCode = null)
         {
@@ -107,6 +112,35 @@ namespace Ecommerce.Domain.Entities
         {
             Status = CartStatus.Abandoned;
             Touch();
+        }
+
+        public void ApplyCoupon(string couponCode, decimal discountAmount)
+        {
+            AppliedCouponCode = couponCode.Trim().ToUpperInvariant();
+            DiscountAmount = Math.Max(0m, Math.Min(Subtotal, discountAmount));
+            Touch();
+        }
+
+        public void RemoveCoupon()
+        {
+            AppliedCouponCode = null;
+            DiscountAmount = 0m;
+            Touch();
+        }
+
+        public decimal CalculateTotals()
+        {
+            if (Items.Count == 0 || Subtotal <= 0)
+            {
+                DiscountAmount = 0m;
+                AppliedCouponCode = null;
+            }
+            else
+            {
+                DiscountAmount = Math.Max(0m, Math.Min(Subtotal, DiscountAmount));
+            }
+            Touch();
+            return TotalAmount;
         }
 
         private void Touch() => UpdatedAt = DateTimeOffset.UtcNow;

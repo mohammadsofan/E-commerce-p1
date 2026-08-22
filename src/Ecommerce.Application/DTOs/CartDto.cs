@@ -9,7 +9,12 @@ namespace Ecommerce.Application.DTOs
         public Guid? UserId { get; set; }
         public string CurrencyCode { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public decimal Subtotal { get; set; }
+        public decimal Discount { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal Total { get; set; }
         public decimal TotalAmount { get; set; }
+        public string? AppliedCouponCode { get; set; }
         public List<CartItemDto> Items { get; set; } = new List<CartItemDto>();
     }
 

@@ -128,6 +128,19 @@ namespace Ecommerce.Application.Commands.Checkout
                     discount = coupon.MaxDiscountAmount.Value;
 
                 order.ApplyCoupon(coupon.Code, discount);
+                coupon.UsedCount++;
+                if (order.UserId.HasValue && order.UserId.Value != Guid.Empty)
+                {
+                    _db.CouponUsages.Add(new CouponUsage
+                    {
+                        Id = Guid.NewGuid(),
+                        CouponId = coupon.Id,
+                        UserId = order.UserId.Value,
+                        OrderId = order.Id,
+                        DiscountAmount = discount,
+                        CreatedAt = DateTimeOffset.UtcNow
+                    });
+                }
             }
 
             order.PlaceOrder();
