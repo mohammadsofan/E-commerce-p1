@@ -318,7 +318,7 @@ namespace Ecommerce.Application.Commands.Checkout
                 var standardShippingCost = storeSettings?.StandardShippingCost ?? 15m;
                 var freeShippingThreshold = storeSettings?.FreeShippingThreshold;
 
-                var subtotalAfterDiscount = Math.Max(0m, order.Subtotal - order.DiscountAmount);
+                var subtotalAfterDiscount = Math.Max(0m, order.Subtotal - order.CartLevelDiscountAmount - order.DiscountAmount);
                 decimal finalShippingCost = 0m;
 
                 if (coupon != null && (coupon.Type ?? string.Empty).ToLowerInvariant() == "free_shipping")
