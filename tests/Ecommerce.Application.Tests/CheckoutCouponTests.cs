@@ -68,10 +68,11 @@ namespace Ecommerce.Application.Tests
             });
 
             var order = await ctx.Orders.Include(o => o.Items).FirstAsync(o => o.Id == orderId);
-            // 2 items x 10 = 20 subtotal; 20% = 4 discount
+            // 2 items x 10 = 20 subtotal; 20% = 4 discount; +15 shipping = 31 total
             Assert.Equal(20m, order.Subtotal);
             Assert.Equal(4m, order.DiscountAmount);
-            Assert.Equal(16m, order.TotalAmount);
+            Assert.Equal(15m, order.ShippingAmount);
+            Assert.Equal(31m, order.TotalAmount);
             Assert.Equal("SAVE20", order.CouponCode);
         }
 
@@ -108,7 +109,8 @@ namespace Ecommerce.Application.Tests
             var order = await ctx.Orders.FirstAsync(o => o.Id == orderId);
             Assert.Equal(10m, order.Subtotal);
             Assert.Equal(5m, order.DiscountAmount);
-            Assert.Equal(5m, order.TotalAmount);
+            Assert.Equal(15m, order.ShippingAmount);
+            Assert.Equal(20m, order.TotalAmount);
         }
 
         [Fact]
@@ -143,9 +145,10 @@ namespace Ecommerce.Application.Tests
             });
 
             var order = await ctx.Orders.FirstAsync(o => o.Id == orderId);
-            // 20 subtotal, 50% = 10 but capped at 3
+            // 20 subtotal, 50% = 10 but capped at 3; +15 shipping = 32 total
             Assert.Equal(3m, order.DiscountAmount);
-            Assert.Equal(17m, order.TotalAmount);
+            Assert.Equal(15m, order.ShippingAmount);
+            Assert.Equal(32m, order.TotalAmount);
         }
 
         [Fact]

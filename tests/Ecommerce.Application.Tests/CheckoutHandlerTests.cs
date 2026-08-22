@@ -172,5 +172,187 @@ namespace Ecommerce.Application.Tests
             Assert.Null(updatedCart.AppliedCouponCode);
             Assert.Equal(0m, updatedCart.DiscountAmount);
         }
+
+        [Fact]
+        public async Task Checkout_WhenSubtotalBelowFreeShippingThreshold_AppliesStandardShipping()
+        {
+            using var context = CreateInMemoryContext();
+
+            var userId = Guid.NewGuid();
+            var productId = Guid.NewGuid();
+
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Sofa Cushion",
+                Sku = "CUSH-01",
+                BasePrice = 30m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Products.AddAsync(product);
+
+            var inv = new InventoryItem { Id = productId, ProductId = productId };
+            inv.AddStock(10);
+            await context.InventoryItems.AddAsync(inv);
+
+            var setting = new StoreSetting
+            {
+                StandardShippingCost = 15m,
+                FreeShippingThreshold = 50m
+            };
+            await context.StoreSettings.AddAsync(setting);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            var command = new CheckoutCommand
+            {
+                UserId = userId,
+                Currency = "ILS",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, Quantity = 1 }
+                }
+            };
+
+            var orderId = await handler.Handle(command);
+            var order = await context.Orders.FindAsync(orderId);
+
+            Assert.NotNull(order);
+            Assert.Equal(30m, order.Subtotal);
+            Assert.Equal(15m, order.ShippingAmount);
+            Assert.Equal(45m, order.TotalAmount);
+        }
+
+        [Fact]
+        public async Task Checkout_WhenSubtotalMeetsFreeShippingThreshold_AppliesFreeShipping()
+        {
+            using var context = CreateInMemoryContext();
+
+            var userId = Guid.NewGuid();
+            var productId = Guid.NewGuid();
+
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Luxury Couch",
+                Sku = "COUCH-01",
+                BasePrice = 80m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Products.AddAsync(product);
+
+            var inv = new InventoryItem { Id = productId, ProductId = productId };
+            inv.AddStock(10);
+            await context.InventoryItems.AddAsync(inv);
+
+            var setting = new StoreSetting
+            {
+                StandardShippingCost = 15m,
+                FreeShippingThreshold = 50m
+            };
+            await context.StoreSettings.AddAsync(setting);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            var command = new CheckoutCommand
+            {
+                UserId = userId,
+                Currency = "ILS",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, Quantity = 1 }
+                }
+            };
+
+            var orderId = await handler.Handle(command);
+            var order = await context.Orders.FindAsync(orderId);
+
+            Assert.NotNull(order);
+            Assert.Equal(80m, order.Subtotal);
+            Assert.Equal(0m, order.ShippingAmount);
+            Assert.Equal(80m, order.TotalAmount);
+        }
+
+        [Fact]
+        public async Task Checkout_WithFreeShippingCoupon_AppliesFreeShipping()
+        {
+            using var context = CreateInMemoryContext();
+
+            var userId = Guid.NewGuid();
+            var productId = Guid.NewGuid();
+
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Table Lamp",
+                Sku = "LAMP-01",
+                BasePrice = 25m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Products.AddAsync(product);
+
+            var inv = new InventoryItem { Id = productId, ProductId = productId };
+            inv.AddStock(10);
+            await context.InventoryItems.AddAsync(inv);
+
+            var setting = new StoreSetting
+            {
+                StandardShippingCost = 15m,
+                FreeShippingThreshold = 50m
+            };
+            await context.StoreSettings.AddAsync(setting);
+
+            var coupon = new Coupon
+            {
+                Id = Guid.NewGuid(),
+                Code = "FREESHIP",
+                Description = "Free delivery",
+                Type = "free_shipping",
+                Value = 0m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Coupons.AddAsync(coupon);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            var command = new CheckoutCommand
+            {
+                UserId = userId,
+                CouponCode = "FREESHIP",
+                Currency = "ILS",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, Quantity = 1 }
+                }
+            };
+
+            var orderId = await handler.Handle(command);
+            var order = await context.Orders.FindAsync(orderId);
+
+            Assert.NotNull(order);
+            Assert.Equal(25m, order.Subtotal);
+            Assert.Equal(0m, order.ShippingAmount);
+            Assert.Equal(25m, order.TotalAmount);
+        }
     }
 }

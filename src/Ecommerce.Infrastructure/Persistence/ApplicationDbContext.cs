@@ -63,6 +63,7 @@ namespace Ecommerce.Infrastructure.Persistence
         public DbSet<Address> Addresses { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<HeroBanner> HeroBanners { get; set; }
+        public DbSet<StoreSetting> StoreSettings { get; set; }
 
         public IQueryable<IApplicationUser> Users => base.Users.Cast<IApplicationUser>();
 

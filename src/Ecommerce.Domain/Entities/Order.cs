@@ -73,10 +73,17 @@ namespace Ecommerce.Domain.Entities
             UpdatedAt = DateTimeOffset.UtcNow;
         }
 
+        public void SetShippingAmount(decimal shippingAmount)
+        {
+            ShippingAmount = Math.Max(0m, shippingAmount);
+            RecalculateTotals();
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
         public void ApplyCoupon(string couponCode, decimal discountAmount)
         {
             CouponCode = couponCode;
-            DiscountAmount = discountAmount;
+            DiscountAmount = Math.Max(0m, Math.Min(Subtotal, discountAmount));
             RecalculateTotals();
             UpdatedAt = DateTimeOffset.UtcNow;
         }
@@ -84,10 +91,8 @@ namespace Ecommerce.Domain.Entities
         public void RecalculateTotals()
         {
             Subtotal = Items.Sum(i => i.UnitPrice * i.Quantity);
-            // DiscountAmount is partially from items and partially from coupon
-            var itemsDiscount = Items.Sum(i => i.DiscountAmount);
-            DiscountAmount = itemsDiscount + DiscountAmount; // if coupon already set, it will be included
-            TotalAmount = Subtotal - DiscountAmount + ShippingAmount;
+            DiscountAmount = Math.Max(0m, Math.Min(Subtotal, DiscountAmount));
+            TotalAmount = Math.Max(0m, Subtotal - DiscountAmount + ShippingAmount);
         }
 
         public void PlaceOrder()

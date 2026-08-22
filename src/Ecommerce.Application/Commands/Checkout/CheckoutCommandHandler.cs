@@ -120,10 +120,13 @@ namespace Ecommerce.Application.Commands.Checkout
                 : userCarts.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c.AppliedCouponCode))?.AppliedCouponCode;
 
             // Just-In-Time Coupon Re-validation before order creation
+            Coupon? coupon = null;
+            bool isFreeShippingCoupon = false;
+
             if (!string.IsNullOrWhiteSpace(effectiveCouponCode))
             {
                 var upperCode = effectiveCouponCode.ToUpperInvariant();
-                var coupon = await _db.Coupons
+                coupon = await _db.Coupons
                     .FirstOrDefaultAsync(c => c.Code == upperCode, cancellationToken);
 
                 async Task ClearCartsCouponAndFail(string errorMessage)
@@ -181,6 +184,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     await ClearCartsCouponAndFail("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
                 }
 
+                isFreeShippingCoupon = false;
                 decimal discount = 0m;
                 var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
                 if (type == "percentage")
@@ -194,6 +198,11 @@ namespace Ecommerce.Application.Commands.Checkout
                 else if (type == "fixed_amount")
                 {
                     discount = coupon.Value;
+                }
+                else if (type == "free_shipping")
+                {
+                    isFreeShippingCoupon = true;
+                    discount = 0m;
                 }
                 else
                 {
@@ -219,6 +228,28 @@ namespace Ecommerce.Application.Commands.Checkout
                 }
             }
 
+            // Calculate dynamic shipping cost based on live StoreSettings
+            var storeSettings = await _db.StoreSettings.FirstOrDefaultAsync(cancellationToken);
+            var standardShippingCost = storeSettings?.StandardShippingCost ?? 15m;
+            var freeShippingThreshold = storeSettings?.FreeShippingThreshold;
+
+            var subtotalAfterDiscount = Math.Max(0m, order.Subtotal - order.DiscountAmount);
+            decimal finalShippingCost = 0m;
+
+            if (coupon != null && (coupon.Type ?? string.Empty).ToLowerInvariant() == "free_shipping")
+            {
+                finalShippingCost = 0m;
+            }
+            else if (freeShippingThreshold.HasValue && subtotalAfterDiscount >= freeShippingThreshold.Value)
+            {
+                finalShippingCost = 0m;
+            }
+            else if (order.Items.Any())
+            {
+                finalShippingCost = standardShippingCost;
+            }
+
+            order.SetShippingAmount(finalShippingCost);
             order.PlaceOrder();
 
             // Clear user's active cart in database if exists

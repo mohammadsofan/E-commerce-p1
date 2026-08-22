@@ -392,6 +392,11 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<IQueryHandler<GetMyProfileQuery, AdminUserDto>, Ecommerce.Infrastructure.Services.Profile.GetMyProfileQueryHandler>();
             services.AddScoped<ICommandHandler<UpdateProfileCommand, AdminUserDto>, Ecommerce.Infrastructure.Services.Profile.UpdateProfileCommandHandler>();
 
+            // Store Settings query + command handlers
+            services.AddScoped<IQueryHandler<GetStoreSettingsQuery, StoreSettingsDto>, GetStoreSettingsQueryHandler>();
+            services.AddScoped<IQueryHandler<GetShippingSettingsQuery, ShippingSettingsDto>, GetShippingSettingsQueryHandler>();
+            services.AddScoped<ICommandHandler<UpdateStoreSettingsCommand, StoreSettingsDto>, UpdateStoreSettingsCommandHandler>();
+
             // Audit log query handlers
             services.AddScoped<IQueryHandler<GetAdminAuditLogsQuery, PagedResult<AuditLogDto>>, GetAdminAuditLogsQueryHandler>();
             services.AddScoped<IQueryHandler<GetAdminAuditLogByIdQuery, AuditLogDto>, GetAdminAuditLogByIdQueryHandler>();
