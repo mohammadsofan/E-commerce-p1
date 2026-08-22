@@ -99,12 +99,16 @@ namespace Ecommerce.Domain.Entities
         public void Clear()
         {
             Items.Clear();
+            AppliedCouponCode = null;
+            DiscountAmount = 0m;
             Touch();
         }
 
         public void MarkOrdered()
         {
             Status = CartStatus.Ordered;
+            AppliedCouponCode = null;
+            DiscountAmount = 0m;
             Touch();
         }
 

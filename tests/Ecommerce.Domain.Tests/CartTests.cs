@@ -232,5 +232,37 @@ namespace Ecommerce.Domain.Tests
             Assert.Equal(0m, cart.DiscountAmount);
             Assert.Equal(300m, cart.TotalAmount);
         }
+
+        [Fact]
+        public void Clear_WithAppliedCoupon_ClearsItemsAndCoupon()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Table", 300m, 1);
+            cart.ApplyCoupon("PROMO20", 60m);
+
+            Assert.Equal("PROMO20", cart.AppliedCouponCode);
+            Assert.Equal(60m, cart.DiscountAmount);
+
+            cart.Clear();
+
+            Assert.Empty(cart.Items);
+            Assert.Null(cart.AppliedCouponCode);
+            Assert.Equal(0m, cart.DiscountAmount);
+            Assert.Equal(0m, cart.TotalAmount);
+        }
+
+        [Fact]
+        public void MarkOrdered_WithAppliedCoupon_ClearsCouponAndSetsStatus()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Table", 300m, 1);
+            cart.ApplyCoupon("PROMO20", 60m);
+
+            cart.MarkOrdered();
+
+            Assert.Equal(CartStatus.Ordered, cart.Status);
+            Assert.Null(cart.AppliedCouponCode);
+            Assert.Equal(0m, cart.DiscountAmount);
+        }
     }
 }

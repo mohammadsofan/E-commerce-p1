@@ -148,11 +148,12 @@ namespace Ecommerce.Application.Commands.Checkout
             // Clear user's active cart in database if exists
             if (command.UserId != Guid.Empty)
             {
-                var userCart = await _db.Carts
+                var userCarts = await _db.Carts
                     .Include(c => c.Items)
-                    .FirstOrDefaultAsync(c => c.UserId == command.UserId && c.Status == Domain.Enums.CartStatus.Active, cancellationToken);
+                    .Where(c => c.UserId == command.UserId && c.Status == Domain.Enums.CartStatus.Active)
+                    .ToListAsync(cancellationToken);
 
-                if (userCart != null)
+                foreach (var userCart in userCarts)
                 {
                     userCart.Clear();
                 }
