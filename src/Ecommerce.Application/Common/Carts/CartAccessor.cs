@@ -100,17 +100,22 @@ namespace Ecommerce.Application.Common.Carts
             Dictionary<Guid, ProductPromotionEvaluation>? promoEvaluations = null;
             if (PromotionEvaluator != null)
             {
-                var targets = result.Items.Select(item =>
-                {
-                    var prod = products.FirstOrDefault(p => p.Id == item.ProductId);
-                    return new ProductPromotionTarget
+                var targets = result.Items
+                    .GroupBy(i => i.ProductId)
+                    .Select(g =>
                     {
-                        ProductId = item.ProductId,
-                        CategoryId = prod?.CategoryId,
-                        BasePrice = prod?.BasePrice ?? item.UnitPrice,
-                        Quantity = item.Quantity
-                    };
-                });
+                        var prod = products.FirstOrDefault(p => p.Id == g.Key);
+                        var firstItem = g.First();
+                        return new ProductPromotionTarget
+                        {
+                            ProductId = g.Key,
+                            CategoryId = prod?.CategoryId,
+                            BasePrice = prod?.BasePrice ?? firstItem.UnitPrice,
+                            Quantity = g.Sum(i => i.Quantity)
+                        };
+                    })
+                    .ToList();
+
                 promoEvaluations = await PromotionEvaluator.EvaluateProductsAsync(targets, cancellationToken);
             }
 
@@ -156,8 +161,12 @@ namespace Ecommerce.Application.Common.Carts
                 {
                     if (eval.TotalDiscount > 0)
                     {
+                        int totalProductQty = result.Items.Where(i => i.ProductId == item.ProductId).Sum(i => i.Quantity);
+                        decimal itemShare = totalProductQty > 0 ? (decimal)item.Quantity / totalProductQty : 1m;
+                        decimal itemDiscount = Math.Round(eval.TotalDiscount * itemShare, 2);
+
                         item.PromotionalPrice = eval.PromotionalPrice;
-                        item.LineTotal = Math.Max(0, (item.UnitPrice * item.Quantity) - eval.TotalDiscount);
+                        item.LineTotal = Math.Max(0, (item.UnitPrice * item.Quantity) - itemDiscount);
                     }
                     else if (eval.DiscountAmount > 0 && eval.PromotionalPrice < item.OriginalPrice)
                     {

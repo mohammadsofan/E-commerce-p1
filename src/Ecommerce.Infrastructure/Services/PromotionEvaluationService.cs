@@ -57,9 +57,15 @@ namespace Ecommerce.Infrastructure.Services
             CancellationToken cancellationToken = default)
         {
             var targetList = targets?.ToList() ?? new List<ProductPromotionTarget>();
-            var results = targetList.ToDictionary(
-                t => t.ProductId,
-                t => CreateDefaultEvaluation(t.ProductId, t.BasePrice));
+            var results = new Dictionary<Guid, ProductPromotionEvaluation>();
+
+            foreach (var t in targetList)
+            {
+                if (!results.ContainsKey(t.ProductId))
+                {
+                    results[t.ProductId] = CreateDefaultEvaluation(t.ProductId, t.BasePrice);
+                }
+            }
 
             if (targetList.Count == 0)
                 return results;
