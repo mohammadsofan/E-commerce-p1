@@ -32,18 +32,9 @@ namespace Ecommerce.Application.Commands.Carts
             var coupon = await Db.Coupons
                 .FirstOrDefaultAsync(c => c.Code == upperCode, cancellationToken);
 
-            if (coupon == null)
-                throw new DomainException("كود الخصم غير صحيح");
-
-            if (!coupon.IsActive)
-                throw new DomainException("هذا الكوبون غير فعال");
-
             var now = DateTimeOffset.UtcNow;
-            if (coupon.StartAt.HasValue && coupon.StartAt.Value > now)
-                throw new DomainException("هذا الكوبون لم يبدأ تفعيله بعد");
-
-            if (coupon.EndAt.HasValue && coupon.EndAt.Value < now)
-                throw new DomainException("انتهت صلاحية الكوبون");
+            if (coupon == null || !coupon.IsActive || (coupon.EndAt.HasValue && coupon.EndAt.Value < now) || (coupon.StartAt.HasValue && coupon.StartAt.Value > now))
+                throw new DomainException("كود الخصم غير صحيح أو منتهي الصلاحية");
 
             if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
                 throw new DomainException("تجاوز الكوبون حد الاستخدام المسموح به");

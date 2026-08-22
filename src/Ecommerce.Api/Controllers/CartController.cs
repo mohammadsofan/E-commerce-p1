@@ -75,6 +75,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Applies a coupon code to the current user's cart.</summary>
         [HttpPost("coupon")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("CouponRateLimit")]
         public async Task<IActionResult> ApplyCoupon([FromBody] ApplyCouponToCartRequest request)
         {
             var command = new ApplyCouponToCartCommand { Code = request.Code };

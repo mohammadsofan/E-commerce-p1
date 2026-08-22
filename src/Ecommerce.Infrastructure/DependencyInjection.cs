@@ -47,7 +47,8 @@ namespace Ecommerce.Infrastructure
             // Expose interface for Application layer
             services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
-            // TODO: register repositories, identity services, event dispatchers, etc.
+            // In-memory cache for static/semi-static data (e.g. promotions evaluation)
+            services.AddMemoryCache();
 
             // Register application command dispatcher and pipeline behaviors
             services.AddScoped<Ecommerce.Application.Common.Commands.CommandDispatcher>();

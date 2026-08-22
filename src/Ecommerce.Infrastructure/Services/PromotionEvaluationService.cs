@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -7,16 +7,21 @@ using System.Threading.Tasks;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Ecommerce.Infrastructure.Services
 {
     public class PromotionEvaluationService : IPromotionEvaluationService
     {
         private readonly IApplicationDbContext _db;
+        private readonly IMemoryCache? _cache;
+        private static readonly string CacheKey = "active_promotions";
+        private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(30);
 
-        public PromotionEvaluationService(IApplicationDbContext db)
+        public PromotionEvaluationService(IApplicationDbContext db, IMemoryCache? cache = null)
         {
             _db = db;
+            _cache = cache;
         }
 
         public async Task<ProductPromotionEvaluation> EvaluateProductAsync(
@@ -50,15 +55,35 @@ namespace Ecommerce.Infrastructure.Services
 
             var now = DateTimeOffset.UtcNow;
 
-            var activePromotions = await _db.Promotions
-                .AsNoTracking()
-                .Where(p => p.IsActive &&
-                           (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
-                           (!p.EndAt.HasValue || p.EndAt.Value >= now) &&
-                           (!p.UsageLimit.HasValue || p.UsedCount < p.UsageLimit.Value))
-                .OrderByDescending(p => p.Priority)
-                .ThenByDescending(p => p.CreatedAt)
-                .ToListAsync(cancellationToken);
+            List<Promotion> activePromotions;
+            if (_cache != null)
+            {
+                activePromotions = await _cache.GetOrCreateAsync(CacheKey, async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+                    return await _db.Promotions
+                        .AsNoTracking()
+                        .Where(p => p.IsActive &&
+                                   (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
+                                   (!p.EndAt.HasValue || p.EndAt.Value >= now) &&
+                                   (!p.UsageLimit.HasValue || p.UsedCount < p.UsageLimit.Value))
+                        .OrderByDescending(p => p.Priority)
+                        .ThenByDescending(p => p.CreatedAt)
+                        .ToListAsync(cancellationToken);
+                }) ?? new List<Promotion>();
+            }
+            else
+            {
+                activePromotions = await _db.Promotions
+                    .AsNoTracking()
+                    .Where(p => p.IsActive &&
+                               (!p.StartAt.HasValue || p.StartAt.Value <= now) &&
+                               (!p.EndAt.HasValue || p.EndAt.Value >= now) &&
+                               (!p.UsageLimit.HasValue || p.UsedCount < p.UsageLimit.Value))
+                    .OrderByDescending(p => p.Priority)
+                    .ThenByDescending(p => p.CreatedAt)
+                    .ToListAsync(cancellationToken);
+            }
 
             if (activePromotions.Count == 0)
                 return results;

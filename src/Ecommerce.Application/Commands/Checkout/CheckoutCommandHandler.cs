@@ -316,6 +316,17 @@ namespace Ecommerce.Application.Commands.Checkout
                 order.SetShippingAmount(finalShippingCost);
                 order.PlaceOrder();
 
+                // Validate that final charged total matches client's expected total within acceptable delta
+                if (command.ExpectedTotal.HasValue)
+                {
+                    var delta = Math.Abs(order.TotalAmount - command.ExpectedTotal.Value);
+                    if (delta > 0.01m)
+                    {
+                        if (tx != null) await tx.RollbackAsync(cancellationToken);
+                        throw new DomainException($"تغير سعر أحد المنتجات. الإجمالي الجديد هو {order.TotalAmount:F2}. يرجى مراجعة الطلب والتأكيد.");
+                    }
+                }
+
                 // Clear user's active cart in database if exists
                 foreach (var userCart in userCarts)
                 {

@@ -75,11 +75,26 @@ builder.Services.AddRateLimiter(options =>
                     QueueLimit = queueLimit,
                     AutoReplenishment = true
                 }));
+
+        // Dedicated strict rate limiting policy for coupon application and checkout endpoints (5 req/min)
+        options.AddPolicy("CouponRateLimit", context =>
+            System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anon",
+                _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                }));
     }
     else
     {
         options.GlobalLimiter = System.Threading.RateLimiting.PartitionedRateLimiter.Create<Microsoft.AspNetCore.Http.HttpContext, string>(
             _ => System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("all"));
+
+        options.AddPolicy("CouponRateLimit", _ =>
+            System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("all"));
     }
 });
 
