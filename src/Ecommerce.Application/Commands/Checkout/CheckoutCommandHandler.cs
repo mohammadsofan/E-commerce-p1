@@ -350,33 +350,6 @@ namespace Ecommerce.Application.Commands.Checkout
                     await _domainEvents.DispatchAsync(events, cancellationToken);
                 }
 
-                // Trigger customer order confirmation and admin alert emails
-                if (_emailService != null)
-                {
-                    try
-                    {
-                        string? customerEmail = null;
-                        if (order.UserId.HasValue && order.UserId.Value != Guid.Empty)
-                        {
-                            customerEmail = await _db.Users
-                                .Where(u => u.Id == order.UserId.Value)
-                                .Select(u => u.Email)
-                                .FirstOrDefaultAsync(cancellationToken);
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(customerEmail))
-                        {
-                            await _emailService.SendOrderConfirmationAsync(order, customerEmail, cancellationToken);
-                        }
-
-                        await _emailService.SendAdminOrderAlertAsync(order, cancellationToken);
-                    }
-                    catch
-                    {
-                        // Notification failure should not fail successful order creation
-                    }
-                }
-
                 if (!string.IsNullOrEmpty(command.IdempotencyKey))
                 {
                     await _idempotency.SaveResponseAsync(command.IdempotencyKey, order.Id.ToString());

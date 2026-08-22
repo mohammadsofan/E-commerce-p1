@@ -26,6 +26,8 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             // Computed / derived property - ignore in EF mapping
             builder.Ignore(x => x.Available);
 
+            builder.HasIndex(x => new { x.ProductId, x.ProductVariantId, x.WarehouseId });
+
             // Foreign keys - Restrict delete to avoid SQL Server "multiple cascade paths"
             // cycle error between Product/ProductVariant/InventoryItem.
             builder.HasOne(x => x.Product)

@@ -25,6 +25,9 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.UpdatedAt).IsRequired();
             builder.Property(x => x.ExpiresAt);
 
+            builder.HasIndex(x => new { x.UserId, x.Status });
+            builder.HasIndex(x => new { x.SessionId, x.Status });
+
             builder.HasMany(x => x.Items)
                 .WithOne()
                 .HasForeignKey(ci => ci.CartId)

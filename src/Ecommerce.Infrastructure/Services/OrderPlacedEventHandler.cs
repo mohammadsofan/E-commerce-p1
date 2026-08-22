@@ -95,29 +95,34 @@ namespace Ecommerce.Infrastructure.Services
                 UpdatedAt = DateTimeOffset.UtcNow
             };
 
-            try
-            {
-                await _emailService.SendAsync(new EmailMessage
-                {
-                    To = customerEmail,
-                    ToName = await GetCustomerDisplayNameAsync(order.UserId, cancellationToken),
-                    Subject = notification.Subject,
-                    Body = notification.Body,
-                    IsHtml = true
-                }, cancellationToken);
-
-                notification.Status = "sent";
-                notification.SentAt = DateTimeOffset.UtcNow;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send order confirmation email for order {OrderId}", order.Id);
-                notification.Status = "failed";
-                notification.ErrorMessage = ex.Message;
-            }
-
             _db.Notifications.Add(notification);
             await _db.SaveChangesAsync(cancellationToken);
+
+            var toName = await GetCustomerDisplayNameAsync(order.UserId, cancellationToken);
+            var emailMsg = new EmailMessage
+            {
+                To = customerEmail,
+                ToName = toName,
+                Subject = notification.Subject,
+                Body = notification.Body,
+                IsHtml = true
+            };
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendAsync(emailMsg, CancellationToken.None);
+                    notification.Status = "sent";
+                    notification.SentAt = DateTimeOffset.UtcNow;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send confirmation email for Order {OrderId}", order.Id);
+                    notification.Status = "failed";
+                    notification.ErrorMessage = ex.Message;
+                }
+            });
         }
 
         private async Task SendSmsAsync(Order order, Guid userId, CancellationToken cancellationToken)

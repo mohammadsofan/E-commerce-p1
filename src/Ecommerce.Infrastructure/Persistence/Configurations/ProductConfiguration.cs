@@ -12,6 +12,8 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.Name).IsRequired().HasMaxLength(250);
             builder.Property(x => x.Slug).IsRequired().HasMaxLength(250);
             builder.HasIndex(x => x.Slug).IsUnique();
+            builder.HasIndex(x => new { x.IsDeleted, x.IsActive, x.CategoryId });
+            builder.HasIndex(x => x.CreatedAt);
 
             builder.Property(x => x.BasePrice).HasPrecision(18,2);
             builder.Property(x => x.CostPrice).HasPrecision(18,2);

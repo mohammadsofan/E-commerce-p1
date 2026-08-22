@@ -40,6 +40,10 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
                  builder.Property(x => x.Notes).IsRequired(false);
                  builder.Property(x => x.CustomerNotes).IsRequired(false);
 
+            builder.HasIndex(x => x.UserId);
+            builder.HasIndex(x => x.OrderNumber).IsUnique();
+            builder.HasIndex(x => new { x.Status, x.CreatedAt });
+
             builder.HasMany(x => x.Items)
                    .WithOne()
                    .HasForeignKey(oi => oi.OrderId)

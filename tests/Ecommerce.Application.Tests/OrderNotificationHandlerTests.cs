@@ -141,6 +141,7 @@ namespace Ecommerce.Application.Tests
             var handler = CreateHandler(ctx, emailService);
 
             await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+            await Task.Delay(100);
 
             var message = Assert.Single(emailService.Sent);
             Assert.Equal("customer@test.com", message.To);
@@ -221,6 +222,7 @@ namespace Ecommerce.Application.Tests
             var handler = CreateHandler(ctx, emailService);
 
             await handler.Handle(new OrderPlacedDomainEvent(order.Id));
+            await Task.Delay(100);
 
             var notification = await ctx.Notifications.SingleOrDefaultAsync(n => n.Channel == "email");
             Assert.NotNull(notification);
