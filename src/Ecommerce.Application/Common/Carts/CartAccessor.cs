@@ -70,22 +70,18 @@ namespace Ecommerce.Application.Common.Carts
             var productIds = result.Items.Select(item => item.ProductId).Distinct().ToList();
             if (productIds.Count == 0) return result;
 
-            var productsTask = Db.Products
+            var products = await Db.Products
                 .AsNoTracking()
                 .Where(product => productIds.Contains(product.Id))
                 .Select(product => new { product.Id, product.Slug, product.CategoryId, product.BasePrice })
                 .ToListAsync(cancellationToken);
 
-            var imagesTask = Db.ProductImages
+            var images = await Db.ProductImages
                 .AsNoTracking()
                 .Where(image => productIds.Contains(image.ProductId))
                 .OrderByDescending(image => image.IsPrimary)
                 .ThenBy(image => image.SortOrder)
                 .ToListAsync(cancellationToken);
-
-            await Task.WhenAll(productsTask, imagesTask);
-            var products = await productsTask;
-            var images = await imagesTask;
 
             Dictionary<Guid, ProductPromotionEvaluation>? promoEvaluations = null;
             if (PromotionEvaluator != null)
