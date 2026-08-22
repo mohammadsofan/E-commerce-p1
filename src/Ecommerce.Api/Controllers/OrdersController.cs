@@ -46,6 +46,7 @@ namespace Ecommerce.Api.Controllers
         /// Transitions an order from Placed to Paid.
         /// </summary>
         [HttpPost("{id:guid}/pay")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> MarkPaid(Guid id)
         {
             var command = new MarkOrderPaidCommand { OrderId = id };
@@ -57,6 +58,7 @@ namespace Ecommerce.Api.Controllers
         /// Transitions a Paid order to Completed.
         /// </summary>
         [HttpPost("{id:guid}/complete")]
+        [Authorize(Policy = "AdminOnly")]
         public async Task<IActionResult> Complete(Guid id)
         {
             var command = new CompleteOrderCommand { OrderId = id };

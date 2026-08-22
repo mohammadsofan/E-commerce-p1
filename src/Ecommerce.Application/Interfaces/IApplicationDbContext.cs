@@ -55,6 +55,7 @@ namespace Ecommerce.Application.Interfaces
         DbSet<HeroBanner> HeroBanners { get; }
         DbSet<StoreSetting> StoreSettings { get; }
         IQueryable<IApplicationUser> Users { get; }
+        Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
 
         Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<TEntity> GetEntry<TEntity>(TEntity entity) where TEntity : class;
 
