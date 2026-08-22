@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,31 +22,34 @@ namespace Ecommerce.Application.Commands.Carts
         public async Task<CartDto> Handle(ApplyCouponToCartCommand command, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(command.Code))
-                throw new DomainException("Coupon code is required");
+                throw new DomainException("يرجى إدخال كود الخصم");
 
             var cart = await GetOrCreateCartAsync(cancellationToken);
             if (cart.Items.Count == 0 || cart.Subtotal <= 0)
-                throw new DomainException("Cannot apply coupon to an empty cart");
+                throw new DomainException("لا يمكن تطبيق كوبون على سلة تسوق فارغة");
 
             var upperCode = command.Code.Trim().ToUpperInvariant();
             var coupon = await Db.Coupons
                 .FirstOrDefaultAsync(c => c.Code == upperCode, cancellationToken);
 
-            if (coupon == null || !coupon.IsActive)
-                throw new DomainException("Invalid or inactive coupon code");
+            if (coupon == null)
+                throw new DomainException("كود الخصم غير صحيح");
+
+            if (!coupon.IsActive)
+                throw new DomainException("هذا الكوبون غير فعال");
 
             var now = DateTimeOffset.UtcNow;
             if (coupon.StartAt.HasValue && coupon.StartAt.Value > now)
-                throw new DomainException("Coupon is not yet active");
+                throw new DomainException("هذا الكوبون لم يبدأ تفعيله بعد");
 
             if (coupon.EndAt.HasValue && coupon.EndAt.Value < now)
-                throw new DomainException("Coupon has expired");
+                throw new DomainException("انتهت صلاحية الكوبون");
 
             if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-                throw new DomainException("Coupon usage limit has been reached");
+                throw new DomainException("تجاوز الكوبون حد الاستخدام المسموح به");
 
             if (coupon.MinOrderAmount.HasValue && cart.Subtotal < coupon.MinOrderAmount.Value)
-                throw new DomainException($"Minimum order subtotal of {coupon.MinOrderAmount.Value:F2} is required to use this coupon");
+                throw new DomainException("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
 
             // Calculate discount amount
             decimal discountAmount = 0m;

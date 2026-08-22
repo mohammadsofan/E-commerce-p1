@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -153,7 +153,7 @@ namespace Ecommerce.Application.Tests
             var ex = await Assert.ThrowsAsync<DomainException>(() =>
                 handler.Handle(new ApplyCouponToCartCommand { Code = "VIP100" }));
 
-            Assert.Contains("Minimum order subtotal", ex.Message);
+            Assert.Equal("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون", ex.Message);
         }
 
         [Fact]

@@ -189,23 +189,23 @@ namespace Ecommerce.Application.Queries.Admin
                 .FirstOrDefaultAsync(c => c.Code == query.Code.ToUpperInvariant(), cancellationToken);
 
             if (coupon == null)
-                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Invalid coupon code" };
+                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "كود الخصم غير صحيح" };
 
             if (!coupon.IsActive)
-                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon is not active" };
+                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "هذا الكوبون غير فعال" };
 
             var now = DateTimeOffset.UtcNow;
             if (coupon.StartAt.HasValue && coupon.StartAt.Value > now)
-                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon has not started yet" };
+                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "هذا الكوبون لم يبدأ تفعيله بعد" };
 
             if (coupon.EndAt.HasValue && coupon.EndAt.Value < now)
-                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon has expired" };
+                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "انتهت صلاحية الكوبون" };
 
             if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon usage limit reached" };
+                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "تجاوز الكوبون حد الاستخدام المسموح به" };
 
             if (coupon.MinOrderAmount.HasValue && query.OrderTotal < coupon.MinOrderAmount.Value)
-                return new ValidateCouponResponse { IsValid = false, ErrorMessage = $"Minimum order amount is {coupon.MinOrderAmount.Value}" };
+                return new ValidateCouponResponse { IsValid = false, ErrorMessage = "لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون" };
 
             // Check per-user limit
             if (coupon.PerUserLimit.HasValue)
@@ -214,7 +214,7 @@ namespace Ecommerce.Application.Queries.Admin
                     .CountAsync(u => u.CouponId == coupon.Id && u.UserId == query.UserId, cancellationToken);
 
                 if (userUsageCount >= coupon.PerUserLimit.Value)
-                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "User usage limit reached" };
+                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "تجاوزت الحد الأقصى المسموح به لاستخدام هذا الكوبون" };
             }
 
             // Check applicable products/categories
@@ -222,14 +222,14 @@ namespace Ecommerce.Application.Queries.Admin
             {
                 var applicableIds = System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(coupon.ApplicableProductIds) ?? new List<Guid>();
                 if (!query.ProductIds.Any(id => applicableIds.Contains(id)))
-                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon not applicable to selected products" };
+                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "الكوبون غير صالح للمنتجات المحددة" };
             }
 
             if (!string.IsNullOrEmpty(coupon.ApplicableCategoryIds) && query.CategoryIds.Any())
             {
                 var applicableIds = System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(coupon.ApplicableCategoryIds) ?? new List<Guid>();
                 if (!query.CategoryIds.Any(id => applicableIds.Contains(id)))
-                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon not applicable to selected categories" };
+                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "الكوبون غير صالح للأقسام المحددة" };
             }
 
             // Check excluded products/categories
@@ -237,14 +237,14 @@ namespace Ecommerce.Application.Queries.Admin
             {
                 var excludedIds = System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(coupon.ExcludedProductIds) ?? new List<Guid>();
                 if (query.ProductIds.Any(id => excludedIds.Contains(id)))
-                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon not applicable to selected products" };
+                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "الكوبون غير صالح للمنتجات المحددة" };
             }
 
             if (!string.IsNullOrEmpty(coupon.ExcludedCategoryIds) && query.CategoryIds.Any())
             {
                 var excludedIds = System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(coupon.ExcludedCategoryIds) ?? new List<Guid>();
                 if (query.CategoryIds.Any(id => excludedIds.Contains(id)))
-                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "Coupon not applicable to selected categories" };
+                    return new ValidateCouponResponse { IsValid = false, ErrorMessage = "الكوبون غير صالح للأقسام المحددة" };
             }
 
             // Calculate discount amount

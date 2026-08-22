@@ -233,7 +233,7 @@ namespace Ecommerce.Application.Tests
             var result = await queryHandler.Handle(query);
 
             Assert.False(result.IsValid);
-            Assert.Equal("Coupon has expired", result.ErrorMessage);
+            Assert.Equal("انتهت صلاحية الكوبون", result.ErrorMessage);
         }
 
         [Fact]
@@ -261,7 +261,7 @@ namespace Ecommerce.Application.Tests
             var result = await queryHandler.Handle(query);
 
             Assert.False(result.IsValid);
-            Assert.Contains("Minimum order", result.ErrorMessage);
+            Assert.Equal("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون", result.ErrorMessage);
         }
 
         [Fact]

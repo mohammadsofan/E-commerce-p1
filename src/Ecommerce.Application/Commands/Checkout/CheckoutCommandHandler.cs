@@ -104,19 +104,19 @@ namespace Ecommerce.Application.Commands.Checkout
                 var coupon = await _db.Coupons
                     .FirstOrDefaultAsync(c => c.Code == command.CouponCode.Trim().ToUpperInvariant(), cancellationToken);
                 if (coupon == null)
-                    throw new DomainException("Invalid coupon code");
+                    throw new DomainException("كود الخصم غير صحيح");
 
                 var now = DateTimeOffset.UtcNow;
                 if (!coupon.IsActive)
-                    throw new DomainException("Coupon is not active");
+                    throw new DomainException("هذا الكوبون غير فعال");
                 if (coupon.StartAt.HasValue && coupon.StartAt.Value > now)
-                    throw new DomainException("Coupon has not started yet");
+                    throw new DomainException("هذا الكوبون لم يبدأ تفعيله بعد");
                 if (coupon.EndAt.HasValue && coupon.EndAt.Value < now)
-                    throw new DomainException("Coupon has expired");
+                    throw new DomainException("انتهت صلاحية الكوبون");
                 if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-                    throw new DomainException("Coupon usage limit reached");
+                    throw new DomainException("تجاوز الكوبون حد الاستخدام المسموح به");
                 if (coupon.MinOrderAmount.HasValue && order.Subtotal < coupon.MinOrderAmount.Value)
-                    throw new DomainException($"Minimum order amount for this coupon is {coupon.MinOrderAmount.Value}");
+                    throw new DomainException("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
 
                 decimal discount = 0m;
                 if (coupon.Type == "percentage")
