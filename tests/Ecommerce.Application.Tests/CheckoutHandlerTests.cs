@@ -37,8 +37,7 @@ namespace Ecommerce.Application.Tests
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
             var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -91,8 +90,7 @@ namespace Ecommerce.Application.Tests
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
             var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 CouponCode = "SAVE10",
                 Currency = "USD",
@@ -151,8 +149,7 @@ namespace Ecommerce.Application.Tests
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
             var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -208,8 +205,7 @@ namespace Ecommerce.Application.Tests
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
             var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "ILS",
                 ShippingAddress = "Test Address",
@@ -264,8 +260,7 @@ namespace Ecommerce.Application.Tests
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
             var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "ILS",
                 ShippingAddress = "Test Address",
@@ -333,8 +328,7 @@ namespace Ecommerce.Application.Tests
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
             var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 CouponCode = "FREESHIP",
                 Currency = "ILS",
@@ -356,3 +350,5 @@ namespace Ecommerce.Application.Tests
         }
     }
 }
+
+

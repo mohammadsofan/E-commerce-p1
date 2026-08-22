@@ -37,8 +37,7 @@ namespace Ecommerce.Application.Tests
 
             var key = "idem-123";
 
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -55,3 +54,5 @@ namespace Ecommerce.Application.Tests
         }
     }
 }
+
+

@@ -47,8 +47,7 @@ namespace Ecommerce.IntegrationTests
             var handler = new CheckoutCommandHandler(ctx, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
             var userId = Guid.NewGuid();
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -61,8 +60,7 @@ namespace Ecommerce.IntegrationTests
             Assert.NotEqual(Guid.Empty, orderId1);
 
             // Second concurrent request should fail due to insufficient inventory (only 2 left, needs 3)
-            var command2 = new CheckoutCommand
-            {
+            var command2 = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -101,8 +99,7 @@ namespace Ecommerce.IntegrationTests
             var handler = new CheckoutCommandHandler(ctx, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
             var userId = Guid.NewGuid();
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -193,8 +190,7 @@ namespace Ecommerce.IntegrationTests
             var handler = new CheckoutCommandHandler(ctx, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
             var userId = Guid.NewGuid();
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -213,3 +209,5 @@ namespace Ecommerce.IntegrationTests
         }
     }
 }
+
+

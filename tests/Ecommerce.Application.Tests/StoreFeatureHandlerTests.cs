@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.StoreFeatures;
@@ -30,8 +30,8 @@ namespace Ecommerce.Application.Tests
             var handler = new CreateStoreFeatureCommandHandler(db);
             var command = new CreateStoreFeatureCommand
             {
-                Title = "الشحن مجاني",
-                Description = "للطلبات فوق 50 دولار",
+                Title = "????? ?????",
+                Description = "??????? ??? 50 ?????",
                 IconName = "Truck",
                 DisplayOrder = 1,
                 IsActive = true
@@ -42,15 +42,15 @@ namespace Ecommerce.Application.Tests
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal("الشحن مجاني", result.Title);
-            Assert.Equal("للطلبات فوق 50 دولار", result.Description);
+            Assert.Equal("????? ?????", result.Title);
+            Assert.Equal("??????? ??? 50 ?????", result.Description);
             Assert.Equal("Truck", result.IconName);
             Assert.Equal(1, result.DisplayOrder);
             Assert.True(result.IsActive);
 
             var inDb = await db.StoreFeatures.FindAsync(result.Id);
             Assert.NotNull(inDb);
-            Assert.Equal("الشحن مجاني", inDb.Title);
+            Assert.Equal("????? ?????", inDb.Title);
         }
 
         [Fact]
@@ -213,3 +213,4 @@ namespace Ecommerce.Application.Tests
         }
     }
 }
+

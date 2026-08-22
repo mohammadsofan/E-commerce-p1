@@ -184,3 +184,4 @@ namespace Ecommerce.IntegrationTests
         }
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -52,7 +52,7 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(90m, evalA.PromotionalPrice);
             Assert.Equal(10m, evalA.DiscountAmount);
             Assert.Equal(10, evalA.DiscountPercentage);
-            Assert.Equal("خصم 10%", evalA.PromotionBadge);
+            Assert.Equal("??? 10%", evalA.PromotionBadge);
 
             // Evaluate Product B (BasePrice 100)
             var evalB = await service.EvaluateProductAsync(productBId, null, 100m);
@@ -89,7 +89,7 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(75m, eval.PromotionalPrice);
             Assert.Equal(25m, eval.DiscountAmount);
             Assert.Equal(25, eval.DiscountPercentage);
-            Assert.Equal("وفر 25 ₪", eval.PromotionBadge);
+            Assert.Equal("??? 25 ?", eval.PromotionBadge);
         }
 
         [Fact]
@@ -220,3 +220,4 @@ namespace Ecommerce.Application.Tests
         }
     }
 }
+

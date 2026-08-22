@@ -47,8 +47,7 @@ namespace Ecommerce.IntegrationTests
             var handler = new CheckoutCommandHandler(ctx, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
 
             var userId = Guid.NewGuid();
-            var command = new CheckoutCommand
-            {
+            var command = new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = userId,
                 Currency = "USD",
                 ShippingAddress = "Test Address",
@@ -68,3 +67,5 @@ namespace Ecommerce.IntegrationTests
         }
     }
 }
+
+

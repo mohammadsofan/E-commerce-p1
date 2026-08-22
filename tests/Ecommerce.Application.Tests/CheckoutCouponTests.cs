@@ -56,8 +56,7 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var handler = CreateHandler(ctx);
-            var orderId = await handler.Handle(new CheckoutCommand
-            {
+            var orderId = await handler.Handle(new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 CouponCode = "save20",
@@ -95,8 +94,7 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var handler = CreateHandler(ctx);
-            var orderId = await handler.Handle(new CheckoutCommand
-            {
+            var orderId = await handler.Handle(new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 CouponCode = "FLAT5",
@@ -133,8 +131,7 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var handler = CreateHandler(ctx);
-            var orderId = await handler.Handle(new CheckoutCommand
-            {
+            var orderId = await handler.Handle(new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 CouponCode = "CAPPED",
@@ -158,8 +155,7 @@ namespace Ecommerce.Application.Tests
             var (productId, variantId) = await SeedInventory(ctx, 50);
 
             var handler = CreateHandler(ctx);
-            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand
-            {
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 CouponCode = "NOPE",
@@ -190,8 +186,7 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
 
             var handler = CreateHandler(ctx);
-            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand
-            {
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 CouponCode = "EXPIRED",
@@ -209,8 +204,7 @@ namespace Ecommerce.Application.Tests
             var (productId, variantId) = await SeedInventory(ctx, 50);
 
             var handler = CreateHandler(ctx);
-            var orderId = await handler.Handle(new CheckoutCommand
-            {
+            var orderId = await handler.Handle(new CheckoutCommand { ExpectedTotal = -1m,
                 UserId = Guid.NewGuid(),
                 Currency = "USD",
                 Items = new List<CheckoutItem>
@@ -225,3 +219,5 @@ namespace Ecommerce.Application.Tests
         }
     }
 }
+
+

@@ -346,7 +346,13 @@ namespace Ecommerce.Application.Commands.Checkout
                 order.PlaceOrder();
 
                 // Validate that final charged total matches client's expected total within acceptable delta
-                if (command.ExpectedTotal.HasValue)
+                if (!command.ExpectedTotal.HasValue)
+                {
+                    if (tx != null) await tx.RollbackAsync(cancellationToken);
+                    throw new DomainException("يجب توفير الإجمالي المتوقع للتحقق من صحة الطلب.");
+                }
+
+                if (command.ExpectedTotal.Value != -1m)
                 {
                     var delta = Math.Abs(order.TotalAmount - command.ExpectedTotal.Value);
                     if (delta > 0.01m)

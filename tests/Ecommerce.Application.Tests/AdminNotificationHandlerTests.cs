@@ -122,3 +122,4 @@ namespace Ecommerce.Application.Tests
         }
     }
 }
+

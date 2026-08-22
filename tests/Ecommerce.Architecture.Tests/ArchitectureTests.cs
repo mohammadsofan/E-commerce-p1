@@ -176,3 +176,4 @@ namespace Ecommerce.Architecture.Tests
         }
     }
 }
+
