@@ -274,7 +274,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     if (type == "percentage")
                     {
                         var applicableSubtotal = Math.Max(0m, order.Subtotal - order.CartLevelDiscountAmount);
-                        discount = applicableSubtotal * (coupon.Value / 100m);
+                        discount = Math.Round(applicableSubtotal * (coupon.Value / 100m), 2, MidpointRounding.AwayFromZero);
                         if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
                         {
                             discount = Math.Min(discount, coupon.MaxDiscountAmount.Value);
