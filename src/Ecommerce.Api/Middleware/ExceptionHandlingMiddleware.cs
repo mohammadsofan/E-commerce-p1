@@ -46,7 +46,7 @@ namespace Ecommerce.Api.Middleware
             {
                 Status = (int)status,
                 Title = title,
-                Detail = ex.Message,
+                Detail = ex.Message + (ex.InnerException != null ? " Inner: " + ex.InnerException.Message : ""), // MODIFIED FOR DEBUGGING
                 Instance = context.Request.Path.Value
             };
 

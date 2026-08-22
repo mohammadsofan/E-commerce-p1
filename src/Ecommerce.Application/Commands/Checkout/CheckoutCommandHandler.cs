@@ -220,7 +220,7 @@ namespace Ecommerce.Application.Commands.Checkout
                         }
                         if (userCarts.Count > 0)
                         {
-                            await _db.SaveChangesAsync(cancellationToken);
+                            try { await _db.SaveChangesAsync(cancellationToken); } catch (Exception dbEx) { if (tx != null) await tx.RollbackAsync(); throw new DomainException("DB Error: " + (dbEx.InnerException?.Message ?? dbEx.Message)); }
                         }
                         if (tx != null) await tx.RollbackAsync(cancellationToken);
                         throw new DomainException(errorMessage);
@@ -362,7 +362,7 @@ namespace Ecommerce.Application.Commands.Checkout
 
                 // Persist order, coupon usage/increment, and cleared cart atomically
                 await _db.Orders.AddAsync(order, cancellationToken);
-                await _db.SaveChangesAsync(cancellationToken);
+                try { await _db.SaveChangesAsync(cancellationToken); } catch (Exception dbEx) { if (tx != null) await tx.RollbackAsync(); throw new DomainException("DB Error: " + (dbEx.InnerException?.Message ?? dbEx.Message)); }
 
                 if (tx != null)
                 {
