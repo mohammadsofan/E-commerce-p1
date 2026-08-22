@@ -165,15 +165,7 @@ namespace Ecommerce.Application.Commands.Checkout
 
                     if (inventory != null)
                     {
-                        try
-                        {
-                            inventory.Reserve(it.Quantity);
-                        }
-                        catch (InventoryException)
-                        {
-                            if (tx != null) await tx.RollbackAsync(cancellationToken);
-                            throw;
-                        }
+                        inventory.Reserve(it.Quantity);
                     }
                 }
 
@@ -401,6 +393,11 @@ namespace Ecommerce.Application.Commands.Checkout
             {
                 if (tx != null) await tx.RollbackAsync(cancellationToken);
                 throw new DomainException("حدث تعارض مؤقت في الطلب. يرجى المحاولة مرة أخرى.");
+            }
+            catch (InventoryException ex)
+            {
+                if (tx != null) await tx.RollbackAsync(cancellationToken);
+                throw new DomainException(ex.Message ?? "بعض المنتجات المطلوبة نفدت من المخزون.");
             }
             catch
             {
