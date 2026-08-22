@@ -72,11 +72,11 @@ namespace Ecommerce.Application.Tests
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command));
-            Assert.Contains("شراء هذا المنتج", ex.Message);
+            Assert.Contains("Completed", ex.Message);
         }
 
         [Fact]
-        public async Task SubmitReview_Succeeds_WhenUserHasPurchasedProduct()
+        public async Task SubmitReview_ThrowsDomainException_WhenOrderIsPendingOrProcessing()
         {
             // Arrange
             using var db = CreateInMemoryContext();
@@ -95,7 +95,7 @@ namespace Ecommerce.Application.Tests
             };
             await db.Products.AddAsync(product);
 
-            // User has an order with this product
+            // User has an order with Placed status (not yet Completed)
             var order = new Order
             {
                 Id = Guid.NewGuid(),
@@ -103,6 +103,55 @@ namespace Ecommerce.Application.Tests
                 OrderNumber = "ORD-999"
             };
             order.AddItem(product.Id, Guid.NewGuid(), product.Name, 500m, 1);
+            order.PlaceOrder();
+            await db.Orders.AddAsync(order);
+            await db.SaveChangesAsync();
+
+            var handler = new SubmitProductReviewCommandHandler(db, mapper, currentUser);
+            var command = new SubmitProductReviewCommand
+            {
+                ProductId = product.Id,
+                Rating = 5,
+                Title = "Super phone!",
+                Comment = "Battery lasts all day."
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command));
+            Assert.Contains("Completed", ex.Message);
+        }
+
+        [Fact]
+        public async Task SubmitReview_Succeeds_WhenUserHasCompletedOrder()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateTestMapper();
+
+            var userId = Guid.NewGuid();
+            var currentUser = new TestCurrentUserService { UserId = userId, UserName = "buyer@example.com" };
+
+            var product = new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "Test Phone",
+                Slug = "test-phone",
+                BasePrice = 500m,
+                IsActive = true
+            };
+            await db.Products.AddAsync(product);
+
+            // User has a Completed order
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrderNumber = "ORD-999"
+            };
+            order.AddItem(product.Id, Guid.NewGuid(), product.Name, 500m, 1);
+            order.PlaceOrder();
+            order.MarkPaid();
+            order.Complete();
             await db.Orders.AddAsync(order);
             await db.SaveChangesAsync();
 
@@ -127,7 +176,7 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
-        public async Task GetReviewEligibility_ReturnsCanReviewTrue_WhenPurchased()
+        public async Task GetReviewEligibility_ReturnsCanReviewFalse_WhenOrderNotCompleted()
         {
             // Arrange
             using var db = CreateInMemoryContext();
@@ -153,6 +202,51 @@ namespace Ecommerce.Application.Tests
                 OrderNumber = "ORD-123"
             };
             order.AddItem(product.Id, Guid.NewGuid(), product.Name, 50m, 1);
+            order.PlaceOrder();
+            await db.Orders.AddAsync(order);
+            await db.SaveChangesAsync();
+
+            var handler = new GetProductReviewEligibilityQueryHandler(db, mapper, currentUser);
+            var query = new GetProductReviewEligibilityQuery { ProductId = product.Id };
+
+            // Act
+            var result = await handler.Handle(query);
+
+            // Assert
+            Assert.False(result.CanReview);
+            Assert.False(result.HasPurchased);
+        }
+
+        [Fact]
+        public async Task GetReviewEligibility_ReturnsCanReviewTrue_WhenOrderCompleted()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateTestMapper();
+
+            var userId = Guid.NewGuid();
+            var currentUser = new TestCurrentUserService { UserId = userId };
+
+            var product = new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "Headphones",
+                Slug = "headphones",
+                BasePrice = 50m,
+                IsActive = true
+            };
+            await db.Products.AddAsync(product);
+
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                OrderNumber = "ORD-123"
+            };
+            order.AddItem(product.Id, Guid.NewGuid(), product.Name, 50m, 1);
+            order.PlaceOrder();
+            order.MarkPaid();
+            order.Complete();
             await db.Orders.AddAsync(order);
             await db.SaveChangesAsync();
 

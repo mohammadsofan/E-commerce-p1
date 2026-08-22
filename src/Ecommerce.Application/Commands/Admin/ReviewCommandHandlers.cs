@@ -71,29 +71,29 @@ namespace Ecommerce.Application.Commands.Admin
                 .ToListAsync(cancellationToken);
             var allTargetIds = new List<Guid>(variantIds) { command.ProductId };
 
-            // Verified Purchase Requirement: Customer must have ordered the product in a non-cancelled order, or be an Admin
-            var hasPurchased = isAdmin;
-            if (!hasPurchased && candidateUserIds.Any())
+            // Verified Purchase Requirement: Customer must have an order with Status == OrderStatus.Completed containing the product, or be an Admin
+            var hasCompletedOrder = isAdmin;
+            if (!hasCompletedOrder && candidateUserIds.Any())
             {
                 var candidateNullableIds = candidateUserIds.Select(id => (Guid?)id).ToList();
 
-                var orderIds = await _db.Orders
+                var completedOrderIds = await _db.Orders
                     .AsNoTracking()
-                    .Where(o => candidateNullableIds.Contains(o.UserId) && o.Status != OrderStatus.Cancelled)
+                    .Where(o => candidateNullableIds.Contains(o.UserId) && o.Status == OrderStatus.Completed)
                     .Select(o => o.Id)
                     .ToListAsync(cancellationToken);
 
-                if (orderIds.Any())
+                if (completedOrderIds.Any())
                 {
-                    hasPurchased = await _db.OrderItems
+                    hasCompletedOrder = await _db.OrderItems
                         .AsNoTracking()
-                        .AnyAsync(oi => orderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || allTargetIds.Contains(oi.ProductVariantId)), cancellationToken);
+                        .AnyAsync(oi => completedOrderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || allTargetIds.Contains(oi.ProductVariantId)), cancellationToken);
                 }
             }
 
-            if (!hasPurchased)
+            if (!hasCompletedOrder)
             {
-                throw new DomainException("التقييم متاح فقط للعملاء الذين قاموا بشراء هذا المنتج (مشتري موثوق).");
+                throw new DomainException("لا يمكنك تقييم هذا المنتج إلا بعد استلام طلبك واكتمال حالته (Completed).");
             }
 
             var now = DateTimeOffset.UtcNow;

@@ -256,9 +256,10 @@ if (app.Environment.IsDevelopment())
         var db = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.ApplicationDbContext>();
         var seeder = scope.ServiceProvider.GetRequiredService<Ecommerce.Infrastructure.Persistence.DbSeeder>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
+        var userManager = scope.ServiceProvider.GetService<UserManager<Ecommerce.Infrastructure.Identity.ApplicationUser>>();
         try
         {
-            await seeder.SeedAsync(db, roleManager);
+            await seeder.SeedAsync(db, roleManager, userManager);
         }
         catch (Exception ex)
         {

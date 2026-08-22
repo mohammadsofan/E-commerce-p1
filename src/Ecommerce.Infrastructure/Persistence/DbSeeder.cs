@@ -20,13 +20,14 @@ namespace Ecommerce.Infrastructure.Persistence
             _logger = logger;
         }
 
-        public async Task SeedAsync(ApplicationDbContext db, RoleManager<ApplicationRole>? roleManager = null)
+        public async Task SeedAsync(ApplicationDbContext db, RoleManager<ApplicationRole>? roleManager = null, UserManager<ApplicationUser>? userManager = null)
         {
             try
             {
                 await db.Database.EnsureCreatedAsync();
 
                 await SeedRolesAsync(roleManager);
+                await SeedUsersAsync(db, userManager);
                 await SeedCurrenciesAsync(db);
                 await SeedWarehousesAsync(db);
                 await SeedShippingZonesAsync(db);
@@ -35,6 +36,7 @@ namespace Ecommerce.Infrastructure.Persistence
                 await SeedCategoriesAsync(db);
                 await SeedBrandsAsync(db);
                 await SeedProductsAsync(db);
+                await SeedCouponsAsync(db);
                 await SeedSampleOrdersAsync(db);
 
                 _logger.LogInformation("Database seeding completed successfully.");
@@ -58,6 +60,82 @@ namespace Ecommerce.Infrastructure.Persistence
                     await roleManager.CreateAsync(new ApplicationRole { Name = role, Description = $"{role} role", CreatedAt = DateTimeOffset.UtcNow });
                     _logger.LogInformation("Seeded role: {Role}", role);
                 }
+            }
+        }
+
+        private async Task SeedUsersAsync(ApplicationDbContext db, UserManager<ApplicationUser>? userManager)
+        {
+            if (userManager == null) return;
+
+            var testEmail = "e2e-customer@example.com";
+            var existingUser = await userManager.FindByEmailAsync(testEmail);
+            ApplicationUser? user = existingUser;
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    Id = Guid.NewGuid(),
+                    UserName = testEmail,
+                    Email = testEmail,
+                    FirstName = "عميل",
+                    LastName = "تجريبي",
+                    DisplayName = "عميل تجريبي",
+                    EmailConfirmed = true,
+                    IsEmailVerified = true,
+                    IsActive = true,
+                    PhoneNumber = "0599123456",
+                    PhoneNumberConfirmed = true,
+                    IsPhoneVerified = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+
+                var result = await userManager.CreateAsync(user, "Password123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(user, "Customer");
+                    _logger.LogInformation("Seeded E2E test user: {Email}", testEmail);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to seed E2E test user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+            }
+            else
+            {
+                if (!user.EmailConfirmed || !user.IsEmailVerified || !user.IsActive)
+                {
+                    user.EmailConfirmed = true;
+                    user.IsEmailVerified = true;
+                    user.IsActive = true;
+                    await userManager.UpdateAsync(user);
+                }
+            }
+
+            // Seed default Palestinian Address for the test user if none exists
+            if (user != null && !await db.Addresses.AnyAsync(a => a.UserId == user.Id && !a.IsDeleted))
+            {
+                var address = new Address
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    Type = "Shipping",
+                    FirstName = "عميل",
+                    LastName = "تجريبي",
+                    AddressLine1 = "شارع الإرسال، عمارة البرج، طابق 4",
+                    City = "رام الله",
+                    State = "الضفة الغربية",
+                    PostalCode = "00970",
+                    CountryCode = "PS",
+                    PhoneNumber = "0599123456",
+                    IsDefaultShipping = true,
+                    IsDefaultBilling = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await db.Addresses.AddAsync(address);
+                await db.SaveChangesAsync();
+                _logger.LogInformation("Seeded default shipping address for E2E user.");
             }
         }
 
@@ -1206,6 +1284,68 @@ namespace Ecommerce.Infrastructure.Persistence
                 await db.SaveChangesAsync();
                 _logger.LogInformation("Seeded {Count} realistic sample orders for recommendation co-occurrence matrix", orders.Count);
             }
+        }
+
+        private async Task SeedCouponsAsync(ApplicationDbContext db)
+        {
+            var save20 = await db.Coupons.FirstOrDefaultAsync(c => c.Code == "SAVE20");
+            if (save20 == null)
+            {
+                save20 = new Coupon
+                {
+                    Id = Guid.NewGuid(),
+                    Code = "SAVE20",
+                    Description = "خصم 20% على جميع المشتريات",
+                    Type = "percentage",
+                    Value = 20m,
+                    MaxDiscountAmount = 500m,
+                    MinOrderAmount = 0m,
+                    IsActive = true,
+                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
+                    EndAt = DateTimeOffset.UtcNow.AddYears(10),
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await db.Coupons.AddAsync(save20);
+                _logger.LogInformation("Seeded SAVE20 coupon");
+            }
+            else
+            {
+                save20.IsActive = true;
+                save20.MinOrderAmount = 0m;
+                save20.StartAt = DateTimeOffset.UtcNow.AddDays(-30);
+                save20.EndAt = DateTimeOffset.UtcNow.AddYears(10);
+            }
+
+            var sofan10 = await db.Coupons.FirstOrDefaultAsync(c => c.Code == "SOFAN10");
+            if (sofan10 == null)
+            {
+                sofan10 = new Coupon
+                {
+                    Id = Guid.NewGuid(),
+                    Code = "SOFAN10",
+                    Description = "خصم بقيمة 10 شيكل",
+                    Type = "fixed_amount",
+                    Value = 10m,
+                    MinOrderAmount = 0m,
+                    IsActive = true,
+                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
+                    EndAt = DateTimeOffset.UtcNow.AddYears(10),
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+                await db.Coupons.AddAsync(sofan10);
+                _logger.LogInformation("Seeded SOFAN10 coupon");
+            }
+            else
+            {
+                sofan10.IsActive = true;
+                sofan10.MinOrderAmount = 0m;
+                sofan10.StartAt = DateTimeOffset.UtcNow.AddDays(-30);
+                sofan10.EndAt = DateTimeOffset.UtcNow.AddYears(10);
+            }
+
+            await db.SaveChangesAsync();
         }
     }
 }

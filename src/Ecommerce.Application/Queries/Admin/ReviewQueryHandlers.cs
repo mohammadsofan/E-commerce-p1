@@ -93,22 +93,22 @@ namespace Ecommerce.Application.Queries.Admin
                 .ToListAsync(cancellationToken);
             var allTargetIds = new List<Guid>(variantIds) { query.ProductId };
 
-            var hasPurchased = isAdmin;
-            if (!hasPurchased && candidateUserIds.Any())
+            var hasCompletedOrder = isAdmin;
+            if (!hasCompletedOrder && candidateUserIds.Any())
             {
                 var candidateNullableIds = candidateUserIds.Select(id => (Guid?)id).ToList();
 
-                var orderIds = await _db.Orders
+                var completedOrderIds = await _db.Orders
                     .AsNoTracking()
-                    .Where(o => candidateNullableIds.Contains(o.UserId) && o.Status != OrderStatus.Cancelled)
+                    .Where(o => candidateNullableIds.Contains(o.UserId) && o.Status == OrderStatus.Completed)
                     .Select(o => o.Id)
                     .ToListAsync(cancellationToken);
 
-                if (orderIds.Any())
+                if (completedOrderIds.Any())
                 {
-                    hasPurchased = await _db.OrderItems
+                    hasCompletedOrder = await _db.OrderItems
                         .AsNoTracking()
-                        .AnyAsync(oi => orderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || allTargetIds.Contains(oi.ProductVariantId)), cancellationToken);
+                        .AnyAsync(oi => completedOrderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || allTargetIds.Contains(oi.ProductVariantId)), cancellationToken);
                 }
             }
 
@@ -135,8 +135,8 @@ namespace Ecommerce.Application.Queries.Admin
 
             return new ProductReviewEligibilityDto
             {
-                CanReview = hasPurchased,
-                HasPurchased = hasPurchased,
+                CanReview = hasCompletedOrder,
+                HasPurchased = hasCompletedOrder,
                 HasReviewed = existingReview != null,
                 ExistingReview = reviewDto
             };
