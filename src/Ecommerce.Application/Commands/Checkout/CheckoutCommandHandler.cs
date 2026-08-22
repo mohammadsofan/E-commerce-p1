@@ -98,37 +98,107 @@ namespace Ecommerce.Application.Commands.Checkout
                 }
             }
 
-            // Apply coupon discount if provided
-            if (!string.IsNullOrWhiteSpace(command.CouponCode))
+            // Retrieve active cart(s) for the user if exists
+            var userCarts = new System.Collections.Generic.List<Cart>();
+            if (command.UserId != Guid.Empty)
             {
+                userCarts = await _db.Carts
+                    .Include(c => c.Items)
+                    .Where(c => c.UserId == command.UserId && c.Status == Domain.Enums.CartStatus.Active)
+                    .ToListAsync(cancellationToken);
+            }
+
+            // Check if coupon is provided via command or stored on the active cart
+            var effectiveCouponCode = !string.IsNullOrWhiteSpace(command.CouponCode)
+                ? command.CouponCode.Trim()
+                : userCarts.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c.AppliedCouponCode))?.AppliedCouponCode;
+
+            // Just-In-Time Coupon Re-validation before order creation
+            if (!string.IsNullOrWhiteSpace(effectiveCouponCode))
+            {
+                var upperCode = effectiveCouponCode.ToUpperInvariant();
                 var coupon = await _db.Coupons
-                    .FirstOrDefaultAsync(c => c.Code == command.CouponCode.Trim().ToUpperInvariant(), cancellationToken);
+                    .FirstOrDefaultAsync(c => c.Code == upperCode, cancellationToken);
+
+                async Task ClearCartsCouponAndFail(string errorMessage)
+                {
+                    foreach (var c in userCarts)
+                    {
+                        c.RemoveCoupon();
+                    }
+                    if (userCarts.Count > 0)
+                    {
+                        await _db.SaveChangesAsync(cancellationToken);
+                    }
+                    throw new DomainException(errorMessage);
+                }
+
                 if (coupon == null)
-                    throw new DomainException("كود الخصم غير صحيح");
+                {
+                    await ClearCartsCouponAndFail("كود الخصم غير صحيح");
+                }
+
+                if (!coupon.IsActive)
+                {
+                    await ClearCartsCouponAndFail("عذراً، لم يعد هذا الكوبون صالحاً للاستخدام");
+                }
 
                 var now = DateTimeOffset.UtcNow;
-                if (!coupon.IsActive)
-                    throw new DomainException("هذا الكوبون غير فعال");
                 if (coupon.StartAt.HasValue && coupon.StartAt.Value > now)
-                    throw new DomainException("هذا الكوبون لم يبدأ تفعيله بعد");
+                {
+                    await ClearCartsCouponAndFail("هذا الكوبون لم يبدأ تفعيله بعد");
+                }
+
                 if (coupon.EndAt.HasValue && coupon.EndAt.Value < now)
-                    throw new DomainException("انتهت صلاحية الكوبون");
+                {
+                    await ClearCartsCouponAndFail("انتهت صلاحية الكوبون");
+                }
+
                 if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
-                    throw new DomainException("تجاوز الكوبون حد الاستخدام المسموح به");
+                {
+                    await ClearCartsCouponAndFail("تجاوز الكوبون حد الاستخدام المسموح به");
+                }
+
+                if (coupon.PerUserLimit.HasValue && command.UserId != Guid.Empty)
+                {
+                    var userUsageCount = await _db.CouponUsages
+                        .CountAsync(u => u.CouponId == coupon.Id && u.UserId == command.UserId, cancellationToken);
+
+                    if (userUsageCount >= coupon.PerUserLimit.Value)
+                    {
+                        await ClearCartsCouponAndFail("تجاوزت الحد الأقصى المسموح به لاستخدام هذا الكوبون");
+                    }
+                }
+
                 if (coupon.MinOrderAmount.HasValue && order.Subtotal < coupon.MinOrderAmount.Value)
-                    throw new DomainException("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
+                {
+                    await ClearCartsCouponAndFail("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
+                }
 
                 decimal discount = 0m;
-                if (coupon.Type == "percentage")
+                var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
+                if (type == "percentage")
+                {
                     discount = order.Subtotal * (coupon.Value / 100m);
-                else if (coupon.Type == "fixed_amount")
+                    if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
+                    {
+                        discount = Math.Min(discount, coupon.MaxDiscountAmount.Value);
+                    }
+                }
+                else if (type == "fixed_amount")
+                {
                     discount = coupon.Value;
+                }
+                else
+                {
+                    discount = coupon.Value;
+                }
 
-                if (coupon.MaxDiscountAmount.HasValue && discount > coupon.MaxDiscountAmount.Value)
-                    discount = coupon.MaxDiscountAmount.Value;
+                discount = Math.Max(0m, Math.Min(order.Subtotal, discount));
 
                 order.ApplyCoupon(coupon.Code, discount);
                 coupon.UsedCount++;
+
                 if (order.UserId.HasValue && order.UserId.Value != Guid.Empty)
                 {
                     _db.CouponUsages.Add(new CouponUsage
@@ -146,20 +216,12 @@ namespace Ecommerce.Application.Commands.Checkout
             order.PlaceOrder();
 
             // Clear user's active cart in database if exists
-            if (command.UserId != Guid.Empty)
+            foreach (var userCart in userCarts)
             {
-                var userCarts = await _db.Carts
-                    .Include(c => c.Items)
-                    .Where(c => c.UserId == command.UserId && c.Status == Domain.Enums.CartStatus.Active)
-                    .ToListAsync(cancellationToken);
-
-                foreach (var userCart in userCarts)
-                {
-                    userCart.Clear();
-                }
+                userCart.Clear();
             }
 
-            // Persist order and cleared cart
+            // Persist order, coupon usage/increment, and cleared cart atomically
             await _db.Orders.AddAsync(order, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
 

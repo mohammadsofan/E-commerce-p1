@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Ecommerce.Application.Commands.Checkout;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Domain.Entities;
+using Ecommerce.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -113,6 +114,63 @@ namespace Ecommerce.Application.Tests
             Assert.Null(userCart.AppliedCouponCode);
             Assert.Equal(0m, userCart.DiscountAmount);
             Assert.Equal(0m, userCart.TotalAmount);
+        }
+
+        [Fact]
+        public async Task Checkout_WithExpiredCouponInCart_ThrowsException()
+        {
+            using var context = CreateInMemoryContext();
+
+            var userId = Guid.NewGuid();
+            var productId = Guid.NewGuid();
+
+            var inv = new InventoryItem { Id = productId, ProductId = productId };
+            inv.AddStock(10);
+            await context.InventoryItems.AddAsync(inv);
+
+            var cart = Cart.Create(userId, null);
+            cart.AddItem(productId, null, "Sofa", 100m, 1);
+            cart.ApplyCoupon("EXPIRED", 20m);
+            await context.Carts.AddAsync(cart);
+
+            var coupon = new Coupon
+            {
+                Id = Guid.NewGuid(),
+                Code = "EXPIRED",
+                Description = "Expired promo",
+                Type = "fixed_amount",
+                Value = 20m,
+                IsActive = true,
+                EndAt = DateTimeOffset.UtcNow.AddMinutes(-5),
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Coupons.AddAsync(coupon);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            var command = new CheckoutCommand
+            {
+                UserId = userId,
+                Currency = "USD",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, Quantity = 1 }
+                }
+            };
+
+            var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command));
+            Assert.Equal("انتهت صلاحية الكوبون", ex.Message);
+
+            // Verify that the invalid coupon was stripped from the cart in database
+            var updatedCart = await context.Carts.FirstOrDefaultAsync(c => c.UserId == userId);
+            Assert.NotNull(updatedCart);
+            Assert.Null(updatedCart.AppliedCouponCode);
+            Assert.Equal(0m, updatedCart.DiscountAmount);
         }
     }
 }
