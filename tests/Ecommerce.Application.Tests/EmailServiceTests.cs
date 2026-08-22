@@ -75,5 +75,48 @@ namespace Ecommerce.Application.Tests
 
             await Assert.ThrowsAsync<System.Net.Mail.SmtpException>(() => service.SendAsync(message));
         }
+
+        [Fact]
+        public async Task SendOrderConfirmationAsync_NoSmtpHost_SkipsGracefully()
+        {
+            var service = CreateService(o => o.Host = string.Empty);
+            var order = new Ecommerce.Domain.Entities.Order
+            {
+                Id = Guid.NewGuid(),
+                OrderNumber = "ORD-TEST-001",
+                CustomerNotes = "Ramallah, Palestine"
+            };
+
+            await service.SendOrderConfirmationAsync(order, "customer@example.com");
+        }
+
+        [Fact]
+        public async Task SendAdminOrderAlertAsync_NoSmtpHost_SkipsGracefully()
+        {
+            var service = CreateService(o => o.Host = string.Empty);
+            var order = new Ecommerce.Domain.Entities.Order
+            {
+                Id = Guid.NewGuid(),
+                OrderNumber = "ORD-TEST-002",
+                CustomerNotes = "Nablus, Palestine"
+            };
+
+            await service.SendAdminOrderAlertAsync(order);
+        }
+
+        [Fact]
+        public async Task SendOrderShippedAsync_NoSmtpHost_SkipsGracefully()
+        {
+            var service = CreateService(o => o.Host = string.Empty);
+            var order = new Ecommerce.Domain.Entities.Order
+            {
+                Id = Guid.NewGuid(),
+                OrderNumber = "ORD-TEST-003",
+                CustomerNotes = "Jerusalem",
+                Notes = "Shipped via Aramex with tracking: ARX123456"
+            };
+
+            await service.SendOrderShippedAsync(order, "customer@example.com");
+        }
     }
 }

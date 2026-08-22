@@ -70,6 +70,24 @@ namespace Ecommerce.Application.Tests
             {
                 return Task.CompletedTask;
             }
+
+            public Task SendOrderConfirmationAsync(Order order, string customerEmail, CancellationToken cancellationToken = default)
+            {
+                Sent.Add(new EmailMessage { To = customerEmail, Subject = $"Order {order.OrderNumber} confirmed", Body = "Confirmation" });
+                return Task.CompletedTask;
+            }
+
+            public Task SendAdminOrderAlertAsync(Order order, CancellationToken cancellationToken = default)
+            {
+                Sent.Add(new EmailMessage { To = "admin@example.com", Subject = $"Admin alert for {order.OrderNumber}", Body = "Alert" });
+                return Task.CompletedTask;
+            }
+
+            public Task SendOrderShippedAsync(Order order, string customerEmail, CancellationToken cancellationToken = default)
+            {
+                Sent.Add(new EmailMessage { To = customerEmail, Subject = $"Order {order.OrderNumber} shipped", Body = "Shipped" });
+                return Task.CompletedTask;
+            }
         }
 
         private class FakeSmsService : ISmsService
@@ -218,6 +236,21 @@ namespace Ecommerce.Application.Tests
             }
 
             public Task SendTemplateAsync(string to, string templateName, Dictionary<string, string> variables, CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("SMTP boom");
+            }
+
+            public Task SendOrderConfirmationAsync(Order order, string customerEmail, CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("SMTP boom");
+            }
+
+            public Task SendAdminOrderAlertAsync(Order order, CancellationToken cancellationToken = default)
+            {
+                throw new InvalidOperationException("SMTP boom");
+            }
+
+            public Task SendOrderShippedAsync(Order order, string customerEmail, CancellationToken cancellationToken = default)
             {
                 throw new InvalidOperationException("SMTP boom");
             }

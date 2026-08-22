@@ -15,12 +15,18 @@ namespace Ecommerce.Application.Commands.Checkout
         private readonly IApplicationDbContext _db;
         private readonly IIdempotencyService _idempotency;
         private readonly IDomainEventDispatcher _domainEvents;
+        private readonly IEmailService? _emailService;
 
-        public CheckoutCommandHandler(IApplicationDbContext db, IIdempotencyService idempotency, IDomainEventDispatcher domainEvents)
+        public CheckoutCommandHandler(
+            IApplicationDbContext db,
+            IIdempotencyService idempotency,
+            IDomainEventDispatcher domainEvents,
+            IEmailService? emailService = null)
         {
             _db = db;
             _idempotency = idempotency;
             _domainEvents = domainEvents;
+            _emailService = emailService;
         }
 
         public async Task<System.Guid> Handle(CheckoutCommand command, CancellationToken cancellationToken = default)
@@ -231,6 +237,33 @@ namespace Ecommerce.Application.Commands.Checkout
             if (events.Count > 0)
             {
                 await _domainEvents.DispatchAsync(events, cancellationToken);
+            }
+
+            // Trigger customer order confirmation and admin alert emails
+            if (_emailService != null)
+            {
+                try
+                {
+                    string? customerEmail = null;
+                    if (order.UserId.HasValue && order.UserId.Value != Guid.Empty)
+                    {
+                        customerEmail = await _db.Users
+                            .Where(u => u.Id == order.UserId.Value)
+                            .Select(u => u.Email)
+                            .FirstOrDefaultAsync(cancellationToken);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(customerEmail))
+                    {
+                        await _emailService.SendOrderConfirmationAsync(order, customerEmail, cancellationToken);
+                    }
+
+                    await _emailService.SendAdminOrderAlertAsync(order, cancellationToken);
+                }
+                catch
+                {
+                    // Notification failure should not fail successful order creation
+                }
             }
 
             if (!string.IsNullOrEmpty(command.IdempotencyKey))

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ecommerce.Domain.Entities;
 
 namespace Ecommerce.Application.Interfaces
 {
@@ -20,5 +21,8 @@ namespace Ecommerce.Application.Interfaces
     {
         Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default);
         Task SendTemplateAsync(string to, string templateName, Dictionary<string, string> variables, CancellationToken cancellationToken = default);
+        Task SendOrderConfirmationAsync(Order order, string customerEmail, CancellationToken cancellationToken = default);
+        Task SendAdminOrderAlertAsync(Order order, CancellationToken cancellationToken = default);
+        Task SendOrderShippedAsync(Order order, string customerEmail, CancellationToken cancellationToken = default);
     }
 }
