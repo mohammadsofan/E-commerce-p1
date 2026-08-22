@@ -102,6 +102,8 @@ namespace Ecommerce.Infrastructure
             services.AddScoped<ICommandHandler<UpdateCartItemCommand, CartDto>, UpdateCartItemCommandHandler>();
             services.AddScoped<ICommandHandler<RemoveFromCartCommand, CartDto>, RemoveFromCartCommandHandler>();
             services.AddScoped<ICommandHandler<ClearCartCommand, CartDto>, ClearCartCommandHandler>();
+            services.AddScoped<ICommandHandler<ApplyCouponToCartCommand, CartDto>, ApplyCouponToCartCommandHandler>();
+            services.AddScoped<ICommandHandler<RemoveCouponFromCartCommand, CartDto>, RemoveCouponFromCartCommandHandler>();
 
             // Wishlist command handlers
             services.AddScoped<ICommandHandler<AddToWishlistCommand, WishlistItemDto>, AddToWishlistCommandHandler>();
