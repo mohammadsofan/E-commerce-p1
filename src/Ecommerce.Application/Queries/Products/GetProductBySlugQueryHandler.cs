@@ -14,11 +14,16 @@ namespace Ecommerce.Application.Queries.Products
     {
         private readonly IApplicationDbContext _db;
         private readonly IMapper _mapper;
+        private readonly IPromotionEvaluationService? _promotionEvaluator;
 
-        public GetProductBySlugQueryHandler(IApplicationDbContext db, IMapper mapper)
+        public GetProductBySlugQueryHandler(
+            IApplicationDbContext db,
+            IMapper mapper,
+            IPromotionEvaluationService? promotionEvaluator = null)
         {
             _db = db;
             _mapper = mapper;
+            _promotionEvaluator = promotionEvaluator;
         }
 
         public async Task<ProductDto> Handle(GetProductBySlugQuery query, CancellationToken cancellationToken = default)
@@ -32,7 +37,26 @@ namespace Ecommerce.Application.Queries.Products
                 .FirstOrDefaultAsync(p => p.Slug == query.Slug, cancellationToken);
 
             if (product == null) throw new NotFoundException("Product", query.Slug);
-            return _mapper.Map<ProductDto>(product);
+            var dto = _mapper.Map<ProductDto>(product);
+
+            if (_promotionEvaluator != null)
+            {
+                var promoEval = await _promotionEvaluator.EvaluateProductAsync(
+                    dto.Id,
+                    dto.Category?.Id,
+                    dto.BasePrice,
+                    cancellationToken);
+
+                if (promoEval.HasActivePromotion)
+                {
+                    dto.PromotionalPrice = promoEval.PromotionalPrice;
+                    dto.DiscountPercentage = promoEval.DiscountPercentage;
+                    dto.PromotionName = promoEval.PromotionName;
+                    dto.PromotionBadge = promoEval.PromotionBadge;
+                }
+            }
+
+            return dto;
         }
     }
 }

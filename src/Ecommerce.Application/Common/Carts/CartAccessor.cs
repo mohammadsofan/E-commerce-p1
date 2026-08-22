@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,12 +22,18 @@ namespace Ecommerce.Application.Common.Carts
         protected readonly IApplicationDbContext Db;
         protected readonly ICurrentUserService CurrentUser;
         protected readonly IMapper Mapper;
+        protected readonly IPromotionEvaluationService? PromotionEvaluator;
 
-        protected CartAccessor(IApplicationDbContext db, ICurrentUserService currentUser, IMapper mapper)
+        protected CartAccessor(
+            IApplicationDbContext db,
+            ICurrentUserService currentUser,
+            IMapper mapper,
+            IPromotionEvaluationService? promotionEvaluator = null)
         {
             Db = db;
             CurrentUser = currentUser;
             Mapper = mapper;
+            PromotionEvaluator = promotionEvaluator;
         }
 
         protected async Task<Cart> GetOrCreateCartAsync(CancellationToken cancellationToken)
@@ -65,7 +73,7 @@ namespace Ecommerce.Application.Common.Carts
             var products = await Db.Products
                 .AsNoTracking()
                 .Where(product => productIds.Contains(product.Id))
-                .Select(product => new { product.Id, product.Slug })
+                .Select(product => new { product.Id, product.Slug, product.CategoryId, product.BasePrice })
                 .ToListAsync(cancellationToken);
 
             var images = await Db.ProductImages
@@ -75,12 +83,22 @@ namespace Ecommerce.Application.Common.Carts
                 .ThenBy(image => image.SortOrder)
                 .ToListAsync(cancellationToken);
 
+            Dictionary<Guid, ProductPromotionEvaluation>? promoEvaluations = null;
+            if (PromotionEvaluator != null)
+            {
+                var targets = products.Select(p => new ProductPromotionTarget
+                {
+                    ProductId = p.Id,
+                    CategoryId = p.CategoryId,
+                    BasePrice = p.BasePrice
+                });
+                promoEvaluations = await PromotionEvaluator.EvaluateProductsAsync(targets, cancellationToken);
+            }
+
             foreach (var item in result.Items)
             {
-                item.ProductSlug = products
-                    .Where(product => product.Id == item.ProductId)
-                    .Select(product => product.Slug)
-                    .FirstOrDefault() ?? string.Empty;
+                var prod = products.FirstOrDefault(product => product.Id == item.ProductId);
+                item.ProductSlug = prod?.Slug ?? string.Empty;
                 item.ImageUrl = images
                     .Where(image => image.ProductId == item.ProductId && image.ProductVariantId == item.ProductVariantId)
                     .Select(image => image.Url)
@@ -89,6 +107,14 @@ namespace Ecommerce.Application.Common.Carts
                         .Where(image => image.ProductId == item.ProductId && image.ProductVariantId == null)
                         .Select(image => image.Url)
                         .FirstOrDefault();
+
+                if (promoEvaluations != null && promoEvaluations.TryGetValue(item.ProductId, out var eval) && eval.HasActivePromotion)
+                {
+                    item.OriginalPrice = prod?.BasePrice ?? item.UnitPrice;
+                    item.PromotionalPrice = eval.PromotionalPrice;
+                    item.PromotionName = eval.PromotionName;
+                    item.PromotionBadge = eval.PromotionBadge;
+                }
             }
 
             return result;

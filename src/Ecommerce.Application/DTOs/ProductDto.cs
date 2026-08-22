@@ -17,6 +17,11 @@ namespace Ecommerce.Application.DTOs
         public List<string> Tags { get; set; } = new List<string>();
         public List<ProductAttributeOptionDto> Attributes { get; set; } = new List<ProductAttributeOptionDto>();
         public int AvailableStock { get; set; }
+        public decimal? PromotionalPrice { get; set; }
+        public int? DiscountPercentage { get; set; }
+        public string? PromotionName { get; set; }
+        public string? PromotionBadge { get; set; }
+        public bool IsOnSale => PromotionalPrice.HasValue && PromotionalPrice.Value < BasePrice;
     }
 
     public class ProductAttributeOptionDto

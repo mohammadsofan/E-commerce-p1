@@ -16,17 +16,20 @@ namespace Ecommerce.Application.Commands.Checkout
         private readonly IIdempotencyService _idempotency;
         private readonly IDomainEventDispatcher _domainEvents;
         private readonly IEmailService? _emailService;
+        private readonly IPromotionEvaluationService? _promotionEvaluator;
 
         public CheckoutCommandHandler(
             IApplicationDbContext db,
             IIdempotencyService idempotency,
             IDomainEventDispatcher domainEvents,
-            IEmailService? emailService = null)
+            IEmailService? emailService = null,
+            IPromotionEvaluationService? promotionEvaluator = null)
         {
             _db = db;
             _idempotency = idempotency;
             _domainEvents = domainEvents;
             _emailService = emailService;
+            _promotionEvaluator = promotionEvaluator;
         }
 
         public async Task<System.Guid> Handle(CheckoutCommand command, CancellationToken cancellationToken = default)
@@ -86,6 +89,21 @@ namespace Ecommerce.Application.Commands.Checkout
 
                 var productName = product?.Name ?? "Product";
                 var unitPrice = variant?.Price ?? product?.BasePrice ?? 10m;
+
+                if (_promotionEvaluator != null && product != null)
+                {
+                    var promoEval = await _promotionEvaluator.EvaluateProductAsync(
+                        product.Id,
+                        product.CategoryId,
+                        unitPrice,
+                        cancellationToken);
+
+                    if (promoEval.HasActivePromotion && promoEval.PromotionalPrice < unitPrice)
+                    {
+                        unitPrice = promoEval.PromotionalPrice;
+                    }
+                }
+
                 var variantName = variant?.Name ?? string.Empty;
                 var sku = variant?.Sku ?? product?.Sku ?? string.Empty;
                 var imageUrl = product?.Images?.FirstOrDefault()?.Url ?? string.Empty;

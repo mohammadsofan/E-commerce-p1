@@ -17,11 +17,16 @@ namespace Ecommerce.Application.Queries.Products
     {
         private readonly IApplicationDbContext _db;
         private readonly IMapper _mapper;
+        private readonly IPromotionEvaluationService? _promotionEvaluator;
 
-        public GetProductsQueryHandler(IApplicationDbContext db, IMapper mapper)
+        public GetProductsQueryHandler(
+            IApplicationDbContext db,
+            IMapper mapper,
+            IPromotionEvaluationService? promotionEvaluator = null)
         {
             _db = db;
             _mapper = mapper;
+            _promotionEvaluator = promotionEvaluator;
         }
 
         public async Task<PagedResult<ProductDto>> Handle(GetProductsQuery query, CancellationToken cancellationToken = default)
@@ -58,8 +63,6 @@ namespace Ecommerce.Application.Queries.Products
                 products = products.Where(p => p.SeoKeywords != null && EF.Functions.Like(p.SeoKeywords, $"%{tagName}%"));
             }
 
-
-
             if (query.CategoryId.HasValue)
                 products = products.Where(p => p.CategoryId == query.CategoryId.Value);
 
@@ -82,6 +85,28 @@ namespace Ecommerce.Application.Queries.Products
                 .ToListAsync(cancellationToken);
 
             var items = _mapper.Map<List<ProductDto>>(result);
+
+            if (items.Count > 0 && _promotionEvaluator != null)
+            {
+                var targets = items.Select(i => new ProductPromotionTarget
+                {
+                    ProductId = i.Id,
+                    CategoryId = i.Category?.Id,
+                    BasePrice = i.BasePrice
+                });
+
+                var promoEvaluations = await _promotionEvaluator.EvaluateProductsAsync(targets, cancellationToken);
+                foreach (var item in items)
+                {
+                    if (promoEvaluations.TryGetValue(item.Id, out var eval) && eval.HasActivePromotion)
+                    {
+                        item.PromotionalPrice = eval.PromotionalPrice;
+                        item.DiscountPercentage = eval.DiscountPercentage;
+                        item.PromotionName = eval.PromotionName;
+                        item.PromotionBadge = eval.PromotionBadge;
+                    }
+                }
+            }
 
             return new PagedResult<ProductDto>
             {

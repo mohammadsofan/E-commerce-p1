@@ -19,8 +19,12 @@ namespace Ecommerce.Application.Commands.Carts
         // This prevents two requests from trying to persist the same cart snapshot.
         private static readonly SemaphoreSlim CartWriteLock = new(1, 1);
 
-        public AddToCartCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IMapper mapper)
-            : base(db, currentUser, mapper)
+        public AddToCartCommandHandler(
+            IApplicationDbContext db,
+            ICurrentUserService currentUser,
+            IMapper mapper,
+            IPromotionEvaluationService? promotionEvaluator = null)
+            : base(db, currentUser, mapper, promotionEvaluator)
         {
         }
 
@@ -48,6 +52,21 @@ namespace Ecommerce.Application.Commands.Carts
 
                 unitPrice = variant.Price;
                 productName = string.IsNullOrWhiteSpace(variant.Name) ? product.Name : variant.Name;
+            }
+
+            // Evaluate automatic promotional discount
+            if (PromotionEvaluator != null)
+            {
+                var promoEval = await PromotionEvaluator.EvaluateProductAsync(
+                    product.Id,
+                    product.CategoryId,
+                    unitPrice,
+                    cancellationToken);
+
+                if (promoEval.HasActivePromotion && promoEval.PromotionalPrice < unitPrice)
+                {
+                    unitPrice = promoEval.PromotionalPrice;
+                }
             }
 
             var normalizedOptions = string.IsNullOrWhiteSpace(command.SelectedOptions) ? null : command.SelectedOptions.Trim();

@@ -10,8 +10,12 @@ namespace Ecommerce.Application.Queries.Carts
 {
     public class GetCartQueryHandler : CartAccessor, IQueryHandler<GetCartQuery, CartDto>
     {
-        public GetCartQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser, IMapper mapper)
-            : base(db, currentUser, mapper)
+        public GetCartQueryHandler(
+            IApplicationDbContext db,
+            ICurrentUserService currentUser,
+            IMapper mapper,
+            IPromotionEvaluationService? promotionEvaluator = null)
+            : base(db, currentUser, mapper, promotionEvaluator)
         {
         }
 

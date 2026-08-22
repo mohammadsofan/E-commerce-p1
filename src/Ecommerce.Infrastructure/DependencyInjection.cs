@@ -444,6 +444,9 @@ namespace Ecommerce.Infrastructure
             // Product search index service
             services.AddScoped<Ecommerce.Application.Interfaces.IProductSearchService, Ecommerce.Infrastructure.Services.ProductSearchService>();
 
+            // Promotion evaluation service
+            services.AddScoped<Ecommerce.Application.Interfaces.IPromotionEvaluationService, Ecommerce.Infrastructure.Services.PromotionEvaluationService>();
+
             // Register EF configurations for new entities
             // (Applied automatically via ApplyConfigurationsFromAssembly)
 

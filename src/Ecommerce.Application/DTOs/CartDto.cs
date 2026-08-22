@@ -31,5 +31,9 @@ namespace Ecommerce.Application.DTOs
         public string? ImageUrl { get; set; }
         public string? SelectedOptions { get; set; }
         public string? VariantName { get; set; }
+        public decimal? OriginalPrice { get; set; }
+        public decimal? PromotionalPrice { get; set; }
+        public string? PromotionName { get; set; }
+        public string? PromotionBadge { get; set; }
     }
 }
