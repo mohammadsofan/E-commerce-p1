@@ -115,6 +115,8 @@ namespace Ecommerce.Application.Commands.Checkout
                     .ThenBy(i => i.ProductVariantId ?? Guid.Empty)
                     .ToList();
 
+                var promotionUsages = new System.Collections.Generic.List<Ecommerce.Domain.Entities.PromotionUsage>();
+
                 foreach (var it in orderedItems)
                 {
                     var product = products.FirstOrDefault(p => p.Id == it.ProductId);
@@ -147,6 +149,19 @@ namespace Ecommerce.Application.Commands.Checkout
                             else if (promoEval.PromotionalPrice < baseUnitPrice && promoEval.DiscountAmount > 0)
                             {
                                 lineDiscount = (baseUnitPrice - promoEval.PromotionalPrice) * it.Quantity;
+                            }
+
+                            if (lineDiscount > 0 && promoEval.PromotionId.HasValue)
+                            {
+                                promotionUsages.Add(new Ecommerce.Domain.Entities.PromotionUsage
+                                {
+                                    Id = Guid.NewGuid(),
+                                    PromotionId = promoEval.PromotionId.Value,
+                                    UserId = command.UserId,
+                                    OrderId = order.Id,
+                                    DiscountAmount = lineDiscount,
+                                    CreatedAt = DateTimeOffset.UtcNow
+                                });
                             }
                         }
                     }
@@ -183,6 +198,18 @@ namespace Ecommerce.Application.Commands.Checkout
                     if (cartLevelEval.HasCartLevelPromotion && !string.IsNullOrWhiteSpace(cartLevelEval.PromotionName))
                     {
                         order.ApplyCartLevelPromotion(cartLevelEval.PromotionName, cartLevelEval.TotalCartDiscount);
+                        if (cartLevelEval.TotalCartDiscount > 0 && cartLevelEval.PromotionId.HasValue)
+                        {
+                            promotionUsages.Add(new Ecommerce.Domain.Entities.PromotionUsage
+                            {
+                                Id = Guid.NewGuid(),
+                                PromotionId = cartLevelEval.PromotionId.Value,
+                                UserId = command.UserId,
+                                OrderId = order.Id,
+                                DiscountAmount = cartLevelEval.TotalCartDiscount,
+                                CreatedAt = DateTimeOffset.UtcNow
+                            });
+                        }
                     }
                 }
                 // -----------------------------
@@ -358,6 +385,31 @@ namespace Ecommerce.Application.Commands.Checkout
                 foreach (var userCart in userCarts)
                 {
                     userCart.Clear();
+                }
+
+                if (promotionUsages.Count > 0)
+                {
+                    var groupedUsages = promotionUsages
+                        .GroupBy(pu => pu.PromotionId)
+                        .Select(g => new Ecommerce.Domain.Entities.PromotionUsage
+                        {
+                            Id = Guid.NewGuid(),
+                            PromotionId = g.Key,
+                            UserId = command.UserId,
+                            OrderId = order.Id,
+                            DiscountAmount = g.Sum(x => x.DiscountAmount),
+                            CreatedAt = DateTimeOffset.UtcNow
+                        })
+                        .ToList();
+
+                    await _db.PromotionUsages.AddRangeAsync(groupedUsages, cancellationToken);
+
+                    var promoIds = groupedUsages.Select(u => u.PromotionId).ToList();
+                    var promos = await _db.Promotions.Where(p => promoIds.Contains(p.Id)).ToListAsync(cancellationToken);
+                    foreach(var promo in promos)
+                    {
+                        promo.UsedCount++;
+                    }
                 }
 
                 // Persist order, coupon usage/increment, and cleared cart atomically
