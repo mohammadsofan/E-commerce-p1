@@ -187,6 +187,15 @@ namespace Ecommerce.Infrastructure.Services
                 {
                     if (rules.TryGetValue("tiers", out var tiers) && tiers.ValueKind == JsonValueKind.Array)
                     {
+                        decimal eligibleSubtotal = 0m;
+                        foreach (var ci in cartItems)
+                        {
+                            if (IsPromotionApplicableToProduct(promo, ci.ProductId, ci.CategoryId))
+                            {
+                                eligibleSubtotal += (ci.UnitPrice * ci.Quantity);
+                            }
+                        }
+
                         decimal bestDiscount = 0;
                         foreach (var tier in tiers.EnumerateArray())
                         {
@@ -194,10 +203,9 @@ namespace Ecommerce.Infrastructure.Services
                             {
                                 decimal minSpend = ms.GetDecimal();
                                 decimal discountVal = d.GetDecimal();
-                                if (currentSubtotal >= minSpend)
+                                if (eligibleSubtotal >= minSpend)
                                 {
-                                    // Could be percentage or fixed based on another flag, but assuming percentage if <= 100, else fixed
-                                    decimal calculatedDiscount = discountVal <= 100m ? Math.Round(currentSubtotal * (discountVal / 100m), 2) : discountVal;
+                                    decimal calculatedDiscount = discountVal <= 100m ? Math.Round(eligibleSubtotal * (discountVal / 100m), 2) : discountVal;
                                     if (calculatedDiscount > bestDiscount)
                                         bestDiscount = calculatedDiscount;
                                 }
@@ -249,7 +257,16 @@ namespace Ecommerce.Infrastructure.Services
                     if (rules.TryGetValue("giftProductId", out var gid))
                         giftIdStr = gid.GetString() ?? "";
 
-                    if (currentSubtotal >= minSpend && Guid.TryParse(giftIdStr, out var giftProductId))
+                    decimal eligibleSubtotal = 0m;
+                    foreach (var ci in cartItems)
+                    {
+                        if (IsPromotionApplicableToProduct(promo, ci.ProductId, ci.CategoryId))
+                        {
+                            eligibleSubtotal += (ci.UnitPrice * ci.Quantity);
+                        }
+                    }
+
+                    if (eligibleSubtotal >= minSpend && Guid.TryParse(giftIdStr, out var giftProductId))
                     {
                         var giftItem = cartItems.FirstOrDefault(ci => ci.ProductId == giftProductId);
                         if (giftItem != null)

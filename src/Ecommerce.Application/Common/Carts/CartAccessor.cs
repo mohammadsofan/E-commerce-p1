@@ -204,6 +204,7 @@ namespace Ecommerce.Application.Common.Carts
                 var cartTargets = result.Items.Select(i => new CartLevelPromotionTarget
                 {
                     ProductId = i.ProductId,
+                    CategoryId = products.FirstOrDefault(p => p.Id == i.ProductId)?.CategoryId,
                     UnitPrice = i.Quantity > 0 ? (i.LineTotal / i.Quantity) : i.UnitPrice,
                     Quantity = i.Quantity
                 }).ToList();

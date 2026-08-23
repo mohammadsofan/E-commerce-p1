@@ -190,6 +190,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     var cartTargets = order.Items.Select(i => new Ecommerce.Application.Interfaces.CartLevelPromotionTarget
                     {
                         ProductId = i.ProductId,
+                        CategoryId = products.FirstOrDefault(p => p.Id == i.ProductId)?.CategoryId,
                         UnitPrice = i.Quantity > 0 ? (i.TotalAmount / i.Quantity) : i.UnitPrice,
                         Quantity = i.Quantity
                     }).ToList();
