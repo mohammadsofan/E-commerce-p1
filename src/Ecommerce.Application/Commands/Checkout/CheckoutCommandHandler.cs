@@ -83,7 +83,10 @@ namespace Ecommerce.Application.Commands.Checkout
                     ShippingAmount = command.ShippingAmount >= 0 ? command.ShippingAmount : 0m,
                     CustomerNotes = command.CustomerNotes ?? string.Empty,
                     Notes = string.Join(" | ", notesParts),
-                    UserId = command.UserId == Guid.Empty ? null : command.UserId
+                    UserId = command.UserId == Guid.Empty ? null : command.UserId,
+                    ShippingAddressId = command.ShippingAddressId,
+                    BillingAddressId = command.BillingAddressId,
+                    ShippingMethodId = command.ShippingMethodId
                 };
 
                 // Pre-fetch products, variants, and inventory items to eliminate N+1 queries

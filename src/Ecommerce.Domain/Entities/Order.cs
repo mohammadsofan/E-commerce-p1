@@ -13,6 +13,9 @@ namespace Ecommerce.Domain.Entities
         public Guid Id { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
         public Guid? UserId { get; set; }
+        public Guid? ShippingAddressId { get; set; }
+        public Guid? BillingAddressId { get; set; }
+        public Guid? ShippingMethodId { get; set; }
         public OrderStatus Status { get; private set; }
         public PaymentStatus PaymentStatus { get; private set; }
         public FulfillmentStatus FulfillmentStatus { get; private set; }

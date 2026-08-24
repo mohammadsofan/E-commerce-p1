@@ -15,6 +15,9 @@ namespace Ecommerce.Application.Commands.Checkout
         public string? PaymentMethod { get; set; }
         public string IdempotencyKey { get; set; } = string.Empty;
         public decimal? ExpectedTotal { get; set; }
+        public Guid? ShippingAddressId { get; set; }
+        public Guid? BillingAddressId { get; set; }
+        public Guid? ShippingMethodId { get; set; }
     }
 
     public class CheckoutItem
