@@ -18,11 +18,13 @@ namespace Ecommerce.Infrastructure.Services
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMapper _mapper;
+        private readonly IRefreshTokenService _refreshTokenService;
 
-        public UserManagementService(UserManager<ApplicationUser> userManager, IMapper mapper)
+        public UserManagementService(UserManager<ApplicationUser> userManager, IMapper mapper, IRefreshTokenService refreshTokenService)
         {
             _userManager = userManager;
             _mapper = mapper;
+            _refreshTokenService = refreshTokenService;
         }
 
         public async Task<AdminUserDto> CreateUserAsync(string email, string userName, string password, string firstName, string lastName, string displayName, string phoneNumber, List<string> roles, CancellationToken cancellationToken = default)
@@ -117,6 +119,11 @@ namespace Ecommerce.Infrastructure.Services
                 throw new DomainException($"Failed to update user: {errors}");
             }
 
+            if (!isActive)
+            {
+                await _refreshTokenService.RevokeAllAsync(id);
+            }
+
             // Update roles
             if (roles.Count > 0)
             {
@@ -130,6 +137,7 @@ namespace Ecommerce.Infrastructure.Services
                 {
                     await _userManager.AddToRolesAsync(user, rolesToAdd);
                 }
+                await _refreshTokenService.RevokeAllAsync(id);
             }
 
             var dto = _mapper.Map<AdminUserDto>(user);
@@ -143,6 +151,8 @@ namespace Ecommerce.Infrastructure.Services
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null)
                 throw new NotFoundException("User", id);
+
+            await _refreshTokenService.RevokeAllAsync(id);
 
             if (hardDelete)
             {
@@ -178,6 +188,8 @@ namespace Ecommerce.Infrastructure.Services
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 throw new DomainException($"Failed to change password: {errors}");
             }
+
+            await _refreshTokenService.RevokeAllAsync(userId);
         }
 
         public async Task SetUserRolesAsync(Guid userId, List<string> roles, CancellationToken cancellationToken = default)
@@ -185,6 +197,8 @@ namespace Ecommerce.Infrastructure.Services
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
                 throw new NotFoundException("User", userId);
+
+            await _refreshTokenService.RevokeAllAsync(userId);
 
             var validRoles = new[] { "Admin", "Customer" };
             var rolesToAdd = roles.Where(r => validRoles.Contains(r)).ToList();
@@ -262,3 +276,4 @@ namespace Ecommerce.Infrastructure.Services
         }
     }
 }
+

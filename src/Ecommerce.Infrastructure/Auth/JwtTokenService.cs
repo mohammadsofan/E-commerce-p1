@@ -43,7 +43,7 @@ namespace Ecommerce.Infrastructure.Auth
                 issuer: issuer,
                 audience: issuer,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
+                expires: DateTime.UtcNow.AddMinutes(15),
                 signingCredentials: creds);
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);

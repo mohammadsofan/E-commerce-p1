@@ -1,3 +1,5 @@
+using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.Admin;
 using Ecommerce.Application.Common.Commands;
@@ -38,5 +40,30 @@ namespace Ecommerce.Api.Controllers
             var result = await _commandDispatcher.Send<UpdateProfileCommand, AdminUserDto>(command);
             return Ok(result);
         }
+
+        /// <summary>Changes the current user's password</summary>
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+                return Unauthorized();
+
+            var command = new Ecommerce.Application.Commands.Admin.ChangePasswordCommand
+            {
+                UserId = userId,
+                CurrentPassword = request.CurrentPassword,
+                NewPassword = request.NewPassword
+            };
+
+            await _commandDispatcher.Send<Ecommerce.Application.Commands.Admin.ChangePasswordCommand, Ecommerce.Application.Common.Unit>(command);
+            return Ok(new { Message = "Password changed successfully." });
+        }
+    }
+
+    public class ChangePasswordRequest
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 }
