@@ -106,8 +106,8 @@ namespace Ecommerce.Application.Mappings
             // and computed getters TotalAmount / LineTotal).
             CreateMap<Cart, CartDto>()
                 .ForMember(d => d.Subtotal, opt => opt.MapFrom(s => s.Subtotal))
-                .ForMember(d => d.Discount, opt => opt.MapFrom(s => s.DiscountAmount))
-                .ForMember(d => d.DiscountAmount, opt => opt.MapFrom(s => s.DiscountAmount))
+                .ForMember(d => d.Discount, opt => opt.Ignore())
+                .ForMember(d => d.DiscountAmount, opt => opt.Ignore())
                 .ForMember(d => d.Total, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.TotalAmount, opt => opt.MapFrom(s => s.TotalAmount))
                 .ForMember(d => d.AppliedCouponCode, opt => opt.MapFrom(s => s.AppliedCouponCode));

@@ -182,12 +182,15 @@ namespace Ecommerce.Domain.Tests
             cart.AddItem(Guid.NewGuid(), null, "Chair", 100m, 2); // Subtotal = 200
 
             // 15% discount = 30
-            cart.ApplyCoupon("SAVE15", 30m);
+            var coupon = new Coupon { Code = "SAVE15", Type = "percentage", Value = 15m };
+            cart.ApplyCoupon(coupon.Code);
 
             Assert.Equal("SAVE15", cart.AppliedCouponCode);
             Assert.Equal(200m, cart.Subtotal);
-            Assert.Equal(30m, cart.DiscountAmount);
-            Assert.Equal(170m, cart.TotalAmount);
+            
+            var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
+            Assert.Equal(30m, calculatedDiscount);
+            Assert.Equal(170m, calculatedTotal);
         }
 
         [Fact]
@@ -196,12 +199,15 @@ namespace Ecommerce.Domain.Tests
             var cart = Cart.Create(Guid.NewGuid(), null);
             cart.AddItem(Guid.NewGuid(), null, "Sofa", 250m, 1); // Subtotal = 250
 
-            cart.ApplyCoupon("FIXED50", 50m);
+            var coupon = new Coupon { Code = "FIXED50", Type = "fixed_amount", Value = 50m };
+            cart.ApplyCoupon(coupon.Code);
 
             Assert.Equal("FIXED50", cart.AppliedCouponCode);
             Assert.Equal(250m, cart.Subtotal);
-            Assert.Equal(50m, cart.DiscountAmount);
-            Assert.Equal(200m, cart.TotalAmount);
+            
+            var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
+            Assert.Equal(50m, calculatedDiscount);
+            Assert.Equal(200m, calculatedTotal);
         }
 
         [Fact]
@@ -210,11 +216,14 @@ namespace Ecommerce.Domain.Tests
             var cart = Cart.Create(Guid.NewGuid(), null);
             cart.AddItem(Guid.NewGuid(), null, "Lamp", 40m, 1); // Subtotal = 40
 
-            cart.ApplyCoupon("MEGA100", 100m);
+            var coupon = new Coupon { Code = "MEGA100", Type = "fixed_amount", Value = 100m };
+            cart.ApplyCoupon(coupon.Code);
 
             Assert.Equal(40m, cart.Subtotal);
-            Assert.Equal(40m, cart.DiscountAmount);
-            Assert.Equal(0m, cart.TotalAmount);
+            
+            var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
+            Assert.Equal(40m, calculatedDiscount);
+            Assert.Equal(0m, calculatedTotal);
         }
 
         [Fact]
@@ -222,15 +231,18 @@ namespace Ecommerce.Domain.Tests
         {
             var cart = Cart.Create(Guid.NewGuid(), null);
             cart.AddItem(Guid.NewGuid(), null, "Table", 300m, 1);
-            cart.ApplyCoupon("PROMO20", 60m);
+            var coupon = new Coupon { Code = "PROMO20", Type = "fixed_amount", Value = 60m };
+            cart.ApplyCoupon(coupon.Code);
 
-            Assert.Equal(240m, cart.TotalAmount);
+            var total = cart.CalculateTotals(coupon, out _);
+            Assert.Equal(240m, total);
 
             cart.RemoveCoupon();
+            var totalAfterRemove = cart.CalculateTotals(coupon, out var discountAfter);
 
             Assert.Null(cart.AppliedCouponCode);
-            Assert.Equal(0m, cart.DiscountAmount);
-            Assert.Equal(300m, cart.TotalAmount);
+            Assert.Equal(0m, discountAfter);
+            Assert.Equal(300m, totalAfterRemove);
         }
 
         [Fact]
@@ -238,17 +250,18 @@ namespace Ecommerce.Domain.Tests
         {
             var cart = Cart.Create(Guid.NewGuid(), null);
             cart.AddItem(Guid.NewGuid(), null, "Table", 300m, 1);
-            cart.ApplyCoupon("PROMO20", 60m);
+            var coupon = new Coupon { Code = "PROMO20", Type = "fixed_amount", Value = 60m };
+            cart.ApplyCoupon(coupon.Code);
 
             Assert.Equal("PROMO20", cart.AppliedCouponCode);
-            Assert.Equal(60m, cart.DiscountAmount);
-
+            
             cart.Clear();
 
             Assert.Empty(cart.Items);
             Assert.Null(cart.AppliedCouponCode);
-            Assert.Equal(0m, cart.DiscountAmount);
-            Assert.Equal(0m, cart.TotalAmount);
+            var total = cart.CalculateTotals(coupon, out var discount);
+            Assert.Equal(0m, discount);
+            Assert.Equal(0m, total);
         }
 
         [Fact]
@@ -256,13 +269,13 @@ namespace Ecommerce.Domain.Tests
         {
             var cart = Cart.Create(Guid.NewGuid(), null);
             cart.AddItem(Guid.NewGuid(), null, "Table", 300m, 1);
-            cart.ApplyCoupon("PROMO20", 60m);
+            var coupon = new Coupon { Code = "PROMO20", Type = "fixed_amount", Value = 60m };
+            cart.ApplyCoupon(coupon.Code);
 
             cart.MarkOrdered();
 
             Assert.Equal(CartStatus.Ordered, cart.Status);
             Assert.Null(cart.AppliedCouponCode);
-            Assert.Equal(0m, cart.DiscountAmount);
         }
     }
 }

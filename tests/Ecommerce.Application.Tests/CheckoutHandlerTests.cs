@@ -70,7 +70,7 @@ namespace Ecommerce.Application.Tests
 
             var cart = Cart.Create(userId, null);
             cart.AddItem(productId, null, "Item A", 50m, 2);
-            cart.ApplyCoupon("SAVE10", 10m);
+            cart.ApplyCoupon("SAVE10");
             await context.Carts.AddAsync(cart);
 
             var coupon = new Coupon
@@ -110,8 +110,6 @@ namespace Ecommerce.Application.Tests
             Assert.NotNull(userCart);
             Assert.Empty(userCart.Items);
             Assert.Null(userCart.AppliedCouponCode);
-            Assert.Equal(0m, userCart.DiscountAmount);
-            Assert.Equal(0m, userCart.TotalAmount);
         }
 
         [Fact]
@@ -128,7 +126,7 @@ namespace Ecommerce.Application.Tests
 
             var cart = Cart.Create(userId, null);
             cart.AddItem(productId, null, "Sofa", 100m, 1);
-            cart.ApplyCoupon("EXPIRED", 20m);
+            cart.ApplyCoupon("EXPIRED");
             await context.Carts.AddAsync(cart);
 
             var coupon = new Coupon
@@ -167,7 +165,6 @@ namespace Ecommerce.Application.Tests
             var updatedCart = await context.Carts.FirstOrDefaultAsync(c => c.UserId == userId);
             Assert.NotNull(updatedCart);
             Assert.Null(updatedCart.AppliedCouponCode);
-            Assert.Equal(0m, updatedCart.DiscountAmount);
         }
 
         [Fact]

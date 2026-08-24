@@ -206,7 +206,7 @@ namespace Ecommerce.Application.Tests
 
             var cart = Cart.Create(userId, null);
             cart.AddItem(Guid.NewGuid(), null, "Desk Lamp", 80m, 1);
-            cart.ApplyCoupon("DISCOUNT", 20m);
+            cart.ApplyCoupon("DISCOUNT");
             db.Carts.Add(cart);
             await db.SaveChangesAsync();
 
