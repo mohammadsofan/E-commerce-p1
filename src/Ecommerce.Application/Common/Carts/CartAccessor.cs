@@ -217,6 +217,31 @@ namespace Ecommerce.Application.Common.Carts
                 }
             }
 
+            // Dynamically evaluate coupon discount against current subtotal
+            result.DiscountAmount = 0m;
+            if (!string.IsNullOrWhiteSpace(cart.AppliedCouponCode))
+            {
+                var coupon = await Db.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Code == cart.AppliedCouponCode, cancellationToken);
+                if (coupon != null && coupon.IsActive && 
+                    (!coupon.StartAt.HasValue || coupon.StartAt <= DateTimeOffset.UtcNow) && 
+                    (!coupon.EndAt.HasValue || coupon.EndAt >= DateTimeOffset.UtcNow) && 
+                    (!coupon.MinOrderAmount.HasValue || result.Subtotal >= coupon.MinOrderAmount.Value))
+                {
+                    var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
+                    if (type == "percentage")
+                    {
+                        result.DiscountAmount = result.Subtotal * (coupon.Value / 100m);
+                        if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
+                            result.DiscountAmount = Math.Min(result.DiscountAmount, coupon.MaxDiscountAmount.Value);
+                    }
+                    else if (type == "fixed_amount" || type != "free_shipping")
+                    {
+                        result.DiscountAmount = coupon.Value;
+                    }
+                    result.DiscountAmount = Math.Max(0m, Math.Min(result.Subtotal, result.DiscountAmount));
+                }
+            }
+
             result.Total = Math.Max(0, result.Subtotal - result.CartLevelDiscountAmount - result.DiscountAmount);
             result.TotalAmount = result.Total;
 

@@ -18,7 +18,6 @@ namespace Ecommerce.Domain.Entities
         public required string CurrencyCode { get; set; } = "USD";
         public CartStatus Status { get; private set; }
         public string? AppliedCouponCode { get; set; }
-        public decimal DiscountAmount { get; set; }
         public DateTimeOffset CreatedAt { get; private set; }
         public DateTimeOffset UpdatedAt { get; private set; }
         public DateTimeOffset? ExpiresAt { get; set; }
@@ -28,8 +27,8 @@ namespace Ecommerce.Domain.Entities
         /// <summary>Subtotal of all line items before discounts; not persisted.</summary>
         public decimal Subtotal => Items.Sum(i => i.LineTotal);
 
-        /// <summary>Computed cart total after discount; not persisted. Never drops below zero.</summary>
-        public decimal TotalAmount => Math.Max(0m, Subtotal - DiscountAmount);
+        /// <summary>Computed cart total before discount; not persisted. Never drops below zero.</summary>
+        public decimal TotalAmount => Math.Max(0m, Subtotal);
 
         public static Cart Create(Guid? userId, string? sessionId, string? currencyCode = null)
         {
@@ -100,7 +99,6 @@ namespace Ecommerce.Domain.Entities
         {
             Items.Clear();
             AppliedCouponCode = null;
-            DiscountAmount = 0m;
             Touch();
         }
 
@@ -108,7 +106,6 @@ namespace Ecommerce.Domain.Entities
         {
             Status = CartStatus.Ordered;
             AppliedCouponCode = null;
-            DiscountAmount = 0m;
             Touch();
         }
 
@@ -118,33 +115,46 @@ namespace Ecommerce.Domain.Entities
             Touch();
         }
 
-        public void ApplyCoupon(string couponCode, decimal discountAmount)
+        public void ApplyCoupon(string couponCode)
         {
             AppliedCouponCode = couponCode.Trim().ToUpperInvariant();
-            DiscountAmount = Math.Max(0m, Math.Min(Subtotal, discountAmount));
             Touch();
         }
 
         public void RemoveCoupon()
         {
             AppliedCouponCode = null;
-            DiscountAmount = 0m;
             Touch();
         }
 
-        public decimal CalculateTotals()
+        public decimal CalculateTotals(Coupon? coupon, out decimal calculatedDiscount)
         {
+            calculatedDiscount = 0m;
             if (Items.Count == 0 || Subtotal <= 0)
             {
-                DiscountAmount = 0m;
                 AppliedCouponCode = null;
             }
-            else
+            else if (coupon != null && !string.IsNullOrWhiteSpace(AppliedCouponCode) && coupon.Code.ToUpperInvariant() == AppliedCouponCode)
             {
-                DiscountAmount = Math.Max(0m, Math.Min(Subtotal, DiscountAmount));
+                var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
+                if (type == "percentage")
+                {
+                    calculatedDiscount = Subtotal * (coupon.Value / 100m);
+                    if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
+                        calculatedDiscount = Math.Min(calculatedDiscount, coupon.MaxDiscountAmount.Value);
+                }
+                else if (type == "fixed_amount")
+                {
+                    calculatedDiscount = coupon.Value;
+                }
+                else if (type != "free_shipping")
+                {
+                    calculatedDiscount = coupon.Value;
+                }
+                calculatedDiscount = Math.Max(0m, Math.Min(Subtotal, calculatedDiscount));
             }
             Touch();
-            return TotalAmount;
+            return Math.Max(0m, Subtotal - calculatedDiscount);
         }
 
         private void Touch() => UpdatedAt = DateTimeOffset.UtcNow;

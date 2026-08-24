@@ -42,34 +42,7 @@ namespace Ecommerce.Application.Commands.Carts
             if (coupon.MinOrderAmount.HasValue && cart.Subtotal < coupon.MinOrderAmount.Value)
                 throw new DomainException("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
 
-            // Calculate discount amount
-            decimal discountAmount = 0m;
-            var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
-
-            if (type == "percentage")
-            {
-                discountAmount = cart.Subtotal * (coupon.Value / 100m);
-                if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
-                {
-                    discountAmount = Math.Min(discountAmount, coupon.MaxDiscountAmount.Value);
-                }
-            }
-            else if (type == "fixed_amount")
-            {
-                discountAmount = coupon.Value;
-            }
-            else if (type == "free_shipping")
-            {
-                discountAmount = 0m;
-            }
-            else
-            {
-                discountAmount = coupon.Value;
-            }
-
-            discountAmount = Math.Max(0m, Math.Min(cart.Subtotal, discountAmount));
-
-            cart.ApplyCoupon(coupon.Code, discountAmount);
+            cart.ApplyCoupon(coupon.Code);
             await Db.SaveChangesAsync(cancellationToken);
 
             return await MapAsync(cart, cancellationToken);
