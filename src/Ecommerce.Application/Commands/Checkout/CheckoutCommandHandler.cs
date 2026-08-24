@@ -176,15 +176,44 @@ namespace Ecommerce.Application.Commands.Checkout
 
                     order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, lineDiscount, variantName, sku, imageUrl, it.SelectedOptions);
 
-                    // Reserve inventory if exists
-                    var inventory = inventoryItems.FirstOrDefault(inv =>
-                        (it.ProductVariantId.HasValue && it.ProductVariantId.Value != Guid.Empty && inv.ProductVariantId == it.ProductVariantId.Value)
-                        || (inv.ProductId == it.ProductId));
+                    // --- Multi-warehouse Inventory Allocation ---
+                    // Collect all inventory locations for this product/variant, ordered by
+                    // descending available stock so we drain the fullest warehouses first.
+                    var candidateLocations = inventoryItems
+                        .Where(inv =>
+                            (it.ProductVariantId.HasValue && it.ProductVariantId.Value != Guid.Empty && inv.ProductVariantId == it.ProductVariantId.Value)
+                            || (!it.ProductVariantId.HasValue || it.ProductVariantId.Value == Guid.Empty) && inv.ProductId == it.ProductId && !inv.ProductVariantId.HasValue)
+                        .OrderByDescending(inv => inv.Available)
+                        .ToList();
 
-                    if (inventory != null)
+                    // Calculate how much can actually be fulfilled across all warehouses.
+                    var totalAvailableForItem = candidateLocations.Sum(inv =>
+                        inv.AllowBackorder ? it.Quantity : Math.Max(0, inv.Available));
+
+                    if (!candidateLocations.Any(inv => inv.AllowBackorder) && totalAvailableForItem < it.Quantity)
                     {
-                        inventory.Reserve(it.Quantity);
+                        throw new DomainException($"المنتج '{productName}' غير متوفر بالكمية المطلوبة. الكمية المتاحة: {totalAvailableForItem}.");
                     }
+
+                    // Greedily allocate across warehouses, applying the user's note about
+                    // Reserve(Math.Min(remaining, warehouse.Available)).
+                    int remainingToReserve = it.Quantity;
+                    foreach (var inv in candidateLocations)
+                    {
+                        if (remainingToReserve <= 0) break;
+
+                        int canReserveHere = inv.AllowBackorder
+                            ? remainingToReserve
+                            : Math.Min(remainingToReserve, Math.Max(0, inv.Available));
+
+                        if (canReserveHere > 0)
+                        {
+                            inv.Reserve(canReserveHere);
+                            remainingToReserve -= canReserveHere;
+                        }
+                    }
+                    // --------------------------------------------
+
                 }
 
                 // --- CART LEVEL PROMOTIONS ---

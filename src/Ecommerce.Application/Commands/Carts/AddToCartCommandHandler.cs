@@ -42,6 +42,7 @@ namespace Ecommerce.Application.Commands.Carts
 
             decimal unitPrice = product.BasePrice;
             string productName = product.Name;
+            bool allowBackorder = product.AllowBackorder;
 
             if (command.ProductVariantId is Guid variantId)
             {
@@ -52,7 +53,29 @@ namespace Ecommerce.Application.Commands.Carts
 
                 unitPrice = variant.Price;
                 productName = string.IsNullOrWhiteSpace(variant.Name) ? product.Name : variant.Name;
+                allowBackorder = variant.AllowBackorder;
             }
+
+            // --- JIT Inventory Validation ---
+            // Reject the request early if the specific variant (or base product) has insufficient
+            // stock rather than letting it surface as a hard exception at checkout.
+            if (!allowBackorder)
+            {
+                // Sum available stock across ALL warehouses for this product/variant combination.
+                var inventoryQuery = command.ProductVariantId.HasValue && command.ProductVariantId.Value != Guid.Empty
+                    ? Db.InventoryItems.Where(inv => inv.ProductVariantId == command.ProductVariantId.Value && !inv.AllowBackorder)
+                    : Db.InventoryItems.Where(inv => inv.ProductId == command.ProductId && !inv.ProductVariantId.HasValue && !inv.AllowBackorder);
+
+                var totalAvailable = await inventoryQuery
+                    .AsNoTracking()
+                    .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
+
+                if (totalAvailable > 0 && command.Quantity > totalAvailable)
+                {
+                    throw new DomainException($"الكمية المطلوبة ({command.Quantity}) تتجاوز المخزون المتاح ({totalAvailable}).");
+                }
+            }
+            // --------------------------------
 
             var normalizedOptions = string.IsNullOrWhiteSpace(command.SelectedOptions) ? null : command.SelectedOptions.Trim();
 
@@ -66,6 +89,23 @@ namespace Ecommerce.Application.Commands.Carts
                     (string.IsNullOrWhiteSpace(i.SelectedOptions) ? null : i.SelectedOptions.Trim()) == normalizedOptions);
                 if (existing != null && await Db.CartItems.AnyAsync(i => i.Id == existing.Id, cancellationToken))
                 {
+                    // Validate combined quantity does not exceed stock before merging.
+                    if (!allowBackorder)
+                    {
+                        var inventoryQuery = command.ProductVariantId.HasValue && command.ProductVariantId.Value != Guid.Empty
+                            ? Db.InventoryItems.Where(inv => inv.ProductVariantId == command.ProductVariantId.Value)
+                            : Db.InventoryItems.Where(inv => inv.ProductId == command.ProductId && !inv.ProductVariantId.HasValue);
+
+                        var totalAvailable = await inventoryQuery
+                            .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
+
+                        var newTotal = existing.Quantity + command.Quantity;
+                        if (totalAvailable > 0 && newTotal > totalAvailable)
+                        {
+                            throw new DomainException($"الكمية الإجمالية المطلوبة ({newTotal}) تتجاوز المخزون المتاح ({totalAvailable}).");
+                        }
+                    }
+
                     cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity, normalizedOptions);
                 }
                 else

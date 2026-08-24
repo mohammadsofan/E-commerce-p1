@@ -40,6 +40,11 @@ namespace Ecommerce.Application.Queries.Products
                 .Include(p => p.InventoryItems)
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.VariantAttributes)
+                        .ThenInclude(va => va.ProductAttribute)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.InventoryItems)
                 .Where(p => !p.IsDeleted);
 
             if (query.IsActive.HasValue)

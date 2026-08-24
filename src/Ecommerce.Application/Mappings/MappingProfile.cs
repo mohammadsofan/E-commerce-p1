@@ -50,6 +50,7 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.IsActive, opt => opt.MapFrom(s => s.IsActive))
                 .ForMember(d => d.Category, opt => opt.MapFrom(s => s.Category))
                 .ForMember(d => d.Brand, opt => opt.MapFrom(s => s.Brand))
+                .ForMember(d => d.Variants, opt => opt.MapFrom(s => s.Variants))
                 .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)))
                 .ForMember(d => d.Tags, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.SeoKeywords)
                     ? new System.Collections.Generic.List<string>()
@@ -57,6 +58,18 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Attributes, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.AttributesJson)
                     ? new System.Collections.Generic.List<ProductAttributeOptionDto>()
                     : (System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<ProductAttributeOptionDto>>(s.AttributesJson, (System.Text.Json.JsonSerializerOptions?)null) ?? new System.Collections.Generic.List<ProductAttributeOptionDto>())));
+
+            // Maps ProductVariant → lightweight customer-facing DTO.
+            // AvailableStock is the sum of all warehouse Available values for that variant.
+            CreateMap<ProductVariant, ProductVariantDto>()
+                .ForMember(d => d.AvailableStock, opt => opt.MapFrom(s => s.InventoryItems.Sum(i => i.Available)))
+                .ForMember(d => d.Attributes, opt => opt.MapFrom(s => s.VariantAttributes));
+
+            // Maps a single variant attribute row → the slim DTO used for client-side matching.
+            CreateMap<ProductVariantAttribute, ProductVariantAttributeDto>()
+                .ForMember(d => d.AttributeName, opt => opt.MapFrom(s => s.ProductAttribute != null ? s.ProductAttribute.Name : string.Empty))
+                .ForMember(d => d.AttributeCode, opt => opt.MapFrom(s => s.ProductAttribute != null ? s.ProductAttribute.Code : string.Empty))
+                .ForMember(d => d.Value, opt => opt.MapFrom(s => s.Value));
 
             CreateMap<Product, AdminProductDto>()
                 .ForMember(d => d.Variants, opt => opt.MapFrom(s => s.Variants))

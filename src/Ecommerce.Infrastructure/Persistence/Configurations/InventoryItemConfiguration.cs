@@ -36,7 +36,7 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasOne(x => x.ProductVariant)
-                .WithMany()
+                .WithMany(x => x.InventoryItems)
                 .HasForeignKey(x => x.ProductVariantId)
                 .OnDelete(DeleteBehavior.Restrict);
 

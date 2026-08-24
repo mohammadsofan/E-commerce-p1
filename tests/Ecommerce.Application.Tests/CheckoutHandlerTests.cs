@@ -345,7 +345,115 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(0m, order.ShippingAmount);
             Assert.Equal(25m, order.TotalAmount);
         }
+
+        [Fact]
+        public async Task Checkout_AllocatesAcrossMultipleWarehouses_WhenSingleWarehouseInsufficient()
+        {
+            using var context = CreateInMemoryContext();
+
+            var productId = Guid.NewGuid();
+            var product = new Product
+            {
+                Id = productId,
+                Name = "MultiWarehouse Product",
+                Slug = "multi-wh-prod",
+                BasePrice = 50m,
+                CurrencyCode = "USD",
+                Status = "Active"
+            };
+            await context.Products.AddAsync(product);
+
+            var warehouse1Id = Guid.NewGuid();
+            var warehouse2Id = Guid.NewGuid();
+
+            // Warehouse 1 has 3 items
+            var inv1 = new InventoryItem(productId, warehouse1Id, quantityOnHand: 3);
+            // Warehouse 2 has 4 items
+            var inv2 = new InventoryItem(productId, warehouse2Id, quantityOnHand: 4);
+
+            await context.InventoryItems.AddRangeAsync(inv1, inv2);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            // Order requires 5 items (neither warehouse has 5 alone, but together they have 7)
+            var command = new CheckoutCommand
+            {
+                ExpectedTotal = -1m,
+                UserId = Guid.NewGuid(),
+                Currency = "USD",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, Quantity = 5 }
+                }
+            };
+
+            var orderId = await handler.Handle(command);
+
+            var order = await context.Orders.FindAsync(orderId);
+            Assert.NotNull(order);
+
+            var updatedInv1 = await context.InventoryItems.FindAsync(inv1.Id);
+            var updatedInv2 = await context.InventoryItems.FindAsync(inv2.Id);
+
+            // Total reserved across both warehouses must equal 5
+            Assert.Equal(5, updatedInv1!.QuantityReserved + updatedInv2!.QuantityReserved);
+            // Greedy allocation picked inv2 (4 available) first and reserved 4, then inv1 reserved 1
+            Assert.Equal(4, updatedInv2.QuantityReserved);
+            Assert.Equal(1, updatedInv1.QuantityReserved);
+        }
+
+        [Fact]
+        public async Task Checkout_ThrowsDomainException_WhenTotalStockAcrossAllWarehousesInsufficient()
+        {
+            using var context = CreateInMemoryContext();
+
+            var productId = Guid.NewGuid();
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Short Stock Product",
+                Slug = "short-stock",
+                BasePrice = 30m,
+                CurrencyCode = "USD",
+                Status = "Active"
+            };
+            await context.Products.AddAsync(product);
+
+            var warehouse1Id = Guid.NewGuid();
+            var warehouse2Id = Guid.NewGuid();
+
+            // Total available across all warehouses is 2 + 2 = 4
+            var inv1 = new InventoryItem(productId, warehouse1Id, quantityOnHand: 2);
+            var inv2 = new InventoryItem(productId, warehouse2Id, quantityOnHand: 2);
+
+            await context.InventoryItems.AddRangeAsync(inv1, inv2);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            // Requesting 5 items when only 4 are available
+            var command = new CheckoutCommand
+            {
+                ExpectedTotal = -1m,
+                UserId = Guid.NewGuid(),
+                Currency = "USD",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, Quantity = 5 }
+                }
+            };
+
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command));
+        }
     }
 }
+
 
 

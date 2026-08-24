@@ -27,5 +27,6 @@ namespace Ecommerce.Domain.Entities
 
         public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
         public ICollection<ProductVariantAttribute> VariantAttributes { get; set; } = new List<ProductVariantAttribute>();
+        public ICollection<InventoryItem> InventoryItems { get; set; } = new List<InventoryItem>();
     }
 }

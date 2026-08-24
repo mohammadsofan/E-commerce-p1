@@ -33,7 +33,13 @@ namespace Ecommerce.Application.Queries.Products
                 .Include(p => p.InventoryItems)
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.VariantAttributes)
+                        .ThenInclude(va => va.ProductAttribute)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.InventoryItems)
                 .FirstOrDefaultAsync(p => p.Id == query.Id, cancellationToken);
+
             if (product == null) throw new NotFoundException("Product", query.Id);
             var dto = _mapper.Map<ProductDto>(product);
 
