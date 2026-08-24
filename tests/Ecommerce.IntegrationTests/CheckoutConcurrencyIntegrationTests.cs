@@ -68,7 +68,7 @@ namespace Ecommerce.IntegrationTests
             };
             command2.Items.Add(new CheckoutItem { ProductId = productId, ProductVariantId = variantId, Quantity = 3 });
 
-            await Assert.ThrowsAsync<InventoryException>(() => handler.Handle(command2));
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command2));
 
             // Verify inventory state: first order reserved 3, second failed, available = 2
             var updatedInv = await ctx.InventoryItems.FirstAsync(i => i.Id == variantId);
