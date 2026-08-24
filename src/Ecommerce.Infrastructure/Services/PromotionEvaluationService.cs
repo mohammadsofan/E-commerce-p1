@@ -24,6 +24,11 @@ namespace Ecommerce.Infrastructure.Services
             _cache = cache;
         }
 
+        public void ClearCache()
+        {
+            _cache?.Remove(CacheKey);
+        }
+
         public async Task<ProductPromotionEvaluation> EvaluateProductAsync(
             Guid productId,
             Guid? categoryId,

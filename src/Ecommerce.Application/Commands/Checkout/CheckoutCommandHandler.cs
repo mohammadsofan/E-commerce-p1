@@ -411,6 +411,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     {
                         promo.UsedCount++;
                     }
+                    _promotionEvaluator?.ClearCache();
                 }
 
                 // Persist order, coupon usage/increment, and cleared cart atomically

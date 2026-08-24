@@ -50,5 +50,6 @@ namespace Ecommerce.Application.Interfaces
         Task<ProductPromotionEvaluation> EvaluateProductAsync(Guid productId, Guid? categoryId, decimal basePrice, int quantity, CancellationToken cancellationToken = default);
         Task<Dictionary<Guid, ProductPromotionEvaluation>> EvaluateProductsAsync(IEnumerable<ProductPromotionTarget> targets, CancellationToken cancellationToken = default);
         Task<CartLevelPromotionResult> EvaluateCartLevelPromotionsAsync(List<CartLevelPromotionTarget> cartItems, decimal currentSubtotal, CancellationToken cancellationToken = default);
+        void ClearCache();
     }
 }

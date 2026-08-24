@@ -16,11 +16,13 @@ namespace Ecommerce.Application.Commands.Admin
     {
         private readonly IApplicationDbContext _db;
         private readonly IMapper _mapper;
+        private readonly Ecommerce.Application.Interfaces.IPromotionEvaluationService? _promotionEvaluator;
 
-        public CreatePromotionCommandHandler(IApplicationDbContext db, IMapper mapper)
+        public CreatePromotionCommandHandler(IApplicationDbContext db, IMapper mapper, Ecommerce.Application.Interfaces.IPromotionEvaluationService? promotionEvaluator = null)
         {
             _db = db;
             _mapper = mapper;
+            _promotionEvaluator = promotionEvaluator;
         }
 
         public async Task<AdminPromotionDto> Handle(CreatePromotionCommand command, CancellationToken cancellationToken = default)
@@ -46,8 +48,9 @@ namespace Ecommerce.Application.Commands.Admin
                 UpdatedAt = DateTimeOffset.UtcNow
             };
 
-            _db.Promotions.Add(promotion);
+            await _db.Promotions.AddAsync(promotion, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
+            _promotionEvaluator?.ClearCache();
 
             return _mapper.Map<AdminPromotionDto>(promotion);
         }
@@ -57,11 +60,13 @@ namespace Ecommerce.Application.Commands.Admin
     {
         private readonly IApplicationDbContext _db;
         private readonly IMapper _mapper;
+        private readonly Ecommerce.Application.Interfaces.IPromotionEvaluationService? _promotionEvaluator;
 
-        public UpdatePromotionCommandHandler(IApplicationDbContext db, IMapper mapper)
+        public UpdatePromotionCommandHandler(IApplicationDbContext db, IMapper mapper, Ecommerce.Application.Interfaces.IPromotionEvaluationService? promotionEvaluator = null)
         {
             _db = db;
             _mapper = mapper;
+            _promotionEvaluator = promotionEvaluator;
         }
 
         public async Task<AdminPromotionDto> Handle(UpdatePromotionCommand command, CancellationToken cancellationToken = default)
@@ -96,6 +101,7 @@ namespace Ecommerce.Application.Commands.Admin
             promotion.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _db.SaveChangesAsync(cancellationToken);
+            _promotionEvaluator?.ClearCache();
 
             return _mapper.Map<AdminPromotionDto>(promotion);
         }
@@ -104,10 +110,12 @@ namespace Ecommerce.Application.Commands.Admin
     public class DeletePromotionCommandHandler : ICommandHandler<DeletePromotionCommand, Unit>
     {
         private readonly IApplicationDbContext _db;
+        private readonly Ecommerce.Application.Interfaces.IPromotionEvaluationService? _promotionEvaluator;
 
-        public DeletePromotionCommandHandler(IApplicationDbContext db)
+        public DeletePromotionCommandHandler(IApplicationDbContext db, Ecommerce.Application.Interfaces.IPromotionEvaluationService? promotionEvaluator = null)
         {
             _db = db;
+            _promotionEvaluator = promotionEvaluator;
         }
 
         public async Task<Unit> Handle(DeletePromotionCommand command, CancellationToken cancellationToken = default)
@@ -124,6 +132,7 @@ namespace Ecommerce.Application.Commands.Admin
 
             _db.Promotions.Remove(promotion);
             await _db.SaveChangesAsync(cancellationToken);
+            _promotionEvaluator?.ClearCache();
 
             return Unit.Value;
         }
