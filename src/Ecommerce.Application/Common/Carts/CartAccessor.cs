@@ -243,6 +243,7 @@ namespace Ecommerce.Application.Common.Carts
                 }
             }
 
+            result.Discount = result.DiscountAmount;
             result.Total = Math.Max(0, result.Subtotal - result.CartLevelDiscountAmount - result.DiscountAmount);
             result.TotalAmount = result.Total;
 

@@ -538,7 +538,19 @@ namespace Ecommerce.Application.Queries.Admin
                     break;
             }
 
-            var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+            byte[] bytes;
+            if (isJson)
+            {
+                bytes = System.Text.Encoding.UTF8.GetBytes(content);
+            }
+            else
+            {
+                var preamble = System.Text.Encoding.UTF8.GetPreamble();
+                var contentBytes = System.Text.Encoding.UTF8.GetBytes(content);
+                bytes = new byte[preamble.Length + contentBytes.Length];
+                Buffer.BlockCopy(preamble, 0, bytes, 0, preamble.Length);
+                Buffer.BlockCopy(contentBytes, 0, bytes, preamble.Length, contentBytes.Length);
+            }
             var format = isJson ? "json" : "csv";
 
             return new ExportResult
