@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.Checkout;
+using Ecommerce.Application.Interfaces;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Domain.Exceptions;
@@ -20,10 +21,10 @@ namespace Ecommerce.Application.Tests
             return new ApplicationDbContext(options);
         }
 
-        private CheckoutCommandHandler CreateHandler(ApplicationDbContext ctx)
+        private CheckoutCommandHandler CreateHandler(ApplicationDbContext ctx, IPromotionEvaluationService? promoEvaluator = null)
         {
             var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(ctx);
-            return new CheckoutCommandHandler(ctx, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+            return new CheckoutCommandHandler(ctx, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher(), null, promoEvaluator);
         }
 
         private async Task<(Guid productId, Guid variantId)> SeedInventory(ApplicationDbContext ctx, int stock)
@@ -216,6 +217,101 @@ namespace Ecommerce.Application.Tests
             var order = await ctx.Orders.FirstAsync(o => o.Id == orderId);
             Assert.Equal(0m, order.DiscountAmount);
             Assert.Equal(string.Empty, order.CouponCode);
+        }
+
+        [Fact]
+        public async Task Checkout_WithCoupon_RecordsClampedDiscountInCouponUsage()
+        {
+            using var ctx = CreateInMemoryContext();
+            var (productId, variantId) = await SeedInventory(ctx, 50);
+            var userId = Guid.NewGuid();
+
+            var coupon = new Coupon
+            {
+                Id = Guid.NewGuid(),
+                Code = "OVER50",
+                Type = "fixed_amount",
+                Value = 50m, // 50 discount on 20 subtotal
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await ctx.Coupons.AddAsync(coupon);
+            await ctx.SaveChangesAsync();
+
+            var handler = CreateHandler(ctx);
+            var orderId = await handler.Handle(new CheckoutCommand
+            {
+                ExpectedTotal = -1m,
+                UserId = userId,
+                Currency = "USD",
+                CouponCode = "OVER50",
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, ProductVariantId = variantId, Quantity = 2 } // 20 subtotal
+                }
+            });
+
+            var order = await ctx.Orders.FirstAsync(o => o.Id == orderId);
+            var usage = await ctx.CouponUsages.FirstAsync(u => u.OrderId == orderId);
+
+            Assert.Equal(20m, order.DiscountAmount); // Clamped to subtotal (20)
+            Assert.Equal(20m, usage.DiscountAmount); // Usage table must record clamped 20, NOT 50
+        }
+
+        [Fact]
+        public async Task Checkout_WithMinOrderAmountAndCartLevelPromotion_ValidatesAgainstApplicableSubtotal()
+        {
+            using var ctx = CreateInMemoryContext();
+            var (productId, variantId) = await SeedInventory(ctx, 50);
+            var userId = Guid.NewGuid();
+
+            // Promotion: Spend 100 get 30 fixed discount
+            var promo = new Promotion
+            {
+                Id = Guid.NewGuid(),
+                Name = "Cart Promo 30",
+                Type = "tiered_discount",
+                RulesJson = "{\"tiers\": [{\"minSpend\": 100, \"discount\": 30, \"discountType\": \"fixed_amount\"}]}",
+                IsActive = true,
+                Priority = 1,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await ctx.Promotions.AddAsync(promo);
+
+            // Coupon: Requires MinOrderAmount 100
+            var coupon = new Coupon
+            {
+                Id = Guid.NewGuid(),
+                Code = "MIN100",
+                Type = "fixed_amount",
+                Value = 10m,
+                MinOrderAmount = 100m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await ctx.Coupons.AddAsync(coupon);
+            await ctx.SaveChangesAsync();
+
+            var promoService = new Ecommerce.Infrastructure.Services.PromotionEvaluationService(ctx);
+            var handler = CreateHandler(ctx, promoService);
+
+            // Gross subtotal = 110 (11 items x 10). Cart promo = 30. Applicable subtotal = 80 (< 100 min spend).
+            var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand
+            {
+                ExpectedTotal = -1m,
+                UserId = userId,
+                Currency = "USD",
+                CouponCode = "MIN100",
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, ProductVariantId = variantId, Quantity = 11 }
+                }
+            }));
+
+            Assert.Equal("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون", ex.Message);
         }
     }
 }

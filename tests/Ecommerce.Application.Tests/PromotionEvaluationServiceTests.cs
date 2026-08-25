@@ -218,6 +218,80 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(60m, eval.DiscountAmount);
             Assert.Equal(30, eval.DiscountPercentage);
         }
+
+        [Fact]
+        public async Task EvaluateCartLevelPromotions_TieredDiscount_FixedAmount_CalculatesExactFixedDiscount()
+        {
+            using var ctx = CreateInMemoryContext();
+            var service = new PromotionEvaluationService(ctx);
+
+            var promo = new Promotion
+            {
+                Id = Guid.NewGuid(),
+                Name = "Spend 100 get 50 off",
+                Type = "tiered_discount",
+                RulesJson = "{\"tiers\": [{\"minSpend\": 100, \"discount\": 50, \"discountType\": \"fixed_amount\"}]}",
+                IsActive = true,
+                Priority = 1,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            ctx.Promotions.Add(promo);
+            await ctx.SaveChangesAsync();
+
+            var cartTargets = new List<CartLevelPromotionTarget>
+            {
+                new CartLevelPromotionTarget
+                {
+                    ProductId = Guid.NewGuid(),
+                    UnitPrice = 150m,
+                    Quantity = 1
+                }
+            };
+
+            var eval = await service.EvaluateCartLevelPromotionsAsync(cartTargets, 150m);
+            Assert.True(eval.HasCartLevelPromotion);
+            Assert.Equal("Spend 100 get 50 off", eval.PromotionName);
+            Assert.Equal(50m, eval.TotalCartDiscount); // Must be 50 fixed, NOT 50% (which would be 75)
+        }
+
+        [Fact]
+        public async Task EvaluateCartLevelPromotions_TieredDiscount_Percentage_CalculatesPercentageDiscount()
+        {
+            using var ctx = CreateInMemoryContext();
+            var service = new PromotionEvaluationService(ctx);
+
+            var promo = new Promotion
+            {
+                Id = Guid.NewGuid(),
+                Name = "Tiered percentage promo",
+                Type = "tiered_discount",
+                RulesJson = "{\"tiers\": [{\"minSpend\": 100, \"discount\": 10, \"discountType\": \"percentage\"}, {\"minSpend\": 200, \"discount\": 25, \"discountType\": \"percentage\"}]}",
+                IsActive = true,
+                Priority = 1,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+
+            ctx.Promotions.Add(promo);
+            await ctx.SaveChangesAsync();
+
+            var cartTargets = new List<CartLevelPromotionTarget>
+            {
+                new CartLevelPromotionTarget
+                {
+                    ProductId = Guid.NewGuid(),
+                    UnitPrice = 200m,
+                    Quantity = 1
+                }
+            };
+
+            var eval = await service.EvaluateCartLevelPromotionsAsync(cartTargets, 200m);
+            Assert.True(eval.HasCartLevelPromotion);
+            Assert.Equal("Tiered percentage promo", eval.PromotionName);
+            Assert.Equal(50m, eval.TotalCartDiscount); // 25% of 200 = 50
+        }
     }
 }
 

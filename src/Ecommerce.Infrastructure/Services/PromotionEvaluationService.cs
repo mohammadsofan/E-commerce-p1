@@ -204,16 +204,53 @@ namespace Ecommerce.Infrastructure.Services
                         decimal bestDiscount = 0;
                         foreach (var tier in tiers.EnumerateArray())
                         {
-                            if (tier.TryGetProperty("minSpend", out var ms) && tier.TryGetProperty("discount", out var d))
+                            decimal minSpend = 0;
+                            if (tier.TryGetProperty("minSpend", out var ms) && ms.ValueKind == JsonValueKind.Number)
+                                minSpend = ms.GetDecimal();
+                            else if (tier.TryGetProperty("min_spend", out var ms2) && ms2.ValueKind == JsonValueKind.Number)
+                                minSpend = ms2.GetDecimal();
+
+                            decimal discountVal = 0;
+                            if (tier.TryGetProperty("discount", out var d) && d.ValueKind == JsonValueKind.Number)
+                                discountVal = d.GetDecimal();
+                            else if (tier.TryGetProperty("discountAmount", out var da) && da.ValueKind == JsonValueKind.Number)
+                                discountVal = da.GetDecimal();
+                            else if (tier.TryGetProperty("discountPercentage", out var dp) && dp.ValueKind == JsonValueKind.Number)
+                                discountVal = dp.GetDecimal();
+                            else if (tier.TryGetProperty("amount", out var a) && a.ValueKind == JsonValueKind.Number)
+                                discountVal = a.GetDecimal();
+                            else if (tier.TryGetProperty("value", out var v) && v.ValueKind == JsonValueKind.Number)
+                                discountVal = v.GetDecimal();
+
+                            if (eligibleSubtotal >= minSpend && discountVal > 0)
                             {
-                                decimal minSpend = ms.GetDecimal();
-                                decimal discountVal = d.GetDecimal();
-                                if (eligibleSubtotal >= minSpend)
+                                string discountType = "percentage";
+                                if (tier.TryGetProperty("discountType", out var dt) && dt.ValueKind == JsonValueKind.String)
+                                    discountType = dt.GetString()?.ToLowerInvariant().Trim() ?? "percentage";
+                                else if (tier.TryGetProperty("discount_type", out var dt2) && dt2.ValueKind == JsonValueKind.String)
+                                    discountType = dt2.GetString()?.ToLowerInvariant().Trim() ?? "percentage";
+                                else if (tier.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String)
+                                    discountType = t.GetString()?.ToLowerInvariant().Trim() ?? "percentage";
+                                else if (rules.TryGetValue("discountType", out var rdt) && rdt.ValueKind == JsonValueKind.String)
+                                    discountType = rdt.GetString()?.ToLowerInvariant().Trim() ?? "percentage";
+                                else if (rules.TryGetValue("discount_type", out var rdt2) && rdt2.ValueKind == JsonValueKind.String)
+                                    discountType = rdt2.GetString()?.ToLowerInvariant().Trim() ?? "percentage";
+                                else if (tier.TryGetProperty("discountAmount", out _) || tier.TryGetProperty("amount", out _))
+                                    discountType = "fixed_amount";
+
+                                decimal calculatedDiscount;
+                                if (discountType is "fixed_amount" or "fixed" or "fixed_discount" or "amount")
                                 {
-                                    decimal calculatedDiscount = discountVal <= 100m ? Math.Round(eligibleSubtotal * (discountVal / 100m), 2) : discountVal;
-                                    if (calculatedDiscount > bestDiscount)
-                                        bestDiscount = calculatedDiscount;
+                                    calculatedDiscount = Math.Min(eligibleSubtotal, Math.Max(0m, discountVal));
                                 }
+                                else
+                                {
+                                    var pct = Math.Min(100m, Math.Max(0m, discountVal));
+                                    calculatedDiscount = Math.Round(eligibleSubtotal * (pct / 100m), 2);
+                                }
+
+                                if (calculatedDiscount > bestDiscount)
+                                    bestDiscount = calculatedDiscount;
                             }
                         }
 

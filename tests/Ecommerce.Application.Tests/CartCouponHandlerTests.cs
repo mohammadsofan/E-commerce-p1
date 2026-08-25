@@ -220,6 +220,57 @@ namespace Ecommerce.Application.Tests
             Assert.Equal(0m, result.DiscountAmount);
             Assert.Equal(80m, result.TotalAmount);
         }
+
+        [Fact]
+        public async Task ApplyCoupon_WithCartPromotionReducingApplicableSubtotalBelowMinOrder_ThrowsDomainException()
+        {
+            // Arrange
+            var db = CreateInMemoryContext();
+            var mapper = CreateMapper();
+            var userId = Guid.NewGuid();
+            var user = new FakeCurrentUserService(userId);
+
+            var cart = Cart.Create(userId, null);
+            cart.AddItem(Guid.NewGuid(), null, "Chair", 110m, 1); // Gross Subtotal = 110
+            db.Carts.Add(cart);
+
+            var promo = new Promotion
+            {
+                Id = Guid.NewGuid(),
+                Name = "30 off 100",
+                Type = "tiered_discount",
+                RulesJson = "{\"tiers\": [{\"minSpend\": 100, \"discount\": 30, \"discountType\": \"fixed_amount\"}]}",
+                IsActive = true,
+                Priority = 1,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            db.Promotions.Add(promo);
+
+            var coupon = new Coupon
+            {
+                Id = Guid.NewGuid(),
+                Code = "SAVE10",
+                Description = "Requires $100 min spend",
+                Type = "fixed_amount",
+                Value = 10m,
+                MinOrderAmount = 100m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            db.Coupons.Add(coupon);
+            await db.SaveChangesAsync();
+
+            var promoEvaluator = new Ecommerce.Infrastructure.Services.PromotionEvaluationService(db);
+            var handler = new ApplyCouponToCartCommandHandler(db, user, mapper, promoEvaluator);
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<DomainException>(() =>
+                handler.Handle(new ApplyCouponToCartCommand { Code = "SAVE10" }));
+
+            Assert.Equal("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون", ex.Message);
+        }
     }
 }
 

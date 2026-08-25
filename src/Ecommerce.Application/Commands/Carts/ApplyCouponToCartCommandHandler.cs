@@ -14,8 +14,12 @@ namespace Ecommerce.Application.Commands.Carts
 {
     public class ApplyCouponToCartCommandHandler : CartAccessor, ICommandHandler<ApplyCouponToCartCommand, CartDto>
     {
-        public ApplyCouponToCartCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser, IMapper mapper)
-            : base(db, currentUser, mapper)
+        public ApplyCouponToCartCommandHandler(
+            IApplicationDbContext db,
+            ICurrentUserService currentUser,
+            IMapper mapper,
+            IPromotionEvaluationService? promotionEvaluator = null)
+            : base(db, currentUser, mapper, promotionEvaluator)
         {
         }
 
@@ -39,13 +43,19 @@ namespace Ecommerce.Application.Commands.Carts
             if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
                 throw new DomainException("تجاوز الكوبون حد الاستخدام المسموح به");
 
-            if (coupon.MinOrderAmount.HasValue && cart.Subtotal < coupon.MinOrderAmount.Value)
-                throw new DomainException("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
-
             cart.ApplyCoupon(coupon.Code);
+            var cartDto = await MapAsync(cart, cancellationToken);
+
+            var applicableSubtotal = Math.Max(0m, cartDto.Subtotal - cartDto.CartLevelDiscountAmount);
+            if (coupon.MinOrderAmount.HasValue && applicableSubtotal < coupon.MinOrderAmount.Value)
+            {
+                cart.RemoveCoupon();
+                throw new DomainException("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
+            }
+
             await Db.SaveChangesAsync(cancellationToken);
 
-            return await MapAsync(cart, cancellationToken);
+            return cartDto;
         }
     }
 }

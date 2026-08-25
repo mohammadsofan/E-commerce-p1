@@ -222,15 +222,16 @@ namespace Ecommerce.Application.Common.Carts
             if (!string.IsNullOrWhiteSpace(cart.AppliedCouponCode))
             {
                 var coupon = await Db.Coupons.AsNoTracking().FirstOrDefaultAsync(c => c.Code == cart.AppliedCouponCode, cancellationToken);
+                var applicableSubtotal = Math.Max(0m, result.Subtotal - result.CartLevelDiscountAmount);
                 if (coupon != null && coupon.IsActive && 
                     (!coupon.StartAt.HasValue || coupon.StartAt <= DateTimeOffset.UtcNow) && 
                     (!coupon.EndAt.HasValue || coupon.EndAt >= DateTimeOffset.UtcNow) && 
-                    (!coupon.MinOrderAmount.HasValue || result.Subtotal >= coupon.MinOrderAmount.Value))
+                    (!coupon.MinOrderAmount.HasValue || applicableSubtotal >= coupon.MinOrderAmount.Value))
                 {
                     var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
                     if (type == "percentage")
                     {
-                        result.DiscountAmount = result.Subtotal * (coupon.Value / 100m);
+                        result.DiscountAmount = Math.Round(applicableSubtotal * (coupon.Value / 100m), 2, MidpointRounding.AwayFromZero);
                         if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
                             result.DiscountAmount = Math.Min(result.DiscountAmount, coupon.MaxDiscountAmount.Value);
                     }
@@ -238,7 +239,7 @@ namespace Ecommerce.Application.Common.Carts
                     {
                         result.DiscountAmount = coupon.Value;
                     }
-                    result.DiscountAmount = Math.Max(0m, Math.Min(result.Subtotal, result.DiscountAmount));
+                    result.DiscountAmount = Math.Max(0m, Math.Min(applicableSubtotal, result.DiscountAmount));
                 }
             }
 

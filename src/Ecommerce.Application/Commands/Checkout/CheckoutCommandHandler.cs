@@ -324,7 +324,8 @@ namespace Ecommerce.Application.Commands.Checkout
                         }
                     }
 
-                    if (coupon.MinOrderAmount.HasValue && order.Subtotal < coupon.MinOrderAmount.Value)
+                    var applicableSubtotal = Math.Max(0m, order.Subtotal - order.CartLevelDiscountAmount);
+                    if (coupon.MinOrderAmount.HasValue && applicableSubtotal < coupon.MinOrderAmount.Value)
                     {
                         await ClearCartsCouponAndFail("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
                     }
@@ -334,7 +335,6 @@ namespace Ecommerce.Application.Commands.Checkout
                     var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
                     if (type == "percentage")
                     {
-                        var applicableSubtotal = Math.Max(0m, order.Subtotal - order.CartLevelDiscountAmount);
                         discount = Math.Round(applicableSubtotal * (coupon.Value / 100m), 2, MidpointRounding.AwayFromZero);
                         if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
                         {
@@ -355,7 +355,7 @@ namespace Ecommerce.Application.Commands.Checkout
                         discount = coupon.Value;
                     }
 
-                    discount = Math.Max(0m, Math.Min(order.Subtotal, discount));
+                    discount = Math.Max(0m, Math.Min(applicableSubtotal, discount));
 
                     order.ApplyCoupon(coupon.Code, discount);
                     coupon.UsedCount++;
@@ -368,7 +368,7 @@ namespace Ecommerce.Application.Commands.Checkout
                             CouponId = coupon.Id,
                             UserId = order.UserId.Value,
                             OrderId = order.Id,
-                            DiscountAmount = discount,
+                            DiscountAmount = order.DiscountAmount,
                             CreatedAt = DateTimeOffset.UtcNow
                         });
                     }
