@@ -281,9 +281,8 @@ namespace Ecommerce.Application.Commands.Checkout
                         }
                         if (userCarts.Count > 0)
                         {
-                            try { await _db.SaveChangesAsync(cancellationToken); } catch (Exception dbEx) { if (tx != null) await tx.RollbackAsync(); throw new DomainException("DB Error: " + (dbEx.InnerException?.Message ?? dbEx.Message)); }
+                            await _db.SaveChangesAsync(cancellationToken);
                         }
-                        if (tx != null) await tx.RollbackAsync(cancellationToken);
                         throw new DomainException(errorMessage);
                     }
 
@@ -374,7 +373,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     }
                 }
 
-                // Calculate dynamic shipping cost based on live StoreSettings
+                // Calculate dynamic shipping cost based on live StoreSettings, shipping method, and command
                 var storeSettings = await _db.StoreSettings.FirstOrDefaultAsync(cancellationToken);
                 var standardShippingCost = storeSettings?.StandardShippingCost ?? 15m;
                 var freeShippingThreshold = storeSettings?.FreeShippingThreshold;
@@ -390,6 +389,26 @@ namespace Ecommerce.Application.Commands.Checkout
                 {
                     finalShippingCost = 0m;
                 }
+                else if (command.ShippingMethodId.HasValue && command.ShippingMethodId.Value != Guid.Empty)
+                {
+                    var shippingMethod = await _db.ShippingMethods.FirstOrDefaultAsync(m => m.Id == command.ShippingMethodId.Value, cancellationToken);
+                    if (shippingMethod != null)
+                    {
+                        finalShippingCost = shippingMethod.BaseRate;
+                    }
+                    else if (command.ShippingAmount > 0)
+                    {
+                        finalShippingCost = command.ShippingAmount;
+                    }
+                    else
+                    {
+                        finalShippingCost = standardShippingCost;
+                    }
+                }
+                else if (command.ShippingAmount > 0)
+                {
+                    finalShippingCost = command.ShippingAmount;
+                }
                 else if (order.Items.Any())
                 {
                     finalShippingCost = standardShippingCost;
@@ -401,7 +420,6 @@ namespace Ecommerce.Application.Commands.Checkout
                 // Validate that final charged total matches client's expected total within acceptable delta
                 if (!command.ExpectedTotal.HasValue)
                 {
-                    if (tx != null) await tx.RollbackAsync(cancellationToken);
                     throw new DomainException("يجب توفير الإجمالي المتوقع للتحقق من صحة الطلب.");
                 }
 
@@ -410,7 +428,6 @@ namespace Ecommerce.Application.Commands.Checkout
                     var delta = Math.Abs(order.TotalAmount - command.ExpectedTotal.Value);
                     if (delta > 0.01m)
                     {
-                        if (tx != null) await tx.RollbackAsync(cancellationToken);
                         throw new DomainException($"تغير سعر أحد المنتجات. الإجمالي الجديد هو {order.TotalAmount:F2}. يرجى مراجعة الطلب والتأكيد.");
                     }
                 }
@@ -449,7 +466,7 @@ namespace Ecommerce.Application.Commands.Checkout
 
                 // Persist order, coupon usage/increment, and cleared cart atomically
                 await _db.Orders.AddAsync(order, cancellationToken);
-                try { await _db.SaveChangesAsync(cancellationToken); } catch (Exception dbEx) { if (tx != null) await tx.RollbackAsync(); throw new DomainException("DB Error: " + (dbEx.InnerException?.Message ?? dbEx.Message)); }
+                await _db.SaveChangesAsync(cancellationToken);
 
                 if (tx != null)
                 {
@@ -473,23 +490,28 @@ namespace Ecommerce.Application.Commands.Checkout
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (tx != null) await tx.RollbackAsync(cancellationToken);
+                await SafeRollbackAsync(tx);
                 throw new DomainException("المنتج المطلوب نفد من المخزون. يرجى تحديث السلة والمحاولة مرة أخرى.");
             }
             catch (Microsoft.Data.SqlClient.SqlException sqlEx) when (sqlEx.Number == 1205)
             {
-                if (tx != null) await tx.RollbackAsync(cancellationToken);
+                await SafeRollbackAsync(tx);
                 throw new DomainException("حدث تعارض مؤقت في الطلب. يرجى المحاولة مرة أخرى.");
             }
             catch (InventoryException ex)
             {
-                if (tx != null) await tx.RollbackAsync(cancellationToken);
+                await SafeRollbackAsync(tx);
                 throw new DomainException(ex.Message ?? "بعض المنتجات المطلوبة نفدت من المخزون.");
             }
-            catch
+            catch (DomainException)
             {
-                if (tx != null) await tx.RollbackAsync(cancellationToken);
+                await SafeRollbackAsync(tx);
                 throw;
+            }
+            catch (Exception ex)
+            {
+                await SafeRollbackAsync(tx);
+                throw new DomainException("فشل إتمام الطلب: " + (ex.InnerException?.Message ?? ex.Message));
             }
             finally
             {
@@ -497,6 +519,19 @@ namespace Ecommerce.Application.Commands.Checkout
                 {
                     await tx.DisposeAsync();
                 }
+            }
+        }
+
+        private static async Task SafeRollbackAsync(IDbContextTransaction? tx)
+        {
+            if (tx == null) return;
+            try
+            {
+                await tx.RollbackAsync(CancellationToken.None);
+            }
+            catch
+            {
+                // Silently ignore if already rolled back/aborted
             }
         }
     }
