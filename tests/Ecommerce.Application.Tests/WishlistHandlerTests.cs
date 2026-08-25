@@ -236,6 +236,108 @@ namespace Ecommerce.Application.Tests
             Assert.Equal("Electronics", item.CategoryName);
             Assert.Equal("Apple", item.BrandName);
         }
+
+        [Fact]
+        public async Task GetWishlist_IncludesVariantInventoryItems_CalculatesStockAccurately()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var userId = Guid.NewGuid();
+            var currentUser = new FakeCurrentUserService(userId);
+            var warehouse = new Warehouse { Id = Guid.NewGuid(), Name = "Main Warehouse", Code = "WH-01" };
+            db.Warehouses.Add(warehouse);
+
+            var product = await SeedProductAsync(db, "Running Shoes");
+
+            var variant1 = new ProductVariant
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product.Id,
+                Name = "Size 42 - Black",
+                Sku = "SHOE-42-BLK",
+                Price = 120m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            var variant2 = new ProductVariant
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product.Id,
+                Name = "Size 43 - Black",
+                Sku = "SHOE-43-BLK",
+                Price = 120m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            db.ProductVariants.AddRange(variant1, variant2);
+
+            var inv1 = new InventoryItem(product.Id, warehouse.Id, 8, variant1.Id);
+            var inv2 = new InventoryItem(product.Id, warehouse.Id, 12, variant2.Id);
+            db.InventoryItems.AddRange(inv1, inv2);
+
+            db.WishlistItems.Add(new WishlistItem
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                ProductId = product.Id,
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+
+            var handler = new GetWishlistQueryHandler(db, currentUser);
+            var query = new GetWishlistQuery();
+
+            // Act
+            var result = await handler.Handle(query);
+
+            // Assert
+            Assert.Single(result);
+            var item = result.First();
+            Assert.Equal(product.Id, item.ProductId);
+            Assert.Equal(20, item.AvailableStock);
+        }
+
+        [Fact]
+        public async Task AddToWishlist_WithVariantStock_ReturnsCorrectAvailableStock()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var userId = Guid.NewGuid();
+            var currentUser = new FakeCurrentUserService(userId);
+            var warehouse = new Warehouse { Id = Guid.NewGuid(), Name = "Main Warehouse", Code = "WH-01" };
+            db.Warehouses.Add(warehouse);
+
+            var product = await SeedProductAsync(db, "T-Shirt");
+
+            var variant = new ProductVariant
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product.Id,
+                Name = "Size L - Blue",
+                Sku = "TSHIRT-L-BLU",
+                Price = 30m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            db.ProductVariants.Add(variant);
+
+            var inv = new InventoryItem(product.Id, warehouse.Id, 15, variant.Id);
+            db.InventoryItems.Add(inv);
+            await db.SaveChangesAsync();
+
+            var handler = new AddToWishlistCommandHandler(db, currentUser);
+            var command = new AddToWishlistCommand { ProductId = product.Id };
+
+            // Act
+            var result = await handler.Handle(command);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(15, result.AvailableStock);
+        }
     }
 }
 

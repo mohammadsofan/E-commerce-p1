@@ -36,6 +36,8 @@ namespace Ecommerce.Application.Commands.Wishlist
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Include(p => p.InventoryItems)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.InventoryItems)
                 .FirstOrDefaultAsync(p => p.Id == command.ProductId && !p.IsDeleted, cancellationToken);
 
             if (product == null)
@@ -60,8 +62,16 @@ namespace Ecommerce.Application.Commands.Wishlist
 
             var primaryImage = product.Images?.FirstOrDefault(i => i.IsPrimary)?.Url 
                                ?? product.Images?.FirstOrDefault()?.Url;
-            var availableStock = product.InventoryItems?
+            var rootStock = product.InventoryItems?
+                .Where(i => i.ProductVariantId == null)
                 .Sum(i => Math.Max(0, i.QuantityOnHand - i.QuantityReserved)) ?? 0;
+            var variantStock = product.Variants?
+                .Where(v => !v.IsDeleted && v.IsActive)
+                .SelectMany(v => v.InventoryItems ?? (ICollection<InventoryItem>)new List<InventoryItem>())
+                .Sum(i => Math.Max(0, i.QuantityOnHand - i.QuantityReserved)) ?? 0;
+            var directStock = product.InventoryItems?
+                .Sum(i => Math.Max(0, i.QuantityOnHand - i.QuantityReserved)) ?? 0;
+            var availableStock = (rootStock + variantStock > 0) ? (rootStock + variantStock) : directStock;
 
             return new WishlistItemDto
             {

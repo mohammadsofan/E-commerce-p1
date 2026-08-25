@@ -18,6 +18,8 @@ namespace Ecommerce.Application.DTOs
         public List<ProductAttributeOptionDto> Attributes { get; set; } = new List<ProductAttributeOptionDto>();
         public List<ProductVariantDto> Variants { get; set; } = new List<ProductVariantDto>();
         public int AvailableStock { get; set; }
+        public decimal AverageRating { get; set; }
+        public int ReviewCount { get; set; }
         public decimal? PromotionalPrice { get; set; }
         public int? DiscountPercentage { get; set; }
         public string? PromotionName { get; set; }

@@ -129,12 +129,13 @@ namespace Ecommerce.Application.Queries.Products
                 query = query.Where(p => p.IsFeatured);
             }
 
-            return sortBy switch
+            return sortBy?.ToLowerInvariant() switch
             {
                 "price_asc" => query.OrderBy(p => p.BasePrice),
                 "price_desc" => query.OrderByDescending(p => p.BasePrice),
                 "newest" => query.OrderByDescending(p => p.CreatedAt),
                 "featured" => query.OrderByDescending(p => p.IsFeatured).ThenBy(p => p.Name),
+                "highest_rated" or "rating" or "rating_desc" => query.OrderByDescending(p => p.AverageRating).ThenByDescending(p => p.ReviewCount).ThenBy(p => p.Name),
                 "name" => query.OrderBy(p => p.Name),
                 _ => query.OrderBy(p => p.Name)
             };

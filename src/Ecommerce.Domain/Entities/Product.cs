@@ -36,6 +36,8 @@ namespace Ecommerce.Domain.Entities
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
         public bool IsDeleted { get; set; }
+        public decimal AverageRating { get; set; }
+        public int ReviewCount { get; set; }
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
         public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();

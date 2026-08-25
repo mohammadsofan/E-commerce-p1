@@ -37,6 +37,8 @@ namespace Ecommerce.Application.DTOs
         public bool IsDeleted { get; set; }
         public int Stock { get; set; }
         public int AvailableStock { get; set; }
+        public decimal AverageRating { get; set; }
+        public int ReviewCount { get; set; }
         public Guid? WarehouseId { get; set; }
         public string WarehouseName { get; set; } = string.Empty;
         public List<AdminProductVariantDto> Variants { get; set; } = new List<AdminProductVariantDto>();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Queries.Wishlist
@@ -40,6 +41,9 @@ namespace Ecommerce.Application.Queries.Wishlist
                     .ThenInclude(p => p!.Brand)
                 .Include(w => w.Product)
                     .ThenInclude(p => p!.InventoryItems)
+                .Include(w => w.Product)
+                    .ThenInclude(p => p!.Variants)
+                        .ThenInclude(v => v.InventoryItems)
                 .OrderByDescending(w => w.CreatedAt)
                 .ToListAsync(cancellationToken);
 
@@ -50,8 +54,16 @@ namespace Ecommerce.Application.Queries.Wishlist
                     var product = w.Product!;
                     var primaryImage = product.Images?.FirstOrDefault(i => i.IsPrimary)?.Url 
                                        ?? product.Images?.FirstOrDefault()?.Url;
-                    var availableStock = product.InventoryItems?
+                    var rootStock = product.InventoryItems?
+                        .Where(i => i.ProductVariantId == null)
                         .Sum(i => Math.Max(0, i.QuantityOnHand - i.QuantityReserved)) ?? 0;
+                    var variantStock = product.Variants?
+                        .Where(v => !v.IsDeleted && v.IsActive)
+                        .SelectMany(v => v.InventoryItems ?? (ICollection<InventoryItem>)new List<InventoryItem>())
+                        .Sum(i => Math.Max(0, i.QuantityOnHand - i.QuantityReserved)) ?? 0;
+                    var directStock = product.InventoryItems?
+                        .Sum(i => Math.Max(0, i.QuantityOnHand - i.QuantityReserved)) ?? 0;
+                    var availableStock = (rootStock + variantStock > 0) ? (rootStock + variantStock) : directStock;
 
                     return new WishlistItemDto
                     {

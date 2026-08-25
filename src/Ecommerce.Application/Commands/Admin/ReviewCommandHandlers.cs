@@ -105,6 +105,8 @@ namespace Ecommerce.Application.Commands.Admin
                 ? productReviews.FirstOrDefault(r => candidateUserIds.Contains(r.UserId))
                 : null;
 
+            var isApproved = isAdmin || string.IsNullOrWhiteSpace(command.Comment);
+
             ProductReview review;
             if (existingReview != null)
             {
@@ -112,7 +114,7 @@ namespace Ecommerce.Application.Commands.Admin
                 existingReview.Title = command.Title ?? string.Empty;
                 existingReview.Comment = command.Comment ?? string.Empty;
                 existingReview.IsVerifiedPurchase = true;
-                existingReview.IsApproved = true;
+                existingReview.IsApproved = isApproved;
                 existingReview.UpdatedAt = now;
                 review = existingReview;
             }
@@ -127,13 +129,15 @@ namespace Ecommerce.Application.Commands.Admin
                     Title = command.Title ?? string.Empty,
                     Comment = command.Comment ?? string.Empty,
                     IsVerifiedPurchase = true,
-                    IsApproved = true,
+                    IsApproved = isApproved,
                     CreatedAt = now,
                     UpdatedAt = now
                 };
                 _db.ProductReviews.Add(review);
             }
 
+            await _db.SaveChangesAsync(cancellationToken);
+            await ReviewStatsUpdater.UpdateProductRatingStatsAsync(_db, command.ProductId, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
 
             var dto = _mapper.Map<ProductReviewDto>(review);
@@ -168,6 +172,8 @@ namespace Ecommerce.Application.Commands.Admin
             review.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _db.SaveChangesAsync(cancellationToken);
+            await ReviewStatsUpdater.UpdateProductRatingStatsAsync(_db, review.ProductId, cancellationToken);
+            await _db.SaveChangesAsync(cancellationToken);
 
             return Unit.Value;
         }
@@ -189,10 +195,31 @@ namespace Ecommerce.Application.Commands.Admin
             if (review == null)
                 throw new DomainException("Review not found");
 
+            var productId = review.ProductId;
             _db.ProductReviews.Remove(review);
+            await _db.SaveChangesAsync(cancellationToken);
+            await ReviewStatsUpdater.UpdateProductRatingStatsAsync(_db, productId, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
 
             return Unit.Value;
+        }
+    }
+
+    internal static class ReviewStatsUpdater
+    {
+        public static async Task UpdateProductRatingStatsAsync(IApplicationDbContext db, Guid productId, CancellationToken cancellationToken)
+        {
+            var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+            if (product == null) return;
+
+            var approvedReviews = await db.ProductReviews
+                .Where(r => r.ProductId == productId && r.IsApproved)
+                .ToListAsync(cancellationToken);
+
+            product.ReviewCount = approvedReviews.Count;
+            product.AverageRating = approvedReviews.Count > 0
+                ? Math.Round((decimal)approvedReviews.Average(r => r.Rating), 2)
+                : 0m;
         }
     }
 }
