@@ -19,12 +19,18 @@ namespace Ecommerce.Infrastructure.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMapper _mapper;
         private readonly IRefreshTokenService _refreshTokenService;
+        private readonly ICurrentUserService _currentUser;
 
-        public UserManagementService(UserManager<ApplicationUser> userManager, IMapper mapper, IRefreshTokenService refreshTokenService)
+        public UserManagementService(
+            UserManager<ApplicationUser> userManager,
+            IMapper mapper,
+            IRefreshTokenService refreshTokenService,
+            ICurrentUserService currentUser)
         {
             _userManager = userManager;
             _mapper = mapper;
             _refreshTokenService = refreshTokenService;
+            _currentUser = currentUser;
         }
 
         public async Task<AdminUserDto> CreateUserAsync(string email, string userName, string password, string firstName, string lastName, string displayName, string phoneNumber, List<string> roles, CancellationToken cancellationToken = default)
@@ -84,6 +90,16 @@ namespace Ecommerce.Infrastructure.Services
             var user = await _userManager.FindByIdAsync(id.ToString());
             if (user == null)
                 throw new NotFoundException("User", id);
+
+            // Self-protection: admin cannot deactivate themselves or remove their Admin role
+            if (_currentUser.UserId.HasValue && _currentUser.UserId.Value == id)
+            {
+                if (!isActive)
+                    throw new DomainException("Cannot deactivate your own account.");
+
+                if (roles != null && roles.Count > 0 && !roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase)))
+                    throw new DomainException("Cannot remove the Admin role from your own account.");
+            }
 
             // Check if email is unique (excluding current user)
             if (!string.IsNullOrWhiteSpace(email))
@@ -152,6 +168,10 @@ namespace Ecommerce.Infrastructure.Services
             if (user == null)
                 throw new NotFoundException("User", id);
 
+            // Self-protection: admin cannot delete their own account
+            if (_currentUser.UserId.HasValue && _currentUser.UserId.Value == id)
+                throw new DomainException("Cannot delete your own account.");
+
             await _refreshTokenService.RevokeAllAsync(id);
 
             if (hardDelete)
@@ -197,6 +217,13 @@ namespace Ecommerce.Infrastructure.Services
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
                 throw new NotFoundException("User", userId);
+
+            // Self-protection: admin cannot remove the Admin role from their own account
+            if (_currentUser.UserId.HasValue && _currentUser.UserId.Value == userId)
+            {
+                if (roles != null && !roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase)))
+                    throw new DomainException("Cannot remove the Admin role from your own account.");
+            }
 
             await _refreshTokenService.RevokeAllAsync(userId);
 
@@ -257,8 +284,8 @@ namespace Ecommerce.Infrastructure.Services
             return new PagedResult<AdminUserDto>
             {
                 Items = items,
-                TotalCount = items.Count,
-                Page = 1,
+                TotalCount = totalCount,
+                Page = page,
                 PageSize = pageSize
             };
         }

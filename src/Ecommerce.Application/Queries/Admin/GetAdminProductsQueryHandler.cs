@@ -23,6 +23,10 @@ namespace Ecommerce.Application.Queries.Admin
         {
             var q = _db.Products
                 .Include(p => p.Variants)
+                    .ThenInclude(v => v.InventoryItems)
+                .Include(p => p.Variants)
+                    .ThenInclude(v => v.VariantAttributes)
+                        .ThenInclude(va => va.ProductAttribute)
                 .Include(p => p.Images)
                 .Include(p => p.InventoryItems)
                     .ThenInclude(i => i.Warehouse)

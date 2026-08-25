@@ -18,9 +18,9 @@ namespace Ecommerce.Application.Queries.Admin
     public class GetSalesReportQueryHandler : IQueryHandler<GetSalesReportQuery, SalesReportDto>
     {
         private readonly IApplicationDbContext _db;
-        private readonly IMapper _mapper;
+        private readonly IMapper? _mapper;
 
-        public GetSalesReportQueryHandler(IApplicationDbContext db, IMapper mapper)
+        public GetSalesReportQueryHandler(IApplicationDbContext db, IMapper? mapper = null)
         {
             _db = db;
             _mapper = mapper;
@@ -413,51 +413,150 @@ namespace Ecommerce.Application.Queries.Admin
     public class ExportReportQueryHandler : IQueryHandler<ExportReportQuery, ExportResult>
     {
         private readonly IApplicationDbContext _db;
+        private readonly IMapper? _mapper;
 
-        public ExportReportQueryHandler(IApplicationDbContext db)
+        public ExportReportQueryHandler(IApplicationDbContext db, IMapper? mapper = null)
         {
             _db = db;
+            _mapper = mapper;
         }
 
         public async Task<ExportResult> Handle(ExportReportQuery query, CancellationToken cancellationToken = default)
         {
-            var content = query.ReportType switch
+            var isJson = string.Equals(query.Parameters.Format, "json", StringComparison.OrdinalIgnoreCase);
+            var reportType = query.ReportType?.ToLowerInvariant() ?? string.Empty;
+            string content;
+
+            switch (reportType)
             {
-                "sales" => GenerateSalesCsv(query.Parameters),
-                "revenue" => GenerateRevenueCsv(query.Parameters),
-                "inventory" => GenerateInventoryCsv(query.Parameters),
-                "customer" => GenerateCustomerCsv(query.Parameters),
-                _ => "Report type not supported"
-            };
+                case "sales":
+                {
+                    var salesHandler = new GetSalesReportQueryHandler(_db, _mapper);
+                    var salesQuery = new GetSalesReportQuery
+                    {
+                        StartDate = query.Parameters.StartDate,
+                        EndDate = query.Parameters.EndDate,
+                        GroupBy = query.Parameters.GroupBy
+                    };
+                    var salesReport = await salesHandler.Handle(salesQuery, cancellationToken);
+                    if (isJson)
+                    {
+                        content = System.Text.Json.JsonSerializer.Serialize(salesReport, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                    }
+                    else
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        sb.AppendLine("Period,Orders,Revenue,NewCustomers");
+                        foreach (var row in salesReport.SalesByPeriod)
+                        {
+                            sb.AppendLine($"{EscapeCsv(row.Period)},{row.OrderCount},{row.Revenue:F2},{row.NewCustomers}");
+                        }
+                        content = sb.ToString();
+                    }
+                    break;
+                }
+                case "revenue":
+                {
+                    var revenueHandler = new GetRevenueReportQueryHandler(_db);
+                    var revenueQuery = new GetRevenueReportQuery
+                    {
+                        StartDate = query.Parameters.StartDate,
+                        EndDate = query.Parameters.EndDate,
+                        GroupBy = query.Parameters.GroupBy
+                    };
+                    var revenueReport = await revenueHandler.Handle(revenueQuery, cancellationToken);
+                    if (isJson)
+                    {
+                        content = System.Text.Json.JsonSerializer.Serialize(revenueReport, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                    }
+                    else
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        sb.AppendLine("Period,GrossRevenue,NetRevenue,Discounts,Refunds");
+                        foreach (var row in revenueReport.RevenueByPeriod)
+                        {
+                            sb.AppendLine($"{EscapeCsv(row.Period)},{row.GrossRevenue:F2},{row.NetRevenue:F2},{row.Discounts:F2},{row.Refunds:F2}");
+                        }
+                        content = sb.ToString();
+                    }
+                    break;
+                }
+                case "inventory":
+                {
+                    var inventoryHandler = new GetInventoryReportQueryHandler(_db);
+                    var inventoryQuery = new GetInventoryReportQuery
+                    {
+                        AsOfDate = query.Parameters.StartDate,
+                        WarehouseIds = query.Parameters.WarehouseIds ?? new List<Guid>(),
+                        CategoryIds = query.Parameters.CategoryIds ?? new List<Guid>()
+                    };
+                    var inventoryReport = await inventoryHandler.Handle(inventoryQuery, cancellationToken);
+                    if (isJson)
+                    {
+                        content = System.Text.Json.JsonSerializer.Serialize(inventoryReport, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                    }
+                    else
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        sb.AppendLine("Warehouse,Products,Variants,Value,LowStock");
+                        foreach (var row in inventoryReport.ByWarehouse)
+                        {
+                            sb.AppendLine($"{EscapeCsv(row.WarehouseName)},{row.ProductCount},{row.VariantCount},{row.TotalValue:F2},{row.LowStockCount}");
+                        }
+                        content = sb.ToString();
+                    }
+                    break;
+                }
+                case "customer":
+                case "customers":
+                {
+                    var customerHandler = new GetCustomerReportQueryHandler(_db);
+                    var customerQuery = new GetCustomerReportQuery
+                    {
+                        StartDate = query.Parameters.StartDate,
+                        EndDate = query.Parameters.EndDate
+                    };
+                    var customerReport = await customerHandler.Handle(customerQuery, cancellationToken);
+                    if (isJson)
+                    {
+                        content = System.Text.Json.JsonSerializer.Serialize(customerReport, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                    }
+                    else
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        sb.AppendLine("Segment,Customers,Revenue,AvgOrderValue");
+                        foreach (var row in customerReport.Segments)
+                        {
+                            sb.AppendLine($"{EscapeCsv(row.SegmentName)},{row.CustomerCount},{row.TotalRevenue:F2},{row.AverageOrderValue:F2}");
+                        }
+                        content = sb.ToString();
+                    }
+                    break;
+                }
+                default:
+                    content = "Report type not supported\n";
+                    break;
+            }
 
             var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+            var format = isJson ? "json" : "csv";
 
             return new ExportResult
             {
                 Content = bytes,
-                ContentType = query.Parameters.Format == "csv" ? "text/csv" : "application/json",
-                FileName = $"{query.ReportType}_report_{DateTimeOffset.UtcNow:yyyyMMdd}.{query.Parameters.Format}"
+                ContentType = isJson ? "application/json" : "text/csv",
+                FileName = $"{query.ReportType}_report_{DateTimeOffset.UtcNow:yyyyMMdd}.{format}"
             };
         }
 
-        private string GenerateSalesCsv(ReportParameters p)
+        private static string EscapeCsv(string? field)
         {
-            return "Period,Orders,Revenue,NewCustomers\n";
-        }
-
-        private string GenerateRevenueCsv(ReportParameters p)
-        {
-            return "Period,GrossRevenue,NetRevenue,Discounts,Refunds\n";
-        }
-
-        private string GenerateInventoryCsv(ReportParameters p)
-        {
-            return "Warehouse,Products,Variants,Value,LowStock\n";
-        }
-
-        private string GenerateCustomerCsv(ReportParameters p)
-        {
-            return "Segment,Customers,Revenue,AvgOrderValue\n";
+            if (string.IsNullOrEmpty(field)) return string.Empty;
+            if (field.Contains(",") || field.Contains("\"") || field.Contains("\n") || field.Contains("\r"))
+            {
+                return $"\"{field.Replace("\"", "\"\"")}\"";
+            }
+            return field;
         }
     }
 }

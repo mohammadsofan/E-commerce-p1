@@ -423,6 +423,7 @@ namespace Ecommerce.Infrastructure
 
             // Hosted cleanup
             services.AddHostedService<Ecommerce.Infrastructure.Services.RefreshTokenCleanupService>();
+            services.AddHostedService<Ecommerce.Infrastructure.Services.AbandonedOrderCleanupService>();
 
             // Register database seeder
             services.AddTransient<Ecommerce.Infrastructure.Persistence.DbSeeder>();
