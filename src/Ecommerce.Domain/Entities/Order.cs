@@ -28,6 +28,7 @@ namespace Ecommerce.Domain.Entities
         public string CartLevelPromotionName { get; private set; } = string.Empty;
         public decimal RefundedAmount { get; set; }
         public string CouponCode { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
         public string CustomerNotes { get; set; } = string.Empty;
         public DateTimeOffset? PlacedAt { get; private set; }
@@ -147,7 +148,7 @@ namespace Ecommerce.Domain.Entities
         /// </summary>
         public void Complete()
         {
-            if (Status != OrderStatus.Paid && (Notes.Contains("CashOnDelivery") || CustomerNotes.Contains("CashOnDelivery")))
+            if (Status != OrderStatus.Paid && string.Equals(PaymentMethod, "CashOnDelivery", StringComparison.OrdinalIgnoreCase))
             {
                 Status = OrderStatus.Paid;
                 PaymentStatus = PaymentStatus.Paid;
@@ -181,7 +182,7 @@ namespace Ecommerce.Domain.Entities
         /// </summary>
         public void MarkShipped(string trackingNumber, string carrier)
         {
-            if (Status != OrderStatus.Paid && !Notes.Contains("CashOnDelivery") && !CustomerNotes.Contains("CashOnDelivery"))
+            if (Status != OrderStatus.Paid && !string.Equals(PaymentMethod, "CashOnDelivery", StringComparison.OrdinalIgnoreCase))
                 throw new DomainException("Only paid or Cash on Delivery orders can be shipped");
             if (FulfillmentStatus == FulfillmentStatus.Shipped || FulfillmentStatus == FulfillmentStatus.Delivered)
                 throw new DomainException("Order is already shipped or delivered");
@@ -204,7 +205,7 @@ namespace Ecommerce.Domain.Entities
             FulfillmentStatus = FulfillmentStatus.Delivered;
             UpdatedAt = DateTimeOffset.UtcNow;
 
-            if (Notes.Contains("CashOnDelivery") || CustomerNotes.Contains("CashOnDelivery"))
+            if (string.Equals(PaymentMethod, "CashOnDelivery", StringComparison.OrdinalIgnoreCase))
             {
                 Status = OrderStatus.Paid;
                 PaymentStatus = PaymentStatus.Paid;

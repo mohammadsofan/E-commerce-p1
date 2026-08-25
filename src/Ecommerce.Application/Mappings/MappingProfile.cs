@@ -22,6 +22,7 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.CouponCode, opt => opt.MapFrom(s => s.CouponCode))
                 .ForMember(d => d.Notes, opt => opt.MapFrom(s => s.Notes))
                 .ForMember(d => d.CustomerNotes, opt => opt.MapFrom(s => s.CustomerNotes))
+                .ForMember(d => d.PaymentMethod, opt => opt.MapFrom(s => s.PaymentMethod))
                 .ForMember(d => d.CreatedAt, opt => opt.MapFrom(s => s.CreatedAt))
                 .ForMember(d => d.Items, opt => opt.MapFrom(s => s.Items));
 

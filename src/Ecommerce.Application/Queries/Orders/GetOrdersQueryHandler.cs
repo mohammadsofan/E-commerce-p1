@@ -47,7 +47,7 @@ namespace Ecommerce.Application.Queries.Orders
                 {
                     var (address, paymentMethod) = ParseOrderNotes(matchingOrder.Notes);
                     dto.ShippingAddress = address;
-                    dto.PaymentMethod = paymentMethod;
+                    dto.PaymentMethod = !string.IsNullOrWhiteSpace(matchingOrder.PaymentMethod) ? matchingOrder.PaymentMethod : paymentMethod;
                 }
             }
 

@@ -478,6 +478,59 @@ namespace Ecommerce.Application.Tests
             Assert.True(result.SignatureValid);
             Assert.True(result.Handled);
         }
+
+        [Fact]
+        public async Task HandleWebhook_PaymentIntentSucceeded_MarksOrderPaid()
+        {
+            using var ctx = CreateContext();
+
+            var order = new Ecommerce.Domain.Entities.Order
+            {
+                Id = Guid.NewGuid(),
+                OrderNumber = "ORD-STRIPE-TEST",
+                CurrencyCode = "USD"
+            };
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Test Product", 100m, 1);
+            order.PlaceOrder();
+            await ctx.Orders.AddAsync(order);
+
+            var payment = new Ecommerce.Domain.Entities.Payment
+            {
+                Id = Guid.NewGuid(),
+                OrderId = order.Id,
+                Provider = "stripe",
+                ProviderPaymentId = "pi_order_paid_123",
+                Amount = 100m,
+                CurrencyCode = "USD",
+                Status = "authorized",
+                PaymentMethod = "card",
+                AuthorizedAt = DateTimeOffset.UtcNow,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await ctx.Payments.AddAsync(payment);
+            await ctx.SaveChangesAsync();
+
+            var service = CreateService(ctx);
+
+            var payload = "{" +
+                "\"id\":\"evt_order_1\",\"object\":\"event\",\"type\":\"payment_intent.succeeded\"," +
+                "\"api_version\":\"2023-10-16\",\"created\":" + DateTimeOffset.UtcNow.ToUnixTimeSeconds() + ",\"livemode\":false,\"data\":{" +
+                "\"object\":{\"id\":\"pi_order_paid_123\",\"object\":\"payment_intent\",\"amount\":10000,\"currency\":\"usd\",\"status\":\"succeeded\"}" +
+                "}}";
+
+            var header = ComputeSignatureHeader(payload, "whsec_testsecret");
+            var result = await service.HandleWebhookAsync(payload, header);
+
+            Assert.True(result.SignatureValid);
+            Assert.True(result.Handled);
+
+            var updatedOrder = await ctx.Orders.FindAsync(order.Id);
+            Assert.NotNull(updatedOrder);
+            Assert.Equal(Ecommerce.Domain.Enums.OrderStatus.Paid, updatedOrder.Status);
+            Assert.Equal(Ecommerce.Domain.Enums.PaymentStatus.Paid, updatedOrder.PaymentStatus);
+            Assert.NotNull(updatedOrder.PaidAt);
+        }
     }
 }
 

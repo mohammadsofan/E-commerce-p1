@@ -114,6 +114,16 @@ namespace Ecommerce.Infrastructure.Payments
                 payment.Status = "captured";
                 payment.CapturedAt = DateTimeOffset.UtcNow;
                 payment.CapturedAmount = payment.Amount;
+
+                if (payment.OrderId != Guid.Empty)
+                {
+                    var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == payment.OrderId, cancellationToken);
+                    if (order != null && order.Status == Domain.Enums.OrderStatus.Placed)
+                    {
+                        order.MarkPaid();
+                        _logger.LogInformation("Order {OrderId} marked as paid via Stripe webhook", order.Id);
+                    }
+                }
             }
             else if (paymentIntent.Status == "requires_capture")
             {
@@ -219,6 +229,15 @@ namespace Ecommerce.Infrastructure.Payments
 
                 _db.Refunds.Add(refund);
                 payment.RefundedAmount += refundAmount;
+
+                if (payment.OrderId != Guid.Empty)
+                {
+                    var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == payment.OrderId, cancellationToken);
+                    if (order != null)
+                    {
+                        order.ProcessRefund(refundAmount, "Refunded via Stripe");
+                    }
+                }
             }
 
             payment.Status = payment.RefundedAmount >= payment.Amount ? "refunded" : "partially_refunded";

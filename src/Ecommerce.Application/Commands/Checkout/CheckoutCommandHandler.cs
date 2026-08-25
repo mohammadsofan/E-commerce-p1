@@ -80,6 +80,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     Id = Guid.NewGuid(),
                     OrderNumber = $"ORD-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString().Substring(0, 6).ToUpperInvariant()}",
                     CurrencyCode = string.IsNullOrWhiteSpace(command.Currency) ? "USD" : command.Currency,
+                    PaymentMethod = paymentMethodText,
                     ShippingAmount = command.ShippingAmount >= 0 ? command.ShippingAmount : 0m,
                     CustomerNotes = command.CustomerNotes ?? string.Empty,
                     Notes = string.Join(" | ", notesParts),

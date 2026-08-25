@@ -127,7 +127,7 @@ namespace Ecommerce.Application.Queries.Admin
                 {
                     var (address, paymentMethod) = ParseOrderNotes(matchingOrder.Notes);
                     item.ShippingAddress = address;
-                    item.PaymentMethod = paymentMethod;
+                    item.PaymentMethod = !string.IsNullOrWhiteSpace(matchingOrder.PaymentMethod) ? matchingOrder.PaymentMethod : paymentMethod;
                 }
 
                 if (item.UserId.HasValue && userDict.TryGetValue(item.UserId.Value, out var u))

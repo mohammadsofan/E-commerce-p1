@@ -37,6 +37,7 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
                      .IsConcurrencyToken();
 
                  builder.Property(x => x.CouponCode).IsRequired(false);
+                 builder.Property(x => x.PaymentMethod).HasMaxLength(50).IsRequired(false);
                  builder.Property(x => x.Notes).IsRequired(false);
                  builder.Property(x => x.CustomerNotes).IsRequired(false);
 
