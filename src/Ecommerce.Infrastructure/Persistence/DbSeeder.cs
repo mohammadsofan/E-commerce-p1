@@ -1315,6 +1315,7 @@ namespace Ecommerce.Infrastructure.Persistence
                 save20.MinOrderAmount = 0m;
                 save20.StartAt = DateTimeOffset.UtcNow.AddDays(-30);
                 save20.EndAt = DateTimeOffset.UtcNow.AddYears(10);
+                save20.PerUserLimit = null;
             }
 
             var sofan10 = await db.Coupons.FirstOrDefaultAsync(c => c.Code == "SOFAN10");

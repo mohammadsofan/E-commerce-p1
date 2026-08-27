@@ -18,6 +18,7 @@ namespace Ecommerce.Application.DTOs
         public List<ProductAttributeOptionDto> Attributes { get; set; } = new List<ProductAttributeOptionDto>();
         public List<ProductVariantDto> Variants { get; set; } = new List<ProductVariantDto>();
         public int AvailableStock { get; set; }
+        public bool AllowBackorder { get; set; }
         public decimal AverageRating { get; set; }
         public int ReviewCount { get; set; }
         public decimal? PromotionalPrice { get; set; }
@@ -41,6 +42,7 @@ namespace Ecommerce.Application.DTOs
         public decimal Price { get; set; }
         public bool IsActive { get; set; }
         public int AvailableStock { get; set; }
+        public bool AllowBackorder { get; set; }
         public List<ProductVariantAttributeDto> Attributes { get; set; } = new List<ProductVariantAttributeDto>();
     }
 

@@ -66,13 +66,19 @@ namespace Ecommerce.Application.Commands.Carts
                     ? Db.InventoryItems.Where(inv => inv.ProductVariantId == command.ProductVariantId.Value && !inv.AllowBackorder)
                     : Db.InventoryItems.Where(inv => inv.ProductId == command.ProductId && !inv.ProductVariantId.HasValue && !inv.AllowBackorder);
 
-                var totalAvailable = await inventoryQuery
-                    .AsNoTracking()
-                    .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
-
-                if (totalAvailable > 0 && command.Quantity > totalAvailable)
+                var hasInventoryRecords = await inventoryQuery.AnyAsync(cancellationToken);
+                if (hasInventoryRecords || product.TrackInventory)
                 {
-                    throw new DomainException($"الكمية المطلوبة ({command.Quantity}) تتجاوز المخزون المتاح ({totalAvailable}).");
+                    var totalAvailable = await inventoryQuery
+                        .AsNoTracking()
+                        .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
+
+                    if (command.Quantity > totalAvailable)
+                    {
+                        throw new DomainException(totalAvailable <= 0
+                            ? "المنتج غير متوفر حالياً في المخزون."
+                            : $"الكمية المطلوبة ({command.Quantity}) تتجاوز المخزون المتاح ({totalAvailable}).");
+                    }
                 }
             }
             // --------------------------------
@@ -96,13 +102,19 @@ namespace Ecommerce.Application.Commands.Carts
                             ? Db.InventoryItems.Where(inv => inv.ProductVariantId == command.ProductVariantId.Value)
                             : Db.InventoryItems.Where(inv => inv.ProductId == command.ProductId && !inv.ProductVariantId.HasValue);
 
-                        var totalAvailable = await inventoryQuery
-                            .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
-
-                        var newTotal = existing.Quantity + command.Quantity;
-                        if (totalAvailable > 0 && newTotal > totalAvailable)
+                        var hasInventoryRecords = await inventoryQuery.AnyAsync(cancellationToken);
+                        if (hasInventoryRecords || product.TrackInventory)
                         {
-                            throw new DomainException($"الكمية الإجمالية المطلوبة ({newTotal}) تتجاوز المخزون المتاح ({totalAvailable}).");
+                            var totalAvailable = await inventoryQuery
+                                .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
+
+                            var newTotal = existing.Quantity + command.Quantity;
+                            if (newTotal > totalAvailable)
+                            {
+                                throw new DomainException(totalAvailable <= 0
+                                    ? "المنتج غير متوفر حالياً في المخزون."
+                                    : $"الكمية الإجمالية المطلوبة ({newTotal}) تتجاوز المخزون المتاح ({totalAvailable}).");
+                            }
                         }
                     }
 

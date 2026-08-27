@@ -287,9 +287,6 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
-// Rate limiting middleware (after routing so policies can be attached per-endpoint)
-app.UseRateLimiter();
-
 // HTTPS enforcement
 if (!app.Environment.IsEnvironment("Test") && !app.Environment.IsDevelopment())
 {
@@ -327,6 +324,9 @@ app.UseRouting();
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Rate limiting middleware (after routing & auth so endpoint policies and user identity are resolved)
+app.UseRateLimiter();
 
 // app.UseHttpMetrics();
 

@@ -43,6 +43,14 @@ namespace Ecommerce.Application.Commands.Carts
             if (coupon.UsageLimit.HasValue && coupon.UsedCount >= coupon.UsageLimit.Value)
                 throw new DomainException("تجاوز الكوبون حد الاستخدام المسموح به");
 
+            if (coupon.PerUserLimit.HasValue && CurrentUser.UserId.HasValue && CurrentUser.UserId.Value != Guid.Empty)
+            {
+                var userUsageCount = await Db.CouponUsages
+                    .CountAsync(u => u.CouponId == coupon.Id && u.UserId == CurrentUser.UserId.Value, cancellationToken);
+                if (userUsageCount >= coupon.PerUserLimit.Value)
+                    throw new DomainException("تجاوزت الحد الأقصى المسموح به لاستخدام هذا الكوبون");
+            }
+
             cart.ApplyCoupon(coupon.Code);
             var cartDto = await MapAsync(cart, cancellationToken);
 
