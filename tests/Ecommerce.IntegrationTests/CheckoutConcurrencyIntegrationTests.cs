@@ -64,6 +64,7 @@ namespace Ecommerce.IntegrationTests
             };
             inventory.AddStock(5);
             await ctx.InventoryItems.AddAsync(inventory);
+            await ctx.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
             await ctx.SaveChangesAsync();
 
             var idempotency = new IdempotencyService(ctx);
@@ -139,6 +140,7 @@ namespace Ecommerce.IntegrationTests
             };
             inventory.AddStock(10);
             await ctx.InventoryItems.AddAsync(inventory);
+            await ctx.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
             await ctx.SaveChangesAsync();
 
             var idempotency = new IdempotencyService(ctx);
@@ -186,6 +188,7 @@ namespace Ecommerce.IntegrationTests
             };
             inventory.AddStock(5);
             await ctx.InventoryItems.AddAsync(inventory);
+            await ctx.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
             await ctx.SaveChangesAsync();
 
             var reserveHandler = new Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommandHandler(ctx);
@@ -254,6 +257,7 @@ namespace Ecommerce.IntegrationTests
             };
             inventory.AddStock(2);
             await ctx.InventoryItems.AddAsync(inventory);
+            await ctx.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
             await ctx.SaveChangesAsync();
 
             var idempotency = new IdempotencyService(ctx);

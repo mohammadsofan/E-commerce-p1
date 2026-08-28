@@ -31,7 +31,10 @@ namespace Ecommerce.Application.Tests
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
-            return new ApplicationDbContext(options);
+            var context = new ApplicationDbContext(options);
+            context.Currencies.Add(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
+            context.SaveChanges();
+            return context;
         }
 
         private static IMapper CreateMapper()

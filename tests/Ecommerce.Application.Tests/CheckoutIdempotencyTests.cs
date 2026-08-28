@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Ecommerce.Domain.Entities;
 using Ecommerce.Application.Commands.Checkout;
 using Ecommerce.Infrastructure.Persistence;
 using Ecommerce.Infrastructure.Services;
@@ -16,7 +17,10 @@ namespace Ecommerce.Application.Tests
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            return new ApplicationDbContext(options);
+            var context = new ApplicationDbContext(options);
+            context.Currencies.Add(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
+            context.SaveChanges();
+            return context;
         }
 
         [Fact]

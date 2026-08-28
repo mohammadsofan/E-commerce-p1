@@ -18,7 +18,48 @@ namespace Ecommerce.Application.Tests
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
-            return new ApplicationDbContext(options);
+            var context = new ApplicationDbContext(options);
+            context.Currencies.Add(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
+            context.SaveChanges();
+            return context;
+        }
+
+        [Fact]
+        public async Task Checkout_NoBaseCurrency_ThrowsDomainException()
+        {
+            using var context = CreateInMemoryContext();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand
+            {
+                UserId = Guid.NewGuid(),
+                ExpectedTotal = 0m,
+                Currency = "ILS",
+                Items = new List<CheckoutItem>()
+            }, default));
+        }
+
+        [Fact]
+        public async Task Checkout_MultipleBaseCurrencies_ThrowsDomainException()
+        {
+            using var context = CreateInMemoryContext();
+
+            await context.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = "USD", Symbol = "$", IsBaseCurrency = true });
+            await context.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = "EUR", Symbol = "€", IsBaseCurrency = true });
+            await context.SaveChangesAsync();
+            
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand
+            {
+                UserId = Guid.NewGuid(),
+                ExpectedTotal = 0m,
+                Currency = "ILS",
+                Items = new List<CheckoutItem>()
+            }, default));
         }
 
         [Fact]

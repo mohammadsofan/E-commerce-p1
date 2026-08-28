@@ -52,7 +52,15 @@ namespace Ecommerce.Application.Commands.Admin
             }
 
             _db.Currencies.Add(currency);
-            await _db.SaveChangesAsync(cancellationToken);
+
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                throw new ConcurrencyException("Another operation concurrently modified the base currency. Please try again.");
+            }
 
             return _mapper.Map<CurrencyDto>(currency);
         }
@@ -110,8 +118,14 @@ namespace Ecommerce.Application.Commands.Admin
             {
                 currency.IsBaseCurrency = false;
             }
-
-            await _db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                throw new ConcurrencyException("Another operation concurrently modified the base currency. Please try again.");
+            }
 
             return _mapper.Map<CurrencyDto>(currency);
         }

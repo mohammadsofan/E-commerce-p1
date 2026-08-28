@@ -634,15 +634,19 @@ namespace Ecommerce.Application.Commands.Checkout
         /// </summary>
         private async Task<string> ResolveCurrencyCodeAsync(string? requested, CancellationToken cancellationToken)
         {
-            var currencies = await _db.Currencies
+            var baseCurrencies = await _db.Currencies
                 .AsNoTracking()
-                .Select(c => new { c.Code, c.IsBaseCurrency })
+                .Where(c => c.IsBaseCurrency)
+                .Select(c => c.Code)
                 .ToListAsync(cancellationToken);
 
-            var baseCode = currencies.FirstOrDefault(c => c.IsBaseCurrency)?.Code
-                           ?? currencies.FirstOrDefault()?.Code
-                           ?? "ILS";
-            return baseCode;
+            if (baseCurrencies.Count == 0)
+                throw new DomainException("No base currency is configured for the store. Checkout cannot proceed.");
+                
+            if (baseCurrencies.Count > 1)
+                throw new DomainException("Multiple base currencies exist. Store is misconfigured. Checkout cannot proceed.");
+
+            return baseCurrencies[0];
         }
 
         /// <summary>

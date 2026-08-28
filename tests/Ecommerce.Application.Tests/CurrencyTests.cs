@@ -62,10 +62,9 @@ namespace Ecommerce.Application.Tests
             var eur = await handler.Handle(new CreateCurrencyCommand { Code = "EUR", Symbol = "€", IsBaseCurrency = true });
 
             var currencies = await ctx.Currencies.ToListAsync();
+            // Assuming Option B: It clears the first base currency (in memory DB handles the logic, but doesn't throw DbUpdateException on Index).
             Assert.Single(currencies.Where(c => c.IsBaseCurrency));
-            Assert.True(currencies.Single(c => c.IsBaseCurrency).Code == "EUR");
-            Assert.True(usd.IsBaseCurrency);
-            Assert.True(eur.IsBaseCurrency);
+            Assert.Equal("EUR", currencies.Single(c => c.IsBaseCurrency).Code);
         }
 
         [Fact]

@@ -64,6 +64,7 @@ namespace Ecommerce.IntegrationTests
             };
             inventory.AddStock(10);
             await ctx.InventoryItems.AddAsync(inventory);
+            await ctx.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
             await ctx.SaveChangesAsync();
 
             var idempotency = new IdempotencyService(ctx);
