@@ -112,7 +112,7 @@ namespace Ecommerce.Application.Commands.Admin
             var address = await _db.Addresses
                 .FirstOrDefaultAsync(a => a.Id == command.Id && a.UserId == userId && !a.IsDeleted, cancellationToken);
             if (address == null)
-                throw new DomainException("Address not found");
+                throw new NotFoundException("Address", command.Id);
 
             if (command.EffectiveIsDefaultShipping)
                 await ClearDefaultShippingAsync(userId, address.Id, cancellationToken);
@@ -176,7 +176,7 @@ namespace Ecommerce.Application.Commands.Admin
             var address = await _db.Addresses
                 .FirstOrDefaultAsync(a => a.Id == command.Id && a.UserId == userId && !a.IsDeleted, cancellationToken);
             if (address == null)
-                throw new DomainException("Address not found");
+                throw new NotFoundException("Address", command.Id);
 
             address.IsDeleted = true;
             address.UpdatedAt = DateTimeOffset.UtcNow;

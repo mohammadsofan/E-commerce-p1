@@ -165,12 +165,14 @@ namespace Ecommerce.Domain.Entities
         }
 
         /// <summary>
-        /// Cancels the order. An order in a terminal state (cancelled/completed/refunded) cannot be cancelled.
+        /// Cancels the order. Once fulfilment has started, cancellation is no longer valid;
+        /// post-delivery returns/refunds are separate workflows.
         /// </summary>
         public void Cancel(string? reason = null)
         {
-            if (Status is OrderStatus.Cancelled or OrderStatus.Completed or OrderStatus.Refunded)
-                throw new DomainException("Cannot cancel an order in a terminal state");
+            if (Status is OrderStatus.Cancelled or OrderStatus.Completed or OrderStatus.Refunded ||
+                FulfillmentStatus is FulfillmentStatus.Shipped or FulfillmentStatus.Delivered)
+                throw new DomainException("Cannot cancel an order after fulfilment has started");
 
             Status = OrderStatus.Cancelled;
             CancelledAt = DateTimeOffset.UtcNow;

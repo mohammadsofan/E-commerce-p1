@@ -129,6 +129,29 @@ namespace Ecommerce.Domain.Tests
 
             Assert.Throws<DomainException>(() => order.Cancel());
         }
+
+        [Fact]
+        public void Cancel_FromShipped_Throws()
+        {
+            var order = new Order { PaymentMethod = "CashOnDelivery" };
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Product", 10m, 1);
+            order.PlaceOrder();
+            order.MarkShipped("TRACK-1", "Carrier");
+
+            Assert.Throws<DomainException>(() => order.Cancel("too late"));
+        }
+
+        [Fact]
+        public void Cancel_FromDelivered_Throws()
+        {
+            var order = new Order { PaymentMethod = "CashOnDelivery" };
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Product", 10m, 1);
+            order.PlaceOrder();
+            order.MarkShipped("TRACK-1", "Carrier");
+            order.MarkDelivered();
+
+            Assert.Throws<DomainException>(() => order.Cancel("customer changed mind"));
+        }
     }
 }
 

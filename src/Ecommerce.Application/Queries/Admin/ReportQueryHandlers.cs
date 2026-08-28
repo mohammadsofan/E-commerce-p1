@@ -21,6 +21,14 @@ namespace Ecommerce.Application.Queries.Admin
     /// </summary>
     internal static class ReportPeriod
     {
+        public static string ValidateGroupBy(string? groupBy)
+        {
+            var normalized = string.IsNullOrWhiteSpace(groupBy) ? "day" : groupBy.Trim().ToLowerInvariant();
+            if (normalized is not ("day" or "week" or "month"))
+                throw new Ecommerce.Domain.Exceptions.DomainException("تجميع التقرير غير مدعوم. القيم المتاحة: day, week, month.");
+            return normalized;
+        }
+
         public static (DateTimeOffset Start, DateTimeOffset End) Resolve(
             DateTimeOffset? startDate,
             DateTimeOffset? endDate,
@@ -51,6 +59,7 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<SalesReportDto> Handle(GetSalesReportQuery query, CancellationToken cancellationToken = default)
         {
+            query.GroupBy = ReportPeriod.ValidateGroupBy(query.GroupBy);
             var (effectiveStart, effectiveEnd) = ReportPeriod.Resolve(query.StartDate, query.EndDate);
 
             var ordersQuery = _db.Orders
@@ -169,6 +178,7 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<RevenueReportDto> Handle(GetRevenueReportQuery query, CancellationToken cancellationToken = default)
         {
+            query.GroupBy = ReportPeriod.ValidateGroupBy(query.GroupBy);
             var (effectiveStart, effectiveEnd) = ReportPeriod.Resolve(query.StartDate, query.EndDate);
 
             var ordersQuery = _db.Orders

@@ -87,6 +87,12 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("export")]
         public async Task<IActionResult> ExportReport([FromBody] ExportReportRequest request)
         {
+            if (!string.Equals(request.Format, "csv", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(request.Format, "json", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest("Export format must be csv or json.");
+            }
+
             var query = new ExportReportQuery
             {
                 ReportType = request.ReportType,

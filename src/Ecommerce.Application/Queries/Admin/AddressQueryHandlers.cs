@@ -61,7 +61,7 @@ namespace Ecommerce.Application.Queries.Admin
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == query.Id && a.UserId == userId && !a.IsDeleted, cancellationToken);
             if (address == null)
-                throw new DomainException("Address not found");
+                throw new NotFoundException("Address", query.Id);
 
             return _mapper.Map<AddressDto>(address);
         }
