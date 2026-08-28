@@ -15,6 +15,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Application.Queries.Admin
 {
+    /// <summary>
+    /// Shared date-range normalisation so an inverted range is rejected consistently
+    /// instead of quietly returning zeroed metrics.
+    /// </summary>
+    internal static class ReportPeriod
+    {
+        public static (DateTimeOffset Start, DateTimeOffset End) Resolve(
+            DateTimeOffset? startDate,
+            DateTimeOffset? endDate,
+            int defaultDays = 30)
+        {
+            var start = startDate?.Date ?? DateTimeOffset.UtcNow.AddDays(-defaultDays);
+            var end = endDate.HasValue
+                ? endDate.Value.Date.AddDays(1).AddTicks(-1)
+                : DateTimeOffset.UtcNow;
+
+            if (end < start)
+                throw new Ecommerce.Domain.Exceptions.DomainException("تاريخ النهاية يجب أن يكون بعد تاريخ البداية.");
+
+            return (start, end);
+        }
+    }
+
     public class GetSalesReportQueryHandler : IQueryHandler<GetSalesReportQuery, SalesReportDto>
     {
         private readonly IApplicationDbContext _db;
@@ -28,13 +51,7 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<SalesReportDto> Handle(GetSalesReportQuery query, CancellationToken cancellationToken = default)
         {
-            DateTimeOffset effectiveStart = query.StartDate.HasValue
-                ? query.StartDate.Value.Date
-                : DateTimeOffset.UtcNow.AddDays(-30);
-
-            DateTimeOffset effectiveEnd = query.EndDate.HasValue
-                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
-                : DateTimeOffset.UtcNow;
+            var (effectiveStart, effectiveEnd) = ReportPeriod.Resolve(query.StartDate, query.EndDate);
 
             var ordersQuery = _db.Orders
                 .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled
@@ -152,13 +169,7 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<RevenueReportDto> Handle(GetRevenueReportQuery query, CancellationToken cancellationToken = default)
         {
-            DateTimeOffset effectiveStart = query.StartDate.HasValue
-                ? query.StartDate.Value.Date
-                : DateTimeOffset.UtcNow.AddDays(-30);
-
-            DateTimeOffset effectiveEnd = query.EndDate.HasValue
-                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
-                : DateTimeOffset.UtcNow;
+            var (effectiveStart, effectiveEnd) = ReportPeriod.Resolve(query.StartDate, query.EndDate);
 
             var ordersQuery = _db.Orders
                 .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled
@@ -339,13 +350,7 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<CustomerReportDto> Handle(GetCustomerReportQuery query, CancellationToken cancellationToken = default)
         {
-            DateTimeOffset effectiveStart = query.StartDate.HasValue
-                ? query.StartDate.Value.Date
-                : DateTimeOffset.UtcNow.AddDays(-30);
-
-            DateTimeOffset effectiveEnd = query.EndDate.HasValue
-                ? query.EndDate.Value.Date.AddDays(1).AddTicks(-1)
-                : DateTimeOffset.UtcNow;
+            var (effectiveStart, effectiveEnd) = ReportPeriod.Resolve(query.StartDate, query.EndDate);
 
             var ordersQuery = _db.Orders
                 .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled
@@ -424,7 +429,16 @@ namespace Ecommerce.Application.Queries.Admin
         public async Task<ExportResult> Handle(ExportReportQuery query, CancellationToken cancellationToken = default)
         {
             var isJson = string.Equals(query.Parameters.Format, "json", StringComparison.OrdinalIgnoreCase);
-            var reportType = query.ReportType?.ToLowerInvariant() ?? string.Empty;
+            var reportType = query.ReportType?.Trim().ToLowerInvariant() ?? string.Empty;
+
+            // Only known report types are accepted, and the filename is derived from the
+            // validated value so the caller cannot inject header/path content into it.
+            if (!ExportFileNames.TryGetValue(reportType, out var fileStem))
+            {
+                throw new Ecommerce.Domain.Exceptions.DomainException(
+                    $"نوع التقرير غير مدعوم. الأنواع المتاحة: {string.Join(", ", ExportFileNames.Keys)}.");
+            }
+
             string content;
 
             switch (reportType)
@@ -534,8 +548,8 @@ namespace Ecommerce.Application.Queries.Admin
                     break;
                 }
                 default:
-                    content = "Report type not supported\n";
-                    break;
+                    // Unreachable: unknown types are rejected above.
+                    throw new Ecommerce.Domain.Exceptions.DomainException("نوع التقرير غير مدعوم.");
             }
 
             byte[] bytes;
@@ -557,9 +571,22 @@ namespace Ecommerce.Application.Queries.Admin
             {
                 Content = bytes,
                 ContentType = isJson ? "application/json" : "text/csv",
-                FileName = $"{query.ReportType}_report_{DateTimeOffset.UtcNow:yyyyMMdd}.{format}"
+                FileName = $"{fileStem}_report_{DateTimeOffset.UtcNow:yyyyMMdd}.{format}"
             };
         }
+
+        /// <summary>
+        /// Allow-list of exportable reports mapped to the safe filename stem used in
+        /// Content-Disposition.
+        /// </summary>
+        private static readonly Dictionary<string, string> ExportFileNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["sales"] = "sales",
+            ["revenue"] = "revenue",
+            ["inventory"] = "inventory",
+            ["customer"] = "customers",
+            ["customers"] = "customers"
+        };
 
         private static string EscapeCsv(string? field)
         {

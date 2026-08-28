@@ -16,10 +16,14 @@ namespace Ecommerce.Application.DTOs
         public decimal Subtotal { get; set; }
         public decimal Discount { get; set; }
         public decimal DiscountAmount { get; set; }
+        /// <summary>Discount applied by an automatic cart-level promotion (tiered/bundle/free gift).</summary>
+        public decimal CartLevelDiscountAmount { get; set; }
+        public string CartLevelPromotionName { get; set; } = string.Empty;
         public decimal Shipping { get; set; }
         public decimal ShippingAmount { get; set; }
         public decimal Total { get; set; }
         public decimal TotalAmount { get; set; }
+        public decimal RefundedAmount { get; set; }
         public string CouponCode { get; set; } = string.Empty;
         public string Notes { get; set; } = string.Empty;
         public string CustomerNotes { get; set; } = string.Empty;

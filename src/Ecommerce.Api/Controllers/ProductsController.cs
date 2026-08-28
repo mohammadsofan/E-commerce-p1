@@ -31,7 +31,7 @@ namespace Ecommerce.Api.Controllers
             [FromQuery] Guid? brandId = null,
             [FromQuery] decimal? minPrice = null,
             [FromQuery] decimal? maxPrice = null,
-            [FromQuery] bool? isActive = null,
+            [FromQuery] bool? isFeatured = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] string? tag = null)
         {
@@ -44,7 +44,9 @@ namespace Ecommerce.Api.Controllers
                 BrandId = brandId,
                 MinPrice = minPrice,
                 MaxPrice = maxPrice,
-                IsActive = isActive,
+                // The public catalog only ever lists published products.
+                IsActive = true,
+                IsFeatured = isFeatured,
                 SortBy = sortBy,
                 Tag = tag
             };

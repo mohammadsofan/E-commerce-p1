@@ -27,7 +27,7 @@ namespace Ecommerce.Application.Commands.Admin
         {
             return await _userManagement.CreateUserAsync(
                 command.Email,
-                command.UserName,
+                command.EffectiveUserName,
                 command.Password,
                 command.FirstName,
                 command.LastName,

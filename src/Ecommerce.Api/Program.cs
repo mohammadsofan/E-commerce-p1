@@ -59,6 +59,8 @@ builder.Services.AddRateLimiter(options =>
     options.OnRejected = async (context, cancellationToken) =>
     {
         context.HttpContext.Response.Headers["Retry-After"] = windowSeconds.ToString();
+        // Set the content type so clients can parse the body instead of guessing.
+        context.HttpContext.Response.ContentType = "application/json";
         await context.HttpContext.Response.WriteAsync("{\"error\":\"Too many requests. Please try again later.\"}", cancellationToken);
     };
 
@@ -76,13 +78,27 @@ builder.Services.AddRateLimiter(options =>
                     AutoReplenishment = true
                 }));
 
-        // Dedicated strict rate limiting policy for coupon application and checkout endpoints (5 req/min)
+        // Dedicated strict rate limiting policy for coupon application (5 req/min).
+        // Guessing coupon codes is the abuse case worth throttling hard.
         options.AddPolicy("CouponRateLimit", context =>
             System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
-                context.User.Identity?.Name ?? context.Connection.RemoteIpAddress?.ToString() ?? "anon",
+                ResolveRateLimitPartition(context, "coupon"),
                 _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
                 {
                     PermitLimit = 5,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                }));
+
+        // Checkout gets its own budget so a burst of coupon attempts can never block a
+        // legitimate order from being placed.
+        options.AddPolicy("CheckoutRateLimit", context =>
+            System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+                ResolveRateLimitPartition(context, "checkout"),
+                _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 20,
                     Window = TimeSpan.FromMinutes(1),
                     QueueLimit = 0,
                     AutoReplenishment = true
@@ -95,8 +111,27 @@ builder.Services.AddRateLimiter(options =>
 
         options.AddPolicy("CouponRateLimit", _ =>
             System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("all"));
+
+        options.AddPolicy("CheckoutRateLimit", _ =>
+            System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("all"));
     }
 });
+
+// Partitions authenticated callers by their user id ('sub' claim) rather than
+// Identity.Name, which is null for these JWTs and silently degraded every logged-in
+// user to a shared per-IP bucket.
+static string ResolveRateLimitPartition(Microsoft.AspNetCore.Http.HttpContext context, string scope)
+{
+    var userId = context.User?.FindFirst("sub")?.Value
+                 ?? context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                 ?? context.User?.Identity?.Name;
+
+    var key = !string.IsNullOrWhiteSpace(userId)
+        ? userId
+        : context.Connection.RemoteIpAddress?.ToString() ?? "anon";
+
+    return $"{scope}:{key}";
+}
 
 // API Versioning
 builder.Services.AddApiVersioning(options =>

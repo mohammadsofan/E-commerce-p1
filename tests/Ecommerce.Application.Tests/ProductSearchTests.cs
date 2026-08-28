@@ -155,11 +155,25 @@ namespace Ecommerce.Application.Tests
             await SeedProducts(ctx);
             var handler = new GetProductsQueryHandler(ctx, CreateMapper());
 
-            var result = await handler.Handle(new GetProductsQuery { SortBy = "price_asc" });
+            // IncludeInactive so the unpublished seed row participates in the ordering assertion.
+            var result = await handler.Handle(new GetProductsQuery { SortBy = "price_asc", IncludeInactive = true });
 
             Assert.Equal(4, result.Items.Count);
             Assert.Equal(10m, result.Items[0].BasePrice);
             Assert.Equal(120m, result.Items[^1].BasePrice);
+        }
+
+        [Fact]
+        public async Task GetProducts_ByDefault_ExcludesInactiveProducts()
+        {
+            using var ctx = CreateInMemoryContext();
+            await SeedProducts(ctx);
+            var handler = new GetProductsQueryHandler(ctx, CreateMapper());
+
+            var result = await handler.Handle(new GetProductsQuery());
+
+            Assert.Equal(3, result.Items.Count);
+            Assert.DoesNotContain(result.Items, p => p.Name == "Retired Product");
         }
 
         [Fact]
@@ -196,7 +210,7 @@ namespace Ecommerce.Application.Tests
             await ctx.SaveChangesAsync();
             var handler = new GetProductsQueryHandler(ctx, CreateMapper());
 
-            var result = await handler.Handle(new GetProductsQuery());
+            var result = await handler.Handle(new GetProductsQuery { IncludeInactive = true });
 
             Assert.Equal(3, result.Items.Count);
         }

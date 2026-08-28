@@ -148,6 +148,12 @@ namespace Ecommerce.Application.DTOs
         public string PhoneNumber { get; set; } = string.Empty;
         public bool IsDefaultShipping { get; set; }
         public bool IsDefaultBilling { get; set; }
+
+        /// <summary>Alias of <see cref="CountryCode"/> for clients that read <c>country</c>.</summary>
+        public string Country => CountryCode;
+
+        /// <summary>True when this address is the customer's default shipping destination.</summary>
+        public bool IsDefault => IsDefaultShipping;
     }
 
     public class AuditLogDto

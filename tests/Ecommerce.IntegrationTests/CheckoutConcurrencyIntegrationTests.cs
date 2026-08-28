@@ -28,9 +28,32 @@ namespace Ecommerce.IntegrationTests
         {
             using var ctx = CreateInMemoryContext();
 
-            // Seed inventory with limited stock (5 units)
+            // Seed catalog + inventory with limited stock (5 units)
             var productId = Guid.NewGuid();
             var variantId = Guid.NewGuid();
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Concurrency Product",
+                Sku = "SKU-" + productId.ToString().Substring(0, 6),
+                BasePrice = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.Products.Add(product);
+            var variant = new ProductVariant
+            {
+                Id = variantId,
+                ProductId = productId,
+                Name = "Variant A",
+                Sku = "VAR-" + variantId.ToString().Substring(0, 6),
+                Price = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.ProductVariants.Add(variant);
             var inventory = new InventoryItem
             {
                 Id = variantId,
@@ -83,6 +106,29 @@ namespace Ecommerce.IntegrationTests
 
             var productId = Guid.NewGuid();
             var variantId = Guid.NewGuid();
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Idempotent Product",
+                Sku = "SKU-" + productId.ToString().Substring(0, 6),
+                BasePrice = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.Products.Add(product);
+            var variant = new ProductVariant
+            {
+                Id = variantId,
+                ProductId = productId,
+                Name = "Variant A",
+                Sku = "VAR-" + variantId.ToString().Substring(0, 6),
+                Price = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.ProductVariants.Add(variant);
             var inventory = new InventoryItem
             {
                 Id = variantId,
@@ -174,6 +220,30 @@ namespace Ecommerce.IntegrationTests
 
             var productId = Guid.NewGuid();
             var variantId = Guid.NewGuid();
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Backorder Product",
+                Sku = "SKU-" + productId.ToString().Substring(0, 6),
+                BasePrice = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.Products.Add(product);
+            var variant = new ProductVariant
+            {
+                Id = variantId,
+                ProductId = productId,
+                Name = "Variant A",
+                Sku = "VAR-" + variantId.ToString().Substring(0, 6),
+                Price = 10m,
+                IsActive = true,
+                AllowBackorder = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.ProductVariants.Add(variant);
             var inventory = new InventoryItem
             {
                 Id = variantId,

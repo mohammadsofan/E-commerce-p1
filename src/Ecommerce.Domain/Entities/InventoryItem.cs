@@ -65,9 +65,19 @@ namespace Ecommerce.Domain.Entities
 
         public void Reserve(int quantity)
         {
+            Reserve(quantity, AllowBackorder);
+        }
+
+        /// <summary>
+        /// Reserves stock. <paramref name="allowBackorder"/> lets the caller pass the effective
+        /// backorder policy for the line (product/variant flag OR warehouse flag) so a single
+        /// decision is applied consistently across cart validation and checkout.
+        /// </summary>
+        public void Reserve(int quantity, bool allowBackorder)
+        {
             if (quantity <= 0) throw new InventoryException("Quantity to reserve must be positive");
 
-            if (!AllowBackorder && Available < quantity)
+            if (!allowBackorder && !AllowBackorder && Available < quantity)
             {
                 throw new InventoryException("Insufficient stock to reserve the requested quantity");
             }
@@ -86,6 +96,29 @@ namespace Ecommerce.Domain.Entities
             }
 
             QuantityReserved -= quantity;
+            UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        /// <summary>
+        /// Consumes a previously placed reservation because the goods have physically
+        /// left the warehouse: the reservation is dropped AND on-hand stock is reduced
+        /// by the same amount. This is the fulfilment counterpart of <see cref="Reserve"/>
+        /// and keeps <see cref="Available"/> stable across the transition.
+        /// </summary>
+        public void ConsumeReservation(int quantity)
+        {
+            if (quantity <= 0) throw new InventoryException("Quantity to consume must be positive");
+
+            if (quantity > QuantityReserved)
+            {
+                throw new InventoryException("Cannot consume more than the reserved quantity");
+            }
+
+            QuantityReserved -= quantity;
+            QuantityOnHand -= quantity;
+            // Backordered lines may legitimately drive on-hand below zero conceptually;
+            // clamp so the persisted quantity never becomes negative.
+            if (QuantityOnHand < 0) QuantityOnHand = 0;
             UpdatedAt = DateTimeOffset.UtcNow;
         }
 

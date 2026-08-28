@@ -12,6 +12,11 @@ namespace Ecommerce.Application.Queries.Admin
         public Guid? ProductId { get; set; }
         public Guid? WarehouseId { get; set; }
         public bool? LowStockOnly { get; set; }
-        public bool IncludeBackorder { get; set; } = false;
+
+        /// <summary>
+        /// Backordered rows (negative availability) are the ones an operator most needs to see,
+        /// so they are included by default. Pass false to hide them.
+        /// </summary>
+        public bool IncludeBackorder { get; set; } = true;
     }
 }

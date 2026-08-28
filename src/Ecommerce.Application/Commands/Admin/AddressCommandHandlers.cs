@@ -44,13 +44,23 @@ namespace Ecommerce.Application.Commands.Admin
                 City = command.City,
                 State = command.State,
                 PostalCode = command.PostalCode,
-                CountryCode = command.CountryCode,
+                CountryCode = command.EffectiveCountryCode,
                 PhoneNumber = command.PhoneNumber,
-                IsDefaultShipping = command.IsDefaultShipping,
-                IsDefaultBilling = command.IsDefaultBilling,
+                IsDefaultShipping = command.EffectiveIsDefaultShipping,
+                IsDefaultBilling = command.EffectiveIsDefaultBilling,
                 CreatedAt = now,
                 UpdatedAt = now
             };
+
+            // The very first address a customer saves becomes their default, otherwise the
+            // checkout address picker would have nothing pre-selected.
+            var hasExistingAddress = await _db.Addresses
+                .AnyAsync(a => a.UserId == userId && !a.IsDeleted, cancellationToken);
+            if (!hasExistingAddress)
+            {
+                address.IsDefaultShipping = true;
+                address.IsDefaultBilling = true;
+            }
 
             if (address.IsDefaultShipping)
                 await ClearDefaultShippingAsync(userId, address.Id, cancellationToken);
@@ -104,9 +114,9 @@ namespace Ecommerce.Application.Commands.Admin
             if (address == null)
                 throw new DomainException("Address not found");
 
-            if (command.IsDefaultShipping)
+            if (command.EffectiveIsDefaultShipping)
                 await ClearDefaultShippingAsync(userId, address.Id, cancellationToken);
-            if (command.IsDefaultBilling)
+            if (command.EffectiveIsDefaultBilling)
                 await ClearDefaultBillingAsync(userId, address.Id, cancellationToken);
 
             address.Type = command.Type;
@@ -118,10 +128,10 @@ namespace Ecommerce.Application.Commands.Admin
             address.City = command.City;
             address.State = command.State;
             address.PostalCode = command.PostalCode;
-            address.CountryCode = command.CountryCode;
+            address.CountryCode = command.EffectiveCountryCode;
             address.PhoneNumber = command.PhoneNumber;
-            address.IsDefaultShipping = command.IsDefaultShipping;
-            address.IsDefaultBilling = command.IsDefaultBilling;
+            address.IsDefaultShipping = command.EffectiveIsDefaultShipping;
+            address.IsDefaultBilling = command.EffectiveIsDefaultBilling;
             address.UpdatedAt = DateTimeOffset.UtcNow;
 
             await _db.SaveChangesAsync(cancellationToken);

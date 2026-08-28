@@ -36,6 +36,12 @@ namespace Ecommerce.Application.Commands.Admin
             if (command.FreeShippingThreshold.HasValue && command.FreeShippingThreshold.Value < 0)
                 throw new DomainException("Free shipping threshold cannot be negative");
 
+            // The contact address is used as the From/Reply-To for customer email, so an
+            // invalid value would silently break outbound notifications.
+            if (!string.IsNullOrWhiteSpace(command.ContactEmail) && !IsValidEmail(command.ContactEmail))
+                throw new DomainException("عنوان البريد الإلكتروني للتواصل غير صحيح.");
+
+
             var setting = await _db.StoreSettings.FirstOrDefaultAsync(cancellationToken);
             if (setting == null)
             {
@@ -66,6 +72,20 @@ namespace Ecommerce.Application.Commands.Admin
                 CurrencyCode = setting.CurrencyCode,
                 UpdatedAt = setting.UpdatedAt
             };
+        }
+
+        private static bool IsValidEmail(string email)
+        {
+            try
+            {
+                var address = new System.Net.Mail.MailAddress(email.Trim());
+                return string.Equals(address.Address, email.Trim(), StringComparison.OrdinalIgnoreCase)
+                       && address.Host.Contains('.');
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

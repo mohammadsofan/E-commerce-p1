@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Ecommerce.Application.Common.Carts;
 using Ecommerce.Application.Common.Commands;
+using Ecommerce.Application.Common.Inventory;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Domain.Exceptions;
 using Ecommerce.Application.Interfaces;
@@ -40,48 +41,33 @@ namespace Ecommerce.Application.Commands.Carts
                 .FirstOrDefaultAsync(p => p.Id == command.ProductId, cancellationToken);
             if (product == null) throw new NotFoundException("Product", command.ProductId);
 
+            // A product that is not on sale must not be purchasable, even via a direct API call.
+            if (!product.IsActive || product.IsDeleted)
+                throw new DomainException("هذا المنتج غير متاح للبيع حالياً.");
+
             decimal unitPrice = product.BasePrice;
             string productName = product.Name;
             bool allowBackorder = product.AllowBackorder;
 
-            if (command.ProductVariantId is Guid variantId)
+            if (command.ProductVariantId is Guid variantId && variantId != Guid.Empty)
             {
                 var variant = await Db.ProductVariants
                     .AsNoTracking()
                     .FirstOrDefaultAsync(v => v.Id == variantId, cancellationToken);
                 if (variant == null) throw new NotFoundException("ProductVariant", variantId);
 
+                // The variant must belong to the product being added, otherwise a caller
+                // could borrow any variant's price for any product.
+                if (variant.ProductId != command.ProductId)
+                    throw new DomainException("الخيار المحدد لا ينتمي إلى هذا المنتج.");
+
+                if (!variant.IsActive)
+                    throw new DomainException("الخيار المحدد غير متاح حالياً.");
+
                 unitPrice = variant.Price;
                 productName = string.IsNullOrWhiteSpace(variant.Name) ? product.Name : variant.Name;
                 allowBackorder = variant.AllowBackorder;
             }
-
-            // --- JIT Inventory Validation ---
-            // Reject the request early if the specific variant (or base product) has insufficient
-            // stock rather than letting it surface as a hard exception at checkout.
-            if (!allowBackorder)
-            {
-                // Sum available stock across ALL warehouses for this product/variant combination.
-                var inventoryQuery = command.ProductVariantId.HasValue && command.ProductVariantId.Value != Guid.Empty
-                    ? Db.InventoryItems.Where(inv => inv.ProductVariantId == command.ProductVariantId.Value && !inv.AllowBackorder)
-                    : Db.InventoryItems.Where(inv => inv.ProductId == command.ProductId && !inv.ProductVariantId.HasValue && !inv.AllowBackorder);
-
-                var hasInventoryRecords = await inventoryQuery.AnyAsync(cancellationToken);
-                if (hasInventoryRecords || product.TrackInventory)
-                {
-                    var totalAvailable = await inventoryQuery
-                        .AsNoTracking()
-                        .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
-
-                    if (command.Quantity > totalAvailable)
-                    {
-                        throw new DomainException(totalAvailable <= 0
-                            ? "المنتج غير متوفر حالياً في المخزون."
-                            : $"الكمية المطلوبة ({command.Quantity}) تتجاوز المخزون المتاح ({totalAvailable}).");
-                    }
-                }
-            }
-            // --------------------------------
 
             var normalizedOptions = string.IsNullOrWhiteSpace(command.SelectedOptions) ? null : command.SelectedOptions.Trim();
 
@@ -93,31 +79,18 @@ namespace Ecommerce.Application.Commands.Carts
                     i.ProductId == product.Id &&
                     i.ProductVariantId == command.ProductVariantId &&
                     (string.IsNullOrWhiteSpace(i.SelectedOptions) ? null : i.SelectedOptions.Trim()) == normalizedOptions);
-                if (existing != null && await Db.CartItems.AnyAsync(i => i.Id == existing.Id, cancellationToken))
+
+                var isMerge = existing != null && await Db.CartItems.AnyAsync(i => i.Id == existing.Id, cancellationToken);
+                var requestedTotal = isMerge ? existing!.Quantity + command.Quantity : command.Quantity;
+
+                // --- JIT Inventory Validation ---
+                // Validated against the same allocator the checkout uses, so a line that is
+                // accepted here cannot be rejected at checkout for stock reasons.
+                await EnsureStockAvailableAsync(command, allowBackorder, product.TrackInventory, requestedTotal, isMerge, cancellationToken);
+                // --------------------------------
+
+                if (isMerge)
                 {
-                    // Validate combined quantity does not exceed stock before merging.
-                    if (!allowBackorder)
-                    {
-                        var inventoryQuery = command.ProductVariantId.HasValue && command.ProductVariantId.Value != Guid.Empty
-                            ? Db.InventoryItems.Where(inv => inv.ProductVariantId == command.ProductVariantId.Value)
-                            : Db.InventoryItems.Where(inv => inv.ProductId == command.ProductId && !inv.ProductVariantId.HasValue);
-
-                        var hasInventoryRecords = await inventoryQuery.AnyAsync(cancellationToken);
-                        if (hasInventoryRecords || product.TrackInventory)
-                        {
-                            var totalAvailable = await inventoryQuery
-                                .SumAsync(inv => inv.QuantityOnHand - inv.QuantityReserved, cancellationToken);
-
-                            var newTotal = existing.Quantity + command.Quantity;
-                            if (newTotal > totalAvailable)
-                            {
-                                throw new DomainException(totalAvailable <= 0
-                                    ? "المنتج غير متوفر حالياً في المخزون."
-                                    : $"الكمية الإجمالية المطلوبة ({newTotal}) تتجاوز المخزون المتاح ({totalAvailable}).");
-                            }
-                        }
-                    }
-
                     cart.AddItem(product.Id, command.ProductVariantId, productName, unitPrice, command.Quantity, normalizedOptions);
                 }
                 else
@@ -141,6 +114,47 @@ namespace Ecommerce.Application.Commands.Carts
             finally
             {
                 CartWriteLock.Release();
+            }
+        }
+
+        private async Task EnsureStockAvailableAsync(
+            AddToCartCommand command,
+            bool allowBackorder,
+            bool trackInventory,
+            int requestedTotal,
+            bool isMerge,
+            CancellationToken cancellationToken)
+        {
+            if (allowBackorder) return;
+
+            var variantId = command.ProductVariantId.HasValue && command.ProductVariantId.Value != Guid.Empty
+                ? command.ProductVariantId
+                : null;
+
+            var inventoryRows = await Db.InventoryItems
+                .AsNoTracking()
+                .Where(inv => inv.ProductId == command.ProductId ||
+                              (inv.ProductVariantId.HasValue && variantId.HasValue && inv.ProductVariantId == variantId.Value))
+                .ToListAsync(cancellationToken);
+
+            var candidates = InventoryAllocator.CandidatesFor(inventoryRows, command.ProductId, variantId);
+
+            if (candidates.Count == 0 && !trackInventory) return;
+
+            // A row flagged for backorder makes the line unbounded regardless of the
+            // product/variant flag, matching the checkout allocator.
+            if (InventoryAllocator.AllowsBackorder(candidates)) return;
+
+            var totalAvailable = InventoryAllocator.AvailableFor(candidates, requestedTotal);
+
+            if (requestedTotal > totalAvailable)
+            {
+                if (totalAvailable <= 0)
+                    throw new DomainException("المنتج غير متوفر حالياً في المخزون.");
+
+                throw new DomainException(isMerge
+                    ? $"الكمية الإجمالية المطلوبة ({requestedTotal}) تتجاوز المخزون المتاح ({totalAvailable})."
+                    : $"الكمية المطلوبة ({requestedTotal}) تتجاوز المخزون المتاح ({totalAvailable}).");
             }
         }
     }

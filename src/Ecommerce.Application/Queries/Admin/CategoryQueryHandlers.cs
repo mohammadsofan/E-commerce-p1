@@ -52,7 +52,7 @@ namespace Ecommerce.Application.Queries.Admin
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Slug == query.Slug, cancellationToken);
             if (category == null || !category.IsActive || category.IsDeleted)
-                throw new DomainException("Category not found");
+                throw new NotFoundException("Category", query.Slug);
 
             return _mapper.Map<CategoryDto>(category);
         }

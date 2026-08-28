@@ -40,7 +40,20 @@ namespace Ecommerce.Infrastructure.Services
             };
 
             await _db.IdempotencyKeys.AddAsync(rec);
-            await _db.SaveChangesAsync();
+
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Two concurrent requests raced on the same key and the unique index rejected
+                // the loser. That is a normal "already registered" outcome, not a server error,
+                // so it must not surface as a 500 with SQL detail.
+                _db.Entry(rec).State = EntityState.Detached;
+                return false;
+            }
+
             return true;
         }
 

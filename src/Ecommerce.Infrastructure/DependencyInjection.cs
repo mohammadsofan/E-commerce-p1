@@ -71,6 +71,25 @@ namespace Ecommerce.Infrastructure
 
                 services.AddTransient<Ecommerce.Application.Common.Validation.IValidator<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>>(sp =>
                     new Ecommerce.Application.Common.Validation.FluentValidationAdapter<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>(sp.GetRequiredService<FluentValidation.IValidator<Ecommerce.Application.Commands.ReserveInventory.ReserveInventoryCommand>>()));
+
+                // Address, coupon and catalog-pricing validators. Without these an empty
+                // address, a 500% coupon or a negative price could all be persisted.
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.CreateAddressCommand,
+                    Ecommerce.Application.Validators.CreateAddressCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.UpdateAddressCommand,
+                    Ecommerce.Application.Validators.UpdateAddressCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.CreateCouponCommand,
+                    Ecommerce.Application.Validators.CreateCouponCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.UpdateCouponCommand,
+                    Ecommerce.Application.Validators.UpdateCouponCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.CreateProductCommand,
+                    Ecommerce.Application.Validators.CreateProductCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.UpdateProductCommand,
+                    Ecommerce.Application.Validators.UpdateProductCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.CreateProductVariantCommand,
+                    Ecommerce.Application.Validators.CreateProductVariantCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.UpdateProductVariantCommand,
+                    Ecommerce.Application.Validators.UpdateProductVariantCommandFluentValidator>(services);
             }
             catch
             {
@@ -453,6 +472,19 @@ namespace Ecommerce.Infrastructure
             // (Applied automatically via ApplyConfigurationsFromAssembly)
 
             return services;
+        }
+
+        /// <summary>
+        /// Registers a FluentValidation validator and exposes it through the application's
+        /// own <c>IValidator&lt;T&gt;</c> abstraction so <c>ValidationBehavior</c> picks it up.
+        /// </summary>
+        private static void AddFluentValidator<TCommand, TValidator>(IServiceCollection services)
+            where TValidator : class, FluentValidation.IValidator<TCommand>
+        {
+            services.AddTransient<FluentValidation.IValidator<TCommand>, TValidator>();
+            services.AddTransient<Ecommerce.Application.Common.Validation.IValidator<TCommand>>(sp =>
+                new Ecommerce.Application.Common.Validation.FluentValidationAdapter<TCommand>(
+                    sp.GetRequiredService<FluentValidation.IValidator<TCommand>>()));
         }
     }
 }

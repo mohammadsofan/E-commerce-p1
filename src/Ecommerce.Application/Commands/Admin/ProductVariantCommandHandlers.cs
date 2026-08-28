@@ -83,7 +83,30 @@ namespace Ecommerce.Application.Commands.Admin
 
             await _db.SaveChangesAsync(cancellationToken);
 
+            // The parent product's option matrix is derived from its variants; drop any
+            // legacy hand-written JSON so the two cannot disagree.
+            await ClearLegacyAttributesJsonAsync(_db, command.ProductId, cancellationToken);
+
             return await GetVariantDtoAsync(variant.Id, cancellationToken);
+        }
+
+        internal static async Task ClearLegacyAttributesJsonAsync(
+            IApplicationDbContext db,
+            Guid productId,
+            CancellationToken cancellationToken)
+        {
+            var product = await db.Products.FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+            if (product == null || product.AttributesJson == null) return;
+
+            var hasVariantOptions = await db.ProductVariants
+                .Where(v => v.ProductId == productId)
+                .SelectMany(v => v.VariantAttributes)
+                .AnyAsync(cancellationToken);
+
+            if (!hasVariantOptions) return;
+
+            product.AttributesJson = null;
+            await db.SaveChangesAsync(cancellationToken);
         }
 
         private async Task<AdminProductVariantDto> GetVariantDtoAsync(Guid variantId, CancellationToken cancellationToken)
@@ -227,6 +250,8 @@ namespace Ecommerce.Application.Commands.Admin
             }
 
             await _db.SaveChangesAsync(cancellationToken);
+
+            await CreateProductVariantCommandHandler.ClearLegacyAttributesJsonAsync(_db, variant.ProductId, cancellationToken);
 
             return await GetVariantDtoAsync(variant.Id, cancellationToken);
         }

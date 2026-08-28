@@ -111,22 +111,28 @@ namespace Ecommerce.Infrastructure.Services
 
             var lower = term.ToLowerInvariant();
 
-            var all = await _db.ProductSearchDocuments
+            // Narrow in the database first so the whole index is never materialised;
+            // relevance scoring then runs over the (much smaller) candidate set.
+            var candidates = await _db.ProductSearchDocuments
                 .AsNoTracking()
-                .Where(d => !d.IsDeleted)
+                .Where(d => !d.IsDeleted && d.IsActive)
+                .Where(d => d.SearchText.Contains(lower)
+                            || d.Name.Contains(term)
+                            || d.Slug.Contains(term)
+                            || d.Sku.Contains(term)
+                            || d.ShortDescription.Contains(term))
                 .ToListAsync(cancellationToken);
 
-            var scored = all
+            var scored = candidates
                 .Select(d => new { Document = d, Score = Score(d, lower) })
                 .Where(x => x.Score > 0)
                 .OrderByDescending(x => x.Score)
                 .ThenBy(x => x.Document.Name)
                 .ToList();
 
-            var active = scored.Where(x => x.Document.IsActive).ToList();
-            var total = active.Count;
+            var total = scored.Count;
 
-            var results = active
+            var results = scored
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(x => new ProductSearchHit

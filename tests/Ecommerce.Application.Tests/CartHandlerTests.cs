@@ -55,6 +55,7 @@ namespace Ecommerce.Application.Tests
                 Status = "Active",
                 BasePrice = price,
                 CurrencyCode = "USD",
+                IsActive = true,
                 SeoTitle = "title",
                 SeoDescription = "desc",
                 SeoKeywords = "kw",

@@ -35,7 +35,20 @@ namespace Ecommerce.Api.Middleware
             // Basic XSS filter for legacy browsers
             headers["X-XSS-Protection"] = "1; mode=block";
 
+            // Content Security Policy. This is a JSON API: no inline script or plugin content
+            // should ever execute from a response, and it must not be framed.
+            // Swagger UI needs relaxed script/style rules, so it gets its own policy.
+            headers["Content-Security-Policy"] = IsSwaggerRequest(context)
+                ? "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
+                : "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
             await _next(context);
+        }
+
+        private static bool IsSwaggerRequest(HttpContext context)
+        {
+            var path = context.Request.Path.Value;
+            return path != null && path.StartsWith("/swagger", System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }

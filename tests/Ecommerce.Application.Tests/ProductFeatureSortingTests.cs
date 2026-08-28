@@ -30,7 +30,7 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
-        public async Task GetProducts_WithSortByFeatured_ReturnsOnlyFeaturedProducts()
+        public async Task GetProducts_WithSortByFeatured_SortsFeaturedFirst_WithoutHidingOthers()
         {
             // Arrange
             using var db = CreateInMemoryContext();
@@ -81,9 +81,111 @@ namespace Ecommerce.Application.Tests
             // Act
             var result = await handler.Handle(query);
 
+            // Assert — sorting must not silently drop non-featured products from the catalog.
+            Assert.Equal(2, result.Items.Count);
+            Assert.Equal("Featured Shirt", result.Items.First().Name);
+        }
+
+        [Fact]
+        public async Task GetProducts_WithIsFeaturedFilter_ReturnsOnlyFeaturedProducts()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateMapper();
+
+            db.Products.Add(new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "Featured Shirt",
+                Slug = "featured-shirt",
+                Sku = "SKU-1",
+                ProductType = "Physical",
+                Status = "Active",
+                BasePrice = 30m,
+                CurrencyCode = "USD",
+                IsActive = true,
+                IsFeatured = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
+            db.Products.Add(new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "Regular Pants",
+                Slug = "regular-pants",
+                Sku = "SKU-2",
+                ProductType = "Physical",
+                Status = "Active",
+                BasePrice = 50m,
+                CurrencyCode = "USD",
+                IsActive = true,
+                IsFeatured = false,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
+            await db.SaveChangesAsync();
+
+            var handler = new GetProductsQueryHandler(db, mapper);
+
+            // Act
+            var result = await handler.Handle(new GetProductsQuery { IsFeatured = true });
+
             // Assert
             Assert.Single(result.Items);
             Assert.Equal("Featured Shirt", result.Items.First().Name);
+        }
+
+        [Fact]
+        public async Task GetProducts_ByDefault_ExcludesInactiveProducts()
+        {
+            // Arrange
+            using var db = CreateInMemoryContext();
+            var mapper = CreateMapper();
+
+            db.Products.Add(new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "Published",
+                Slug = "published",
+                Sku = "SKU-PUB",
+                ProductType = "Physical",
+                Status = "Active",
+                BasePrice = 10m,
+                CurrencyCode = "USD",
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
+            db.Products.Add(new Product
+            {
+                Id = Guid.NewGuid(),
+                Name = "Unpublished",
+                Slug = "unpublished",
+                Sku = "SKU-UNPUB",
+                ProductType = "Physical",
+                Status = "Draft",
+                BasePrice = 10m,
+                CurrencyCode = "USD",
+                IsActive = false,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
+            await db.SaveChangesAsync();
+
+            var handler = new GetProductsQueryHandler(db, mapper);
+
+            // Act
+            var storefront = await handler.Handle(new GetProductsQuery());
+            var admin = await handler.Handle(new GetProductsQuery { IncludeInactive = true });
+
+            // Assert
+            Assert.Single(storefront.Items);
+            Assert.Equal("Published", storefront.Items.First().Name);
+            Assert.Equal(2, admin.Items.Count);
         }
 
         [Fact]

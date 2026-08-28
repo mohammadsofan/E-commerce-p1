@@ -146,11 +146,21 @@ namespace Ecommerce.Application.Commands.Admin
             if (hasChildren)
                 throw new DomainException("Cannot delete category with children. Delete children first.");
 
-            // Check if category has products
+            // Check if category has products. Soft-deleted products must not block the
+            // delete, otherwise the category becomes permanently undeletable.
             var hasProducts = await _db.Products
-                .AnyAsync(p => p.CategoryId == command.Id, cancellationToken);
+                .AnyAsync(p => p.CategoryId == command.Id && !p.IsDeleted, cancellationToken);
             if (hasProducts)
                 throw new DomainException("Cannot delete category with products. Reassign products first.");
+
+            // Detach any soft-deleted products so the FK does not block the delete.
+            var archivedProducts = await _db.Products
+                .Where(p => p.CategoryId == command.Id && p.IsDeleted)
+                .ToListAsync(cancellationToken);
+            foreach (var archived in archivedProducts)
+            {
+                archived.CategoryId = null;
+            }
 
             _db.Categories.Remove(category);
             await _db.SaveChangesAsync(cancellationToken);

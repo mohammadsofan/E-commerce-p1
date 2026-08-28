@@ -166,7 +166,7 @@ namespace Ecommerce.Application.Commands.Admin
             var review = await _db.ProductReviews
                 .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
             if (review == null)
-                throw new DomainException("Review not found");
+                throw new NotFoundException("Review", command.Id);
 
             review.IsApproved = command.IsApproved;
             review.UpdatedAt = DateTimeOffset.UtcNow;
@@ -193,7 +193,7 @@ namespace Ecommerce.Application.Commands.Admin
             var review = await _db.ProductReviews
                 .FirstOrDefaultAsync(r => r.Id == command.Id, cancellationToken);
             if (review == null)
-                throw new DomainException("Review not found");
+                throw new NotFoundException("Review", command.Id);
 
             var productId = review.ProductId;
             _db.ProductReviews.Remove(review);

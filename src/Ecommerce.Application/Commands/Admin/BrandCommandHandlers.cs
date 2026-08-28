@@ -126,11 +126,21 @@ namespace Ecommerce.Application.Commands.Admin
             if (brand == null)
                 throw new DomainException("Brand not found");
 
-            // Check if brand has products
+            // Check if brand has products. Soft-deleted products must not block the delete,
+            // otherwise the brand becomes permanently undeletable.
             var hasProducts = await _db.Products
-                .AnyAsync(p => p.BrandId == command.Id, cancellationToken);
+                .AnyAsync(p => p.BrandId == command.Id && !p.IsDeleted, cancellationToken);
             if (hasProducts)
                 throw new DomainException("Cannot delete brand with products. Reassign products first.");
+
+            // Detach any soft-deleted products so the FK does not block the delete.
+            var archivedProducts = await _db.Products
+                .Where(p => p.BrandId == command.Id && p.IsDeleted)
+                .ToListAsync(cancellationToken);
+            foreach (var archived in archivedProducts)
+            {
+                archived.BrandId = null;
+            }
 
             _db.Brands.Remove(brand);
             await _db.SaveChangesAsync(cancellationToken);

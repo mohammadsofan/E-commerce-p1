@@ -29,6 +29,31 @@ namespace Ecommerce.Application.Tests
             var variantId = Guid.NewGuid();
             var productId = Guid.NewGuid();
 
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Variant Product",
+                Sku = $"SKU-{productId}",
+                BasePrice = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Products.AddAsync(product);
+
+            var variant = new ProductVariant
+            {
+                Id = variantId,
+                ProductId = productId,
+                Name = "Variant A",
+                Sku = $"VAR-{variantId}",
+                Price = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.ProductVariants.AddAsync(variant);
+
             var inv = new InventoryItem { Id = variantId, ProductId = productId, ProductVariantId = variantId };
             inv.AddStock(50);
             await context.InventoryItems.AddAsync(inv);
@@ -63,6 +88,18 @@ namespace Ecommerce.Application.Tests
 
             var userId = Guid.NewGuid();
             var productId = Guid.NewGuid();
+
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Coupon Product",
+                Sku = $"SKU-{productId}",
+                BasePrice = 50m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Products.AddAsync(product);
 
             var inv = new InventoryItem { Id = productId, ProductId = productId };
             inv.AddStock(20);
@@ -119,6 +156,18 @@ namespace Ecommerce.Application.Tests
 
             var userId = Guid.NewGuid();
             var productId = Guid.NewGuid();
+
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Expired Coupon Product",
+                Sku = $"SKU-{productId}",
+                BasePrice = 100m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Products.AddAsync(product);
 
             var inv = new InventoryItem { Id = productId, ProductId = productId };
             inv.AddStock(10);
@@ -359,7 +408,8 @@ namespace Ecommerce.Application.Tests
                 Slug = "multi-wh-prod",
                 BasePrice = 50m,
                 CurrencyCode = "USD",
-                Status = "Active"
+                Status = "Active",
+                IsActive = true
             };
             await context.Products.AddAsync(product);
 
@@ -419,7 +469,8 @@ namespace Ecommerce.Application.Tests
                 Slug = "short-stock",
                 BasePrice = 30m,
                 CurrencyCode = "USD",
-                Status = "Active"
+                Status = "Active",
+                IsActive = true
             };
             await context.Products.AddAsync(product);
 

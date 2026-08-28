@@ -14,6 +14,9 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Subtotal, opt => opt.MapFrom(s => s.Subtotal))
                 .ForMember(d => d.Discount, opt => opt.MapFrom(s => s.DiscountAmount))
                 .ForMember(d => d.DiscountAmount, opt => opt.MapFrom(s => s.DiscountAmount))
+                .ForMember(d => d.CartLevelDiscountAmount, opt => opt.MapFrom(s => s.CartLevelDiscountAmount))
+                .ForMember(d => d.CartLevelPromotionName, opt => opt.MapFrom(s => s.CartLevelPromotionName))
+                .ForMember(d => d.RefundedAmount, opt => opt.MapFrom(s => s.RefundedAmount))
                 .ForMember(d => d.Shipping, opt => opt.MapFrom(s => s.ShippingAmount))
                 .ForMember(d => d.ShippingAmount, opt => opt.MapFrom(s => s.ShippingAmount))
                 .ForMember(d => d.Total, opt => opt.MapFrom(s => s.TotalAmount))
@@ -61,9 +64,7 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Tags, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.SeoKeywords)
                     ? new System.Collections.Generic.List<string>()
                     : s.SeoKeywords.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
-                .ForMember(d => d.Attributes, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.AttributesJson)
-                    ? new System.Collections.Generic.List<ProductAttributeOptionDto>()
-                    : (System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<ProductAttributeOptionDto>>(s.AttributesJson, (System.Text.Json.JsonSerializerOptions?)null) ?? new System.Collections.Generic.List<ProductAttributeOptionDto>())));
+                .ForMember(d => d.Attributes, opt => opt.MapFrom(s => Ecommerce.Application.Common.Catalog.ProductAttributeProjection.Resolve(s)));
 
             // Maps ProductVariant → lightweight customer-facing DTO.
             // AvailableStock is the sum of all warehouse Available values for that variant.
@@ -97,9 +98,7 @@ namespace Ecommerce.Application.Mappings
                 .ForMember(d => d.Tags, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.SeoKeywords)
                     ? new System.Collections.Generic.List<string>()
                     : s.SeoKeywords.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList()))
-                .ForMember(d => d.Attributes, opt => opt.MapFrom(s => string.IsNullOrWhiteSpace(s.AttributesJson)
-                    ? new System.Collections.Generic.List<ProductAttributeOptionDto>()
-                    : (System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<ProductAttributeOptionDto>>(s.AttributesJson, (System.Text.Json.JsonSerializerOptions?)null) ?? new System.Collections.Generic.List<ProductAttributeOptionDto>())));
+                .ForMember(d => d.Attributes, opt => opt.MapFrom(s => Ecommerce.Application.Common.Catalog.ProductAttributeProjection.Resolve(s)));
 
             CreateMap<ProductVariant, AdminProductVariantDto>();
             CreateMap<ProductImage, AdminProductImageDto>();

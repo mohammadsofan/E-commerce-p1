@@ -31,6 +31,36 @@ namespace Ecommerce.Application.Tests
         {
             var productId = Guid.NewGuid();
             var variantId = Guid.NewGuid();
+
+            // Checkout is catalog-authoritative: the product and variant must exist and be
+            // published, and the line price is read from them.
+            await ctx.Products.AddAsync(new Product
+            {
+                Id = productId,
+                Name = "Checkout Test Product",
+                Slug = $"checkout-test-{productId}",
+                Sku = $"SKU-{productId}",
+                BasePrice = 10m,
+                CurrencyCode = "USD",
+                IsActive = true,
+                TrackInventory = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
+            await ctx.ProductVariants.AddAsync(new ProductVariant
+            {
+                Id = variantId,
+                ProductId = productId,
+                Name = "Default",
+                Sku = $"SKU-VAR-{variantId}",
+                Price = 10m,
+                IsActive = true,
+                TrackInventory = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            });
+
             var inv = new InventoryItem { Id = variantId, ProductId = productId, ProductVariantId = variantId };
             inv.AddStock(stock);
             await ctx.InventoryItems.AddAsync(inv);

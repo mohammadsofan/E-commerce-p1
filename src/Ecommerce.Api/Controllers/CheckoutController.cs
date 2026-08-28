@@ -20,7 +20,7 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpPost]
-        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("CouponRateLimit")]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("CheckoutRateLimit")]
         public async Task<IActionResult> Post([FromBody] CheckoutCommand command)
         {
             var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

@@ -42,7 +42,10 @@ namespace Ecommerce.Application.Queries.Products
                 .FirstOrDefaultAsync(p => p.Slug == query.Slug, cancellationToken);
 
 
-            if (product == null) throw new NotFoundException("Product", query.Slug);
+            // Unpublished or soft-deleted products must be unreachable by slug too.
+            if (product == null || (!query.IncludeUnpublished && (product.IsDeleted || !product.IsActive)))
+                throw new NotFoundException("Product", query.Slug);
+
             var dto = _mapper.Map<ProductDto>(product);
 
             if (_promotionEvaluator != null)

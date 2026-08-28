@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -687,10 +687,13 @@ namespace Ecommerce.Infrastructure.Persistence
             var diorBrand = await db.Brands.FirstOrDefaultAsync(b => b.Slug == "dior");
             var dellBrand = await db.Brands.FirstOrDefaultAsync(b => b.Slug == "dell");
 
+            // Reused across products so an attribute like "Colour" is defined exactly once.
+            var attributeCache = new Dictionary<string, ProductAttribute>(StringComparer.OrdinalIgnoreCase);
+
             var productsToSeed = new List<(
                 Product product,
                 List<(string url, bool isPrimary, string alt)> images,
-                List<(string name, string sku, decimal price, decimal compareAt)> variants,
+                List<(string name, string sku, decimal price, decimal compareAt, (string attribute, string code, string value)[] options)> variants,
                 int stock
             )>
             {
@@ -723,11 +726,11 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1695048065059-d2d8ceeb0f2c?w=800&auto=format&fit=crop&q=80", false, "آيفون 15 برو ماكس تيتانيوم طبيعي"),
                         ("https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=800&auto=format&fit=crop&q=80", false, "شاشة آيفون فائقة السطوع")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("تيتانيوم طبيعي 256 جيجابايت", "APL-IP15PM-256-NAT", 1199m, 1299m),
-                        ("تيتانيوم أسود 512 جيجابايت", "APL-IP15PM-512-BLK", 1399m, 1499m),
-                        ("تيتانيوم أزرق 1 تيرابايت", "APL-IP15PM-1TB-BLU", 1599m, 1699m)
+                        ("تيتانيوم طبيعي 256 جيجابايت", "APL-IP15PM-256-NAT", 1199m, 1299m, new[] { ("اللون", "COLOR", "تيتانيوم طبيعي"), ("سعة التخزين", "STORAGE", "256 جيجابايت") }),
+                        ("تيتانيوم أسود 512 جيجابايت", "APL-IP15PM-512-BLK", 1399m, 1499m, new[] { ("اللون", "COLOR", "تيتانيوم أسود"), ("سعة التخزين", "STORAGE", "512 جيجابايت") }),
+                        ("تيتانيوم أزرق 1 تيرابايت", "APL-IP15PM-1TB-BLU", 1599m, 1699m, new[] { ("اللون", "COLOR", "تيتانيوم أزرق"), ("سعة التخزين", "STORAGE", "1 تيرابايت") })
                     },
                     45
                 ),
@@ -759,10 +762,10 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80", true, "سماعات سوني WH-1000XM5"),
                         ("https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800&auto=format&fit=crop&q=80", false, "تفاصيل سماعة الرأس")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("أسود كلاسيكي (Black)", "SNY-WH1000XM5-BLK", 349m, 399m),
-                        ("فضي بلاتيني (Silver)", "SNY-WH1000XM5-SLV", 349m, 399m)
+                        ("أسود كلاسيكي (Black)", "SNY-WH1000XM5-BLK", 349m, 399m, new[] { ("اللون", "COLOR", "أسود كلاسيكي") }),
+                        ("فضي بلاتيني (Silver)", "SNY-WH1000XM5-SLV", 349m, 399m, new[] { ("اللون", "COLOR", "فضي بلاتيني") })
                     },
                     60
                 ),
@@ -794,12 +797,12 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80", true, "حذاء نايكي إير ماكس أحمر"),
                         ("https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=800&auto=format&fit=crop&q=80", false, "تفاصيل حذاء نايكي")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("مقاس 41 - أحمر/أسود", "NKE-AIRMAX-41", 175m, 199m),
-                        ("مقاس 42 - أحمر/أسود", "NKE-AIRMAX-42", 175m, 199m),
-                        ("مقاس 43 - أحمر/أسود", "NKE-AIRMAX-43", 175m, 199m),
-                        ("مقاس 44 - أحمر/أسود", "NKE-AIRMAX-44", 175m, 199m)
+                        ("مقاس 41 - أحمر/أسود", "NKE-AIRMAX-41", 175m, 199m, new[] { ("المقاس", "SIZE", "41"), ("اللون", "COLOR", "أحمر/أسود") }),
+                        ("مقاس 42 - أحمر/أسود", "NKE-AIRMAX-42", 175m, 199m, new[] { ("المقاس", "SIZE", "42"), ("اللون", "COLOR", "أحمر/أسود") }),
+                        ("مقاس 43 - أحمر/أسود", "NKE-AIRMAX-43", 175m, 199m, new[] { ("المقاس", "SIZE", "43"), ("اللون", "COLOR", "أحمر/أسود") }),
+                        ("مقاس 44 - أحمر/أسود", "NKE-AIRMAX-44", 175m, 199m, new[] { ("المقاس", "SIZE", "44"), ("اللون", "COLOR", "أحمر/أسود") })
                     },
                     80
                 ),
@@ -831,10 +834,10 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=80", true, "ساعة يد ذكية"),
                         ("https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=800&auto=format&fit=crop&q=80", false, "ساعة أبل بالمعصم")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("هيكل ألمنيوم 41 مم - سماء الليل", "APL-W-S9-41-MID", 399m, 429m),
-                        ("هيكل ألمنيوم 45 مم - ضوء النجوم", "APL-W-S9-45-STR", 429m, 459m)
+                        ("هيكل ألمنيوم 41 مم - سماء الليل", "APL-W-S9-41-MID", 399m, 429m, new[] { ("المقاس", "SIZE", "41 مم"), ("اللون", "COLOR", "سماء الليل") }),
+                        ("هيكل ألمنيوم 45 مم - ضوء النجوم", "APL-W-S9-45-STR", 429m, 459m, new[] { ("المقاس", "SIZE", "45 مم"), ("اللون", "COLOR", "ضوء النجوم") })
                     },
                     35
                 ),
@@ -866,11 +869,11 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1541643600914-78b084683601?w=800&auto=format&fit=crop&q=80", true, "زجاجة عطر سوفاج ديور"),
                         ("https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=800&auto=format&fit=crop&q=80", false, "عطر فاخر أصلي")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("حجم 60 مل", "DIOR-SVG-60ML", 110m, 125m),
-                        ("حجم 100 مل", "DIOR-SVG-100ML", 145m, 165m),
-                        ("حجم 200 مل", "DIOR-SVG-200ML", 210m, 240m)
+                        ("حجم 60 مل", "DIOR-SVG-60ML", 110m, 125m, new[] { ("الحجم", "VOLUME", "60 مل") }),
+                        ("حجم 100 مل", "DIOR-SVG-100ML", 145m, 165m, new[] { ("الحجم", "VOLUME", "100 مل") }),
+                        ("حجم 200 مل", "DIOR-SVG-200ML", 210m, 240m, new[] { ("الحجم", "VOLUME", "200 مل") })
                     },
                     70
                 ),
@@ -902,12 +905,12 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80", true, "جاكيت شتوي أنيق"),
                         ("https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=800&auto=format&fit=crop&q=80", false, "ملابس زارا الشتوية")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("أسود - مقاس M", "ZRA-PUFF-BLK-M", 89m, 120m),
-                        ("أسود - مقاس L", "ZRA-PUFF-BLK-L", 89m, 120m),
-                        ("زيتي - مقاس M", "ZRA-PUFF-OLV-M", 89m, 120m),
-                        ("زيتي - مقاس L", "ZRA-PUFF-OLV-L", 89m, 120m)
+                        ("أسود - مقاس M", "ZRA-PUFF-BLK-M", 89m, 120m, new[] { ("اللون", "COLOR", "أسود"), ("المقاس", "SIZE", "M") }),
+                        ("أسود - مقاس L", "ZRA-PUFF-BLK-L", 89m, 120m, new[] { ("اللون", "COLOR", "أسود"), ("المقاس", "SIZE", "L") }),
+                        ("زيتي - مقاس M", "ZRA-PUFF-OLV-M", 89m, 120m, new[] { ("اللون", "COLOR", "زيتي"), ("المقاس", "SIZE", "M") }),
+                        ("زيتي - مقاس L", "ZRA-PUFF-OLV-L", 89m, 120m, new[] { ("اللون", "COLOR", "زيتي"), ("المقاس", "SIZE", "L") })
                     },
                     90
                 ),
@@ -939,10 +942,10 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop&q=80", true, "لابتوب ديل XPS 15"),
                         ("https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=800&auto=format&fit=crop&q=80", false, "شاشة ديل فائقة النقاء")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("معالج i7 - رام 16GB - سعة 512GB SSD", "DLL-XPS15-16-512", 1499m, 1699m),
-                        ("معالج i9 - رام 32GB - سعة 1TB SSD", "DLL-XPS15-32-1TB", 1899m, 2099m)
+                        ("معالج i7 - رام 16GB - سعة 512GB SSD", "DLL-XPS15-16-512", 1499m, 1699m, new[] { ("المواصفات", "SPEC", "i7 / 16GB / 512GB SSD") }),
+                        ("معالج i9 - رام 32GB - سعة 1TB SSD", "DLL-XPS15-32-1TB", 1899m, 2099m, new[] { ("المواصفات", "SPEC", "i9 / 32GB / 1TB SSD") })
                     },
                     25
                 ),
@@ -974,7 +977,7 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?w=800&auto=format&fit=crop&q=80", true, "شاشة تلفزيون سامسونج ذكية"),
                         ("https://images.unsplash.com/photo-1461151304267-38535e780c79?w=800&auto=format&fit=crop&q=80", false, "غرفة جلوس مع تلفزيون سامسونج")
                     },
-                    new List<(string, string, decimal, decimal)>(),
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>(),
                     20
                 ),
 
@@ -1005,12 +1008,12 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1518002171953-a080ee817e1f?w=800&auto=format&fit=crop&q=80", true, "حذاء أديداس ألترا بوست أبيض"),
                         ("https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=800&auto=format&fit=crop&q=80", false, "تفاصيل نعل ألترا بوست")
                     },
-                    new List<(string, string, decimal, decimal)>
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>
                     {
-                        ("أبيض ناصع - مقاس 42", "ADS-UB-WHT-42", 180m, 210m),
-                        ("أبيض ناصع - مقاس 43", "ADS-UB-WHT-43", 180m, 210m),
-                        ("أسود كور - مقاس 42", "ADS-UB-BLK-42", 180m, 210m),
-                        ("أسود كور - مقاس 44", "ADS-UB-BLK-44", 180m, 210m)
+                        ("أبيض ناصع - مقاس 42", "ADS-UB-WHT-42", 180m, 210m, new[] { ("اللون", "COLOR", "أبيض ناصع"), ("المقاس", "SIZE", "42") }),
+                        ("أبيض ناصع - مقاس 43", "ADS-UB-WHT-43", 180m, 210m, new[] { ("اللون", "COLOR", "أبيض ناصع"), ("المقاس", "SIZE", "43") }),
+                        ("أسود كور - مقاس 42", "ADS-UB-BLK-42", 180m, 210m, new[] { ("اللون", "COLOR", "أسود كور"), ("المقاس", "SIZE", "42") }),
+                        ("أسود كور - مقاس 44", "ADS-UB-BLK-44", 180m, 210m, new[] { ("اللون", "COLOR", "أسود كور"), ("المقاس", "SIZE", "44") })
                     },
                     65
                 ),
@@ -1042,7 +1045,7 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=800&auto=format&fit=crop&q=80", true, "ماكينة قهوة إسبريسو"),
                         ("https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&auto=format&fit=crop&q=80", false, "فنجان قهوة محضر بالماكينة")
                     },
-                    new List<(string, string, decimal, decimal)>(),
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>(),
                     30
                 ),
 
@@ -1073,7 +1076,7 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800&auto=format&fit=crop&q=80", true, "حقيبة ظهر ذكية سوداء"),
                         ("https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=800&auto=format&fit=crop&q=80", false, "تفاصيل الجيوب والملحقات")
                     },
-                    new List<(string, string, decimal, decimal)>(),
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>(),
                     100
                 ),
 
@@ -1104,7 +1107,7 @@ namespace Ecommerce.Infrastructure.Persistence
                         ("https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=800&auto=format&fit=crop&q=80", true, "دمبل تمارين رياضية"),
                         ("https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800&auto=format&fit=crop&q=80", false, "تدريب لياقة وأثقال")
                     },
-                    new List<(string, string, decimal, decimal)>(),
+                    new List<(string, string, decimal, decimal, (string, string, string)[])>(),
                     40
                 )
             };
@@ -1114,6 +1117,7 @@ namespace Ecommerce.Infrastructure.Persistence
                 var existingProduct = await db.Products
                     .Include(p => p.Images)
                     .Include(p => p.Variants)
+                        .ThenInclude(v => v.VariantAttributes)
                     .Include(p => p.InventoryItems)
                     .FirstOrDefaultAsync(p => p.Slug == item.product.Slug);
 
@@ -1159,6 +1163,9 @@ namespace Ecommerce.Infrastructure.Persistence
                         };
                         await db.ProductVariants.AddAsync(variant);
 
+                        // Variant option values — these drive the storefront option matrix.
+                        await SeedVariantAttributesAsync(db, variant.Id, v.options, attributeCache);
+
                         // Variant inventory
                         var varInv = new InventoryItem(product.Id, mainWarehouse.Id, item.stock / Math.Max(item.variants.Count, 1), variant.Id);
                         await db.InventoryItems.AddAsync(varInv);
@@ -1200,6 +1207,24 @@ namespace Ecommerce.Infrastructure.Persistence
                         }
                     }
 
+                    // Back-fill option values for variants seeded before the option matrix existed.
+                    // Without these rows the storefront cannot resolve a variant from a selection.
+                    foreach (var v in item.variants)
+                    {
+                        var variant = existingProduct.Variants.FirstOrDefault(x => x.Sku == v.sku);
+                        if (variant == null) continue;
+                        if (variant.VariantAttributes != null && variant.VariantAttributes.Count > 0) continue;
+
+                        await SeedVariantAttributesAsync(db, variant.Id, v.options, attributeCache);
+                    }
+
+                    // The option matrix is now derived from the variants, so any legacy
+                    // hand-written AttributesJson would only be a stale duplicate.
+                    if (item.variants.Count > 0)
+                    {
+                        existingProduct.AttributesJson = null;
+                    }
+
                     if (!existingProduct.InventoryItems.Any())
                     {
                         var prodInv = new InventoryItem(existingProduct.Id, mainWarehouse.Id, item.stock);
@@ -1210,7 +1235,73 @@ namespace Ecommerce.Infrastructure.Persistence
                 }
             }
 
-            _logger.LogInformation("Seeded and synchronized rich products and variants");
+            _logger.LogInformation("Seeded and synchronized rich products, variants and variant options");
+        }
+
+        /// <summary>
+        /// Ensures the referenced <see cref="ProductAttribute"/> definitions exist and links the
+        /// given variant to its option values.
+        /// </summary>
+        private static async Task SeedVariantAttributesAsync(
+            ApplicationDbContext db,
+            Guid variantId,
+            (string attribute, string code, string value)[] options,
+            Dictionary<string, ProductAttribute> attributeCache)
+        {
+            if (options == null || options.Length == 0) return;
+
+            foreach (var (attributeName, code, value) in options)
+            {
+                if (string.IsNullOrWhiteSpace(value)) continue;
+
+                if (!attributeCache.TryGetValue(code, out var attribute))
+                {
+                    attribute = await db.ProductAttributes.FirstOrDefaultAsync(a => a.Code == code)
+                                ?? await db.ProductAttributes.FirstOrDefaultAsync(a => a.Name == attributeName);
+
+                    if (attribute == null)
+                    {
+                        attribute = new ProductAttribute
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = attributeName,
+                            Code = code,
+                            DisplayType = "Select",
+                            IsFilterable = true,
+                            IsVariant = true,
+                            IsRequired = true,
+                            CreatedAt = DateTimeOffset.UtcNow,
+                            UpdatedAt = DateTimeOffset.UtcNow
+                        };
+                        await db.ProductAttributes.AddAsync(attribute);
+                        await db.SaveChangesAsync();
+                    }
+                    else if (string.IsNullOrWhiteSpace(attribute.Code))
+                    {
+                        attribute.Code = code;
+                        attribute.DisplayType = string.IsNullOrWhiteSpace(attribute.DisplayType) ? "Select" : attribute.DisplayType;
+                        attribute.IsVariant = true;
+                    }
+
+                    attributeCache[code] = attribute;
+                }
+
+                var alreadyLinked = await db.ProductVariantAttributes
+                    .AnyAsync(va => va.ProductVariantId == variantId && va.ProductAttributeId == attribute.Id);
+                if (alreadyLinked) continue;
+
+                await db.ProductVariantAttributes.AddAsync(new ProductVariantAttribute
+                {
+                    Id = Guid.NewGuid(),
+                    ProductVariantId = variantId,
+                    ProductAttributeId = attribute.Id,
+                    Value = value,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
+            await db.SaveChangesAsync();
         }
 
         private async Task SeedSampleOrdersAsync(ApplicationDbContext db)

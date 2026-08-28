@@ -16,7 +16,16 @@ namespace Ecommerce.Application.Queries.Products
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public bool? IsActive { get; set; }
+
+        /// <summary>
+        /// Admin-only escape hatch. The public catalog defaults to published products only.
+        /// </summary>
+        public bool IncludeInactive { get; set; }
+
         public string? SortBy { get; set; } // name, price_asc, price_desc, newest, featured, highest_rated
         public string? Tag { get; set; }    // filter by tag name stored in SeoKeywords
+
+        /// <summary>Restrict results to featured products (independent of the sort order).</summary>
+        public bool? IsFeatured { get; set; }
     }
 }

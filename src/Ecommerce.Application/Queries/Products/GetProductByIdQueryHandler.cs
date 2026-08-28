@@ -40,7 +40,11 @@ namespace Ecommerce.Application.Queries.Products
                     .ThenInclude(v => v.InventoryItems)
                 .FirstOrDefaultAsync(p => p.Id == query.Id, cancellationToken);
 
-            if (product == null) throw new NotFoundException("Product", query.Id);
+            // A product that is unpublished or soft-deleted must not be reachable by GUID,
+            // otherwise the whole catalog-visibility rule can be bypassed with a direct link.
+            if (product == null || (!query.IncludeUnpublished && (product.IsDeleted || !product.IsActive)))
+                throw new NotFoundException("Product", query.Id);
+
             var dto = _mapper.Map<ProductDto>(product);
 
             if (_promotionEvaluator != null)

@@ -27,6 +27,31 @@ namespace Ecommerce.Application.Tests
             var variantId = Guid.NewGuid();
             var productId = Guid.NewGuid();
 
+            var product = new Ecommerce.Domain.Entities.Product
+            {
+                Id = productId,
+                Name = "Idempotency Product",
+                Sku = $"SKU-{productId}",
+                BasePrice = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.Products.AddAsync(product);
+
+            var variant = new Ecommerce.Domain.Entities.ProductVariant
+            {
+                Id = variantId,
+                ProductId = productId,
+                Name = "Variant A",
+                Sku = $"VAR-{variantId}",
+                Price = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            await context.ProductVariants.AddAsync(variant);
+
             var inv = new Ecommerce.Domain.Entities.InventoryItem { Id = variantId, ProductId = productId, ProductVariantId = variantId };
             inv.AddStock(50);
             await context.InventoryItems.AddAsync(inv);

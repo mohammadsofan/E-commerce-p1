@@ -27,9 +27,11 @@ namespace Ecommerce.Application.Queries.Admin
 
         public async Task<AdminDashboardDto> Handle(GetAdminDashboardQuery query, CancellationToken cancellationToken = default)
         {
-            // Basic counts
-            var totalProducts = await _db.Products.CountAsync(cancellationToken);
-            var totalOrders = await _db.Orders.CountAsync(cancellationToken);
+            // KPI counts must reflect what the store actually sells/owes:
+            // soft-deleted products, draft/cancelled orders and staff accounts are excluded.
+            var totalProducts = await _db.Products.CountAsync(p => !p.IsDeleted, cancellationToken);
+            var totalOrders = await _db.Orders
+                .CountAsync(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled, cancellationToken);
             var totalCustomers = await _db.Users.CountAsync(cancellationToken);
 
             // Revenue calculations
@@ -47,24 +49,31 @@ namespace Ecommerce.Application.Queries.Admin
 
             var pendingOrdersRevenue = pendingOrders.Sum();
 
-            // Low stock and out of stock products
+            // Low stock and out of stock products. The threshold comes from each row's
+            // configured ReorderLevel, falling back to a sensible default when unset.
+            const int defaultLowStockThreshold = 10;
             var productsWithInventory = await _db.InventoryItems
                 .Where(i => i.ProductId != null)
                 .GroupBy(i => i.ProductId)
                 .Select(g => new
                 {
                     ProductId = g.Key,
-                    Available = g.Sum(i => i.QuantityOnHand - i.QuantityReserved)
+                    Available = g.Sum(i => i.QuantityOnHand - i.QuantityReserved),
+                    ReorderLevel = g.Max(i => i.ReorderLevel)
                 })
                 .ToListAsync(cancellationToken);
 
-            var lowStockProducts = productsWithInventory.Count(p => p.Available > 0 && p.Available <= 10);
+            var lowStockProducts = productsWithInventory.Count(p =>
+                p.Available > 0 &&
+                p.Available <= (p.ReorderLevel > 0 ? p.ReorderLevel : defaultLowStockThreshold));
             var outOfStockProducts = productsWithInventory.Count(p => p.Available <= 0);
 
-            // Sales by period (last 7 days)
+            // Sales by period (last 7 days), excluding drafts and cancellations.
             var sevenDaysAgo = DateTimeOffset.UtcNow.AddDays(-7);
             var recentOrders = await _db.Orders
-                .Where(o => o.CreatedAt >= sevenDaysAgo)
+                .Where(o => o.CreatedAt >= sevenDaysAgo
+                            && o.Status != OrderStatus.Draft
+                            && o.Status != OrderStatus.Cancelled)
                 .ToListAsync(cancellationToken);
 
             var salesByPeriod = recentOrders
@@ -98,9 +107,11 @@ namespace Ecommerce.Application.Queries.Admin
                 .Take(10)
                 .ToListAsync(cancellationToken);
 
-            // Top customers
+            // Top customers (excluding drafts and cancellations so spend reflects real revenue)
             var customerOrders = await _db.Orders
-                .Where(o => o.UserId != null)
+                .Where(o => o.UserId != null
+                            && o.Status != OrderStatus.Draft
+                            && o.Status != OrderStatus.Cancelled)
                 .GroupBy(o => o.UserId!.Value)
                 .Select(g => new TopCustomerDto
                 {
@@ -129,9 +140,9 @@ namespace Ecommerce.Application.Queries.Admin
             // Build final dashboard
             var dashboard = new AdminDashboardDto
             {
-                TotalProducts = await _db.Products.CountAsync(cancellationToken),
-                TotalOrders = await _db.Orders.CountAsync(cancellationToken),
-                TotalCustomers = await _db.Users.CountAsync(cancellationToken),
+                TotalProducts = totalProducts,
+                TotalOrders = totalOrders,
+                TotalCustomers = totalCustomers,
                 TotalRevenue = totalRevenue,
                 PendingOrdersRevenue = pendingOrdersRevenue,
                 LowStockProducts = lowStockProducts,

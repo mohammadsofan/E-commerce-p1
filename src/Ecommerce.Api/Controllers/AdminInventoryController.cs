@@ -34,7 +34,7 @@ namespace Ecommerce.Api.Controllers
             [FromQuery] Guid? productId = null,
             [FromQuery] Guid? warehouseId = null,
             [FromQuery] bool? lowStockOnly = null,
-            [FromQuery] bool includeBackorder = false)
+            [FromQuery] bool includeBackorder = true)
         {
             var query = new GetAdminInventoryQuery
             {

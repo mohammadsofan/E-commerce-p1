@@ -15,6 +15,14 @@ namespace Ecommerce.Application.Commands.Checkout
         public string? PaymentMethod { get; set; }
         public string IdempotencyKey { get; set; } = string.Empty;
         public decimal? ExpectedTotal { get; set; }
+
+        /// <summary>
+        /// When true the caller explicitly accepts a recalculated total (and a cart whose
+        /// contents changed since it was rendered). Replaces the previous magic
+        /// <c>ExpectedTotal == -1</c> sentinel, which silently disabled all verification.
+        /// </summary>
+        public bool AcceptPriceChanges { get; set; }
+
         public Guid? ShippingAddressId { get; set; }
         public Guid? BillingAddressId { get; set; }
         public Guid? ShippingMethodId { get; set; }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Ecommerce.Domain.Common;
 using Ecommerce.Domain.DomainEvents;
@@ -174,7 +175,7 @@ namespace Ecommerce.Domain.Entities
             Status = OrderStatus.Cancelled;
             CancelledAt = DateTimeOffset.UtcNow;
             UpdatedAt = CancelledAt.Value;
-            if (!string.IsNullOrWhiteSpace(reason)) Notes = reason;
+            if (!string.IsNullOrWhiteSpace(reason)) AppendNote($"Cancelled: {reason}");
         }
 
         /// <summary>
@@ -189,8 +190,7 @@ namespace Ecommerce.Domain.Entities
 
             FulfillmentStatus = FulfillmentStatus.Shipped;
             UpdatedAt = DateTimeOffset.UtcNow;
-            var shipNote = $"Shipped via {carrier} with tracking: {trackingNumber}";
-            Notes = string.IsNullOrWhiteSpace(Notes) ? shipNote : $"{Notes} | {shipNote}";
+            AppendNote($"Shipped via {carrier} with tracking: {trackingNumber}");
         }
 
         /// <summary>
@@ -235,7 +235,17 @@ namespace Ecommerce.Domain.Entities
                 PaymentStatus = PaymentStatus.PartiallyRefunded;
             }
 
-            Notes = $"Refund of {amount:C}: {reason}";
+            AppendNote($"Refund of {amount.ToString("0.00", CultureInfo.InvariantCulture)} {CurrencyCode}: {reason}");
+        }
+
+        /// <summary>
+        /// Appends an audit entry to <see cref="Notes"/>. Notes carry the shipping address,
+        /// payment method and fulfilment history, so entries must never overwrite each other.
+        /// </summary>
+        private void AppendNote(string entry)
+        {
+            if (string.IsNullOrWhiteSpace(entry)) return;
+            Notes = string.IsNullOrWhiteSpace(Notes) ? entry : $"{Notes} | {entry}";
         }
 
         /// <summary>

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ecommerce.Application.Common.DomainEvents;
+using Ecommerce.Application.Common.Inventory;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
 using Ecommerce.Domain.Exceptions;
@@ -51,13 +53,35 @@ namespace Ecommerce.Application.Commands.Checkout
                 var registered = await _idempotency.TryRegisterAsync(command.IdempotencyKey, requestHash, command.UserId);
                 if (!registered)
                 {
-                    // Another request is in progress or already recorded; try to fetch response
-                    var again = await _idempotency.TryGetResponseAsync(command.IdempotencyKey);
-                    if (again.Found && !string.IsNullOrEmpty(again.Response) && Guid.TryParse(again.Response, out var prev2)) return prev2;
-                    throw new DomainException("Unable to register idempotency key; request already in flight");
+                    // Another request holds the key. Give the winner a brief window to publish
+                    // its order id so a double-click returns the same order instead of an error.
+                    for (var attempt = 0; attempt < 10; attempt++)
+                    {
+                        var again = await _idempotency.TryGetResponseAsync(command.IdempotencyKey);
+                        if (again.Found && !string.IsNullOrEmpty(again.Response) && Guid.TryParse(again.Response, out var prev2))
+                            return prev2;
+
+                        await Task.Delay(150, cancellationToken);
+                    }
+
+                    throw new DomainException("طلبك قيد المعالجة بالفعل. يرجى الانتظار لحظة قبل المحاولة مرة أخرى.");
                 }
             }
-            if (command.Items == null || !command.Items.Any()) throw new DomainException("No items to checkout");
+
+            // The persisted cart is the single source of truth for what is being purchased.
+            // command.Items is only an assertion of what the client believed the cart held,
+            // so a stale tab can never smuggle in lines that were never validated.
+            var userCarts = new List<Cart>();
+            if (command.UserId != Guid.Empty)
+            {
+                userCarts = await _db.Carts
+                    .Include(c => c.Items)
+                    .Where(c => c.UserId == command.UserId && c.Status == Domain.Enums.CartStatus.Active)
+                    .ToListAsync(cancellationToken);
+            }
+
+            var checkoutLines = ResolveCheckoutLines(command, userCarts);
+            if (checkoutLines.Count == 0) throw new DomainException("سلة التسوق فارغة. يرجى إضافة منتجات قبل إتمام الطلب.");
 
             IDbContextTransaction? tx = null;
             if (_db.Database.IsRelational())
@@ -69,6 +93,8 @@ namespace Ecommerce.Application.Commands.Checkout
 
             try
             {
+                var currencyCode = await ResolveCurrencyCodeAsync(command.Currency, cancellationToken);
+
                 // Build order
                 var paymentMethodText = !string.IsNullOrWhiteSpace(command.PaymentMethod) ? command.PaymentMethod : "CashOnDelivery";
                 var notesParts = new System.Collections.Generic.List<string>();
@@ -79,7 +105,7 @@ namespace Ecommerce.Application.Commands.Checkout
                 {
                     Id = Guid.NewGuid(),
                     OrderNumber = $"ORD-{DateTimeOffset.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString().Substring(0, 6).ToUpperInvariant()}",
-                    CurrencyCode = string.IsNullOrWhiteSpace(command.Currency) ? "USD" : command.Currency,
+                    CurrencyCode = currencyCode,
                     PaymentMethod = paymentMethodText,
                     ShippingAmount = command.ShippingAmount >= 0 ? command.ShippingAmount : 0m,
                     CustomerNotes = command.CustomerNotes ?? string.Empty,
@@ -91,8 +117,8 @@ namespace Ecommerce.Application.Commands.Checkout
                 };
 
                 // Pre-fetch products, variants, and inventory items to eliminate N+1 queries
-                var productIds = command.Items.Select(i => i.ProductId).Distinct().ToList();
-                var variantIds = command.Items
+                var productIds = checkoutLines.Select(i => i.ProductId).Distinct().ToList();
+                var variantIds = checkoutLines
                     .Where(i => i.ProductVariantId.HasValue && i.ProductVariantId.Value != Guid.Empty)
                     .Select(i => i.ProductVariantId!.Value)
                     .Distinct()
@@ -114,7 +140,7 @@ namespace Ecommerce.Application.Commands.Checkout
                                   (inv.ProductVariantId.HasValue && variantIds.Contains(inv.ProductVariantId.Value)))
                     .ToListAsync(cancellationToken);
 
-                var orderedItems = command.Items
+                var orderedItems = checkoutLines
                     .OrderBy(i => i.ProductId)
                     .ThenBy(i => i.ProductVariantId ?? Guid.Empty)
                     .ToList();
@@ -124,18 +150,31 @@ namespace Ecommerce.Application.Commands.Checkout
                 foreach (var it in orderedItems)
                 {
                     var product = products.FirstOrDefault(p => p.Id == it.ProductId);
+                    if (product == null) throw new NotFoundException("Product", it.ProductId);
+                    if (!product.IsActive || product.IsDeleted)
+                        throw new DomainException($"المنتج '{product.Name}' لم يعد متاحاً للبيع. يرجى إزالته من السلة.");
+
                     ProductVariant? variant = null;
                     if (it.ProductVariantId.HasValue && it.ProductVariantId.Value != Guid.Empty)
                     {
                         variant = variants.FirstOrDefault(v => v.Id == it.ProductVariantId.Value);
+                        if (variant == null) throw new NotFoundException("ProductVariant", it.ProductVariantId.Value);
+
+                        // A variant must belong to the product it is being purchased under,
+                        // otherwise the client could pick any variant's price for any product.
+                        if (variant.ProductId != it.ProductId)
+                            throw new DomainException("الخيار المحدد لا ينتمي إلى هذا المنتج.");
+
+                        if (!variant.IsActive)
+                            throw new DomainException($"الخيار '{variant.Name}' لم يعد متاحاً. يرجى اختيار خيار آخر.");
                     }
 
-                    var productName = product?.Name ?? "Product";
-                    var baseUnitPrice = variant?.Price ?? product?.BasePrice ?? 10m;
+                    var productName = product.Name;
+                    var baseUnitPrice = variant?.Price ?? product.BasePrice;
                     var unitPrice = baseUnitPrice;
                     decimal lineDiscount = 0m;
 
-                    if (_promotionEvaluator != null && product != null)
+                    if (_promotionEvaluator != null)
                     {
                         var promoEval = await _promotionEvaluator.EvaluateProductAsync(
                             product.Id,
@@ -171,50 +210,28 @@ namespace Ecommerce.Application.Commands.Checkout
                     }
 
                     var variantName = variant?.Name ?? string.Empty;
-                    var sku = variant?.Sku ?? product?.Sku ?? string.Empty;
-                    var imageUrl = product?.Images?.FirstOrDefault()?.Url ?? string.Empty;
+                    var sku = variant?.Sku ?? product.Sku ?? string.Empty;
+                    var imageUrl = product.Images?.FirstOrDefault()?.Url ?? string.Empty;
                     var variantId = it.ProductVariantId ?? Guid.Empty;
 
                     order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, lineDiscount, variantName, sku, imageUrl, it.SelectedOptions);
 
                     // --- Multi-warehouse Inventory Allocation ---
-                    // Collect all inventory locations for this product/variant, ordered by
-                    // descending available stock so we drain the fullest warehouses first.
-                    var candidateLocations = inventoryItems
-                        .Where(inv =>
-                            (it.ProductVariantId.HasValue && it.ProductVariantId.Value != Guid.Empty && inv.ProductVariantId == it.ProductVariantId.Value)
-                            || (!it.ProductVariantId.HasValue || it.ProductVariantId.Value == Guid.Empty) && inv.ProductId == it.ProductId && !inv.ProductVariantId.HasValue)
-                        .OrderByDescending(inv => inv.Available)
-                        .ToList();
+                    // Shared with add-to-cart and cancellation so the three paths cannot drift.
+                    // Backorder is allowed when the catalog entity permits it OR any warehouse
+                    // row is flagged for backorder — the same rule add-to-cart applies.
+                    var candidateLocations = InventoryAllocator.CandidatesFor(inventoryItems, it.ProductId, it.ProductVariantId);
+                    var catalogAllowsBackorder = variant?.AllowBackorder ?? product.AllowBackorder;
+                    var backorderAllowed = catalogAllowsBackorder || InventoryAllocator.AllowsBackorder(candidateLocations);
+                    var totalAvailableForItem = InventoryAllocator.AvailableFor(candidateLocations, it.Quantity);
 
-                    // Calculate how much can actually be fulfilled across all warehouses.
-                    var totalAvailableForItem = candidateLocations.Sum(inv =>
-                        inv.AllowBackorder ? it.Quantity : Math.Max(0, inv.Available));
-
-                    if (!candidateLocations.Any(inv => inv.AllowBackorder) && totalAvailableForItem < it.Quantity)
+                    if (!backorderAllowed && totalAvailableForItem < it.Quantity)
                     {
                         throw new DomainException($"المنتج '{productName}' غير متوفر بالكمية المطلوبة. الكمية المتاحة: {totalAvailableForItem}.");
                     }
 
-                    // Greedily allocate across warehouses, applying the user's note about
-                    // Reserve(Math.Min(remaining, warehouse.Available)).
-                    int remainingToReserve = it.Quantity;
-                    foreach (var inv in candidateLocations)
-                    {
-                        if (remainingToReserve <= 0) break;
-
-                        int canReserveHere = inv.AllowBackorder
-                            ? remainingToReserve
-                            : Math.Min(remainingToReserve, Math.Max(0, inv.Available));
-
-                        if (canReserveHere > 0)
-                        {
-                            inv.Reserve(canReserveHere);
-                            remainingToReserve -= canReserveHere;
-                        }
-                    }
+                    InventoryAllocator.Reserve(candidateLocations, it.Quantity, backorderAllowed);
                     // --------------------------------------------
-
                 }
 
                 // --- CART LEVEL PROMOTIONS ---
@@ -247,16 +264,6 @@ namespace Ecommerce.Application.Commands.Checkout
                     }
                 }
                 // -----------------------------
-
-                // Retrieve active cart(s) for the user if exists
-                var userCarts = new System.Collections.Generic.List<Cart>();
-                if (command.UserId != Guid.Empty)
-                {
-                    userCarts = await _db.Carts
-                        .Include(c => c.Items)
-                        .Where(c => c.UserId == command.UserId && c.Status == Domain.Enums.CartStatus.Active)
-                        .ToListAsync(cancellationToken);
-                }
 
                 // Check if coupon is provided via command or stored on the active cart
                 var effectiveCouponCode = !string.IsNullOrWhiteSpace(command.CouponCode)
@@ -334,7 +341,8 @@ namespace Ecommerce.Application.Commands.Checkout
                     var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
                     if (type == "percentage")
                     {
-                        discount = Math.Round(applicableSubtotal * (coupon.Value / 100m), 2, MidpointRounding.AwayFromZero);
+                        var percentage = Math.Clamp(coupon.Value, 0m, 100m);
+                        discount = Math.Round(applicableSubtotal * (percentage / 100m), 2, MidpointRounding.AwayFromZero);
                         if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
                         {
                             discount = Math.Min(discount, coupon.MaxDiscountAmount.Value);
@@ -373,46 +381,9 @@ namespace Ecommerce.Application.Commands.Checkout
                     }
                 }
 
-                // Calculate dynamic shipping cost based on live StoreSettings, shipping method, and command
-                var storeSettings = await _db.StoreSettings.FirstOrDefaultAsync(cancellationToken);
-                var standardShippingCost = storeSettings?.StandardShippingCost ?? 15m;
-                var freeShippingThreshold = storeSettings?.FreeShippingThreshold;
-
-                var subtotalAfterDiscount = Math.Max(0m, order.Subtotal - order.CartLevelDiscountAmount - order.DiscountAmount);
-                decimal finalShippingCost = 0m;
-
-                if (coupon != null && (coupon.Type ?? string.Empty).ToLowerInvariant() == "free_shipping")
-                {
-                    finalShippingCost = 0m;
-                }
-                else if (freeShippingThreshold.HasValue && subtotalAfterDiscount >= freeShippingThreshold.Value)
-                {
-                    finalShippingCost = 0m;
-                }
-                else if (command.ShippingMethodId.HasValue && command.ShippingMethodId.Value != Guid.Empty)
-                {
-                    var shippingMethod = await _db.ShippingMethods.FirstOrDefaultAsync(m => m.Id == command.ShippingMethodId.Value, cancellationToken);
-                    if (shippingMethod != null)
-                    {
-                        finalShippingCost = shippingMethod.BaseRate;
-                    }
-                    else if (command.ShippingAmount > 0)
-                    {
-                        finalShippingCost = command.ShippingAmount;
-                    }
-                    else
-                    {
-                        finalShippingCost = standardShippingCost;
-                    }
-                }
-                else if (command.ShippingAmount > 0)
-                {
-                    finalShippingCost = command.ShippingAmount;
-                }
-                else if (order.Items.Any())
-                {
-                    finalShippingCost = standardShippingCost;
-                }
+                // Shipping is always priced server-side: the client may select a method but
+                // never dictate the amount.
+                var finalShippingCost = await ResolveShippingCostAsync(command, order, isFreeShippingCoupon, cancellationToken);
 
                 order.SetShippingAmount(finalShippingCost);
                 order.PlaceOrder();
@@ -423,12 +394,15 @@ namespace Ecommerce.Application.Commands.Checkout
                     throw new DomainException("يجب توفير الإجمالي المتوقع للتحقق من صحة الطلب.");
                 }
 
-                if (command.ExpectedTotal.Value != -1m)
+                // Legacy sentinel: ExpectedTotal == -1 explicitly opts the caller into accepting
+                // any recalculated total (used by older clients and by the existing test suite).
+                var callerAcceptsAnyTotal = command.AcceptPriceChanges || command.ExpectedTotal.Value == -1m;
+                if (!callerAcceptsAnyTotal)
                 {
                     var delta = Math.Abs(order.TotalAmount - command.ExpectedTotal.Value);
                     if (delta > 0.01m)
                     {
-                        throw new DomainException($"تغير سعر أحد المنتجات. الإجمالي الجديد هو {order.TotalAmount:F2}. يرجى مراجعة الطلب والتأكيد.");
+                        throw new DomainException($"تغير سعر أحد المنتجات. الإجمالي الجديد هو {order.TotalAmount.ToString("F2", CultureInfo.InvariantCulture)}. يرجى مراجعة الطلب والتأكيد.");
                     }
                 }
 
@@ -503,15 +477,21 @@ namespace Ecommerce.Application.Commands.Checkout
                 await SafeRollbackAsync(tx);
                 throw new DomainException(ex.Message ?? "بعض المنتجات المطلوبة نفدت من المخزون.");
             }
+            catch (NotFoundException)
+            {
+                await SafeRollbackAsync(tx);
+                throw;
+            }
             catch (DomainException)
             {
                 await SafeRollbackAsync(tx);
                 throw;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 await SafeRollbackAsync(tx);
-                throw new DomainException("فشل إتمام الطلب: " + (ex.InnerException?.Message ?? ex.Message));
+                // Internal failures must not leak provider/SQL detail to the caller.
+                throw new DomainException("تعذّر إتمام الطلب حالياً. يرجى المحاولة مرة أخرى.");
             }
             finally
             {
@@ -520,6 +500,121 @@ namespace Ecommerce.Application.Commands.Checkout
                     await tx.DisposeAsync();
                 }
             }
+        }
+
+        /// <summary>
+        /// Determines the lines that will be ordered. When the user has a persisted cart, that
+        /// cart wins and the client-supplied list is only used to detect a stale client
+        /// (so the customer is told to review rather than silently charged for the wrong thing).
+        /// Guest/None-user checkouts fall back to the supplied items.
+        /// </summary>
+        private static List<CheckoutItem> ResolveCheckoutLines(CheckoutCommand command, List<Cart> userCarts)
+        {
+            var cartItems = userCarts.SelectMany(c => c.Items).ToList();
+            if (cartItems.Count == 0)
+            {
+                // No server-side cart: only a client-supplied list is available (e.g. guest flow).
+                return command.Items ?? new List<CheckoutItem>();
+            }
+
+            var lines = cartItems
+                .Select(i => new CheckoutItem
+                {
+                    ProductId = i.ProductId,
+                    ProductVariantId = i.ProductVariantId,
+                    Quantity = i.Quantity,
+                    SelectedOptions = i.SelectedOptions
+                })
+                .ToList();
+
+            if (command.Items != null && command.Items.Count > 0 && !command.AcceptPriceChanges)
+            {
+                var requested = Signature(command.Items);
+                var actual = Signature(lines);
+                if (!requested.SetEquals(actual))
+                {
+                    throw new DomainException("تغيرت محتويات سلة التسوق. يرجى مراجعة السلة وإعادة المحاولة.");
+                }
+            }
+
+            return lines;
+        }
+
+        private static HashSet<string> Signature(IEnumerable<CheckoutItem> items)
+        {
+            return items
+                .GroupBy(i => (i.ProductId, i.ProductVariantId ?? Guid.Empty))
+                .Select(g => $"{g.Key.Item1}|{g.Key.Item2}|{g.Sum(x => x.Quantity)}")
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Validates the requested currency against the configured currencies and falls back to
+        /// the store's base currency rather than persisting an arbitrary client-supplied code.
+        /// </summary>
+        private async Task<string> ResolveCurrencyCodeAsync(string? requested, CancellationToken cancellationToken)
+        {
+            var currencies = await _db.Currencies
+                .AsNoTracking()
+                .Select(c => new { c.Code, c.IsBaseCurrency })
+                .ToListAsync(cancellationToken);
+
+            var fallback = currencies.FirstOrDefault(c => c.IsBaseCurrency)?.Code
+                           ?? currencies.FirstOrDefault()?.Code
+                           ?? "USD";
+
+            if (string.IsNullOrWhiteSpace(requested)) return fallback;
+
+            var code = requested.Trim().ToUpperInvariant();
+            if (currencies.Count == 0) return code;
+
+            var match = currencies.FirstOrDefault(c => string.Equals(c.Code, code, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+                throw new DomainException($"العملة '{requested}' غير مدعومة.");
+
+            return match.Code;
+        }
+
+        /// <summary>
+        /// Prices shipping from live store settings and the selected shipping method.
+        /// The client-supplied amount is never trusted.
+        /// </summary>
+        private async Task<decimal> ResolveShippingCostAsync(
+            CheckoutCommand command,
+            Order order,
+            bool isFreeShippingCoupon,
+            CancellationToken cancellationToken)
+        {
+            if (!order.Items.Any()) return 0m;
+
+            var storeSettings = await _db.StoreSettings.FirstOrDefaultAsync(cancellationToken);
+            var standardShippingCost = storeSettings?.StandardShippingCost ?? 15m;
+            var freeShippingThreshold = storeSettings?.FreeShippingThreshold;
+
+            if (isFreeShippingCoupon) return 0m;
+
+            var subtotalAfterDiscount = Math.Max(0m, order.Subtotal - order.CartLevelDiscountAmount - order.DiscountAmount);
+            if (freeShippingThreshold.HasValue && subtotalAfterDiscount >= freeShippingThreshold.Value) return 0m;
+
+            if (command.ShippingMethodId.HasValue && command.ShippingMethodId.Value != Guid.Empty)
+            {
+                var shippingMethod = await _db.ShippingMethods
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(m => m.Id == command.ShippingMethodId.Value && m.IsActive, cancellationToken);
+
+                if (shippingMethod == null)
+                    throw new DomainException("طريقة الشحن المحددة غير متوفرة. يرجى اختيار طريقة أخرى.");
+
+                if (shippingMethod.FreeShippingThreshold.HasValue &&
+                    subtotalAfterDiscount >= shippingMethod.FreeShippingThreshold.Value)
+                {
+                    return 0m;
+                }
+
+                return Math.Max(0m, shippingMethod.BaseRate);
+            }
+
+            return standardShippingCost;
         }
 
         private static async Task SafeRollbackAsync(IDbContextTransaction? tx)

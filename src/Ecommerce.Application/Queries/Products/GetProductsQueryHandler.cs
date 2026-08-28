@@ -47,8 +47,12 @@ namespace Ecommerce.Application.Queries.Products
                     .ThenInclude(v => v.InventoryItems)
                 .Where(p => !p.IsDeleted);
 
+            // Storefront callers must never see unpublished products. Admin callers opt out by
+            // passing IsActive explicitly (including false, to audit unpublished items).
             if (query.IsActive.HasValue)
                 products = products.Where(p => p.IsActive == query.IsActive.Value);
+            else if (!query.IncludeInactive)
+                products = products.Where(p => p.IsActive);
 
             if (!string.IsNullOrWhiteSpace(query.SearchTerm))
             {
@@ -73,6 +77,9 @@ namespace Ecommerce.Application.Queries.Products
 
             if (query.BrandId.HasValue)
                 products = products.Where(p => p.BrandId == query.BrandId.Value);
+
+            if (query.IsFeatured.HasValue)
+                products = products.Where(p => p.IsFeatured == query.IsFeatured.Value);
 
             if (query.MinPrice.HasValue)
                 products = products.Where(p => p.BasePrice >= query.MinPrice.Value);
@@ -124,11 +131,8 @@ namespace Ecommerce.Application.Queries.Products
 
         private static IQueryable<Product> ApplySorting(IQueryable<Product> query, string? sortBy)
         {
-            if (!string.IsNullOrEmpty(sortBy) && sortBy.ToLower() == "featured")
-            {
-                query = query.Where(p => p.IsFeatured);
-            }
-
+            // "featured" is a SORT, not a filter: featured items float to the top but nothing
+            // is hidden. Callers that want only featured products pass IsFeatured=true.
             return sortBy?.ToLowerInvariant() switch
             {
                 "price_asc" => query.OrderBy(p => p.BasePrice),

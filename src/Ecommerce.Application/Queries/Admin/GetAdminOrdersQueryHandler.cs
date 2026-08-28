@@ -9,6 +9,7 @@ using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Application.Queries.Admin;
+using Ecommerce.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 using Ecommerce.Domain.Enums;
@@ -58,6 +59,8 @@ namespace Ecommerce.Application.Queries.Admin
             }
             else if (!string.IsNullOrWhiteSpace(query.Status) && !query.Status.Equals("all", StringComparison.OrdinalIgnoreCase))
             {
+                // An unrecognised filter value must not silently degrade to "no filter" and
+                // return the whole table.
                 if (Enum.TryParse<OrderStatus>(query.Status.Trim(), true, out var parsedStatus))
                 {
                     q = q.Where(o => o.Status == parsedStatus);
@@ -65,6 +68,10 @@ namespace Ecommerce.Application.Queries.Admin
                 else if (int.TryParse(query.Status.Trim(), out var statusInt) && Enum.IsDefined(typeof(OrderStatus), statusInt))
                 {
                     q = q.Where(o => o.Status == (OrderStatus)statusInt);
+                }
+                else
+                {
+                    throw new DomainException($"حالة الطلب '{query.Status}' غير معروفة. الحالات المتاحة: {string.Join(", ", Enum.GetNames<OrderStatus>())}.");
                 }
             }
 
@@ -74,6 +81,10 @@ namespace Ecommerce.Application.Queries.Admin
                 {
                     q = q.Where(o => o.PaymentStatus == parsedPaymentStatus);
                 }
+                else
+                {
+                    throw new DomainException($"حالة الدفع '{query.PaymentStatus}' غير معروفة. الحالات المتاحة: {string.Join(", ", Enum.GetNames<PaymentStatus>())}.");
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(query.FulfillmentStatus) && !query.FulfillmentStatus.Equals("all", StringComparison.OrdinalIgnoreCase))
@@ -82,18 +93,28 @@ namespace Ecommerce.Application.Queries.Admin
                 {
                     q = q.Where(o => o.FulfillmentStatus == parsedFulfillmentStatus);
                 }
+                else
+                {
+                    throw new DomainException($"حالة التجهيز '{query.FulfillmentStatus}' غير معروفة. الحالات المتاحة: {string.Join(", ", Enum.GetNames<FulfillmentStatus>())}.");
+                }
             }
 
             if (query.UserId.HasValue)
                 q = q.Where(o => o.UserId == query.UserId);
 
             var effectiveStartDate = query.StartDate ?? query.FromDate;
+            var effectiveEndDate = query.EndDate ?? query.ToDate;
+
+            if (effectiveStartDate.HasValue && effectiveEndDate.HasValue && effectiveEndDate.Value < effectiveStartDate.Value)
+            {
+                throw new DomainException("تاريخ النهاية يجب أن يكون بعد تاريخ البداية.");
+            }
+
             if (effectiveStartDate.HasValue)
             {
                 q = q.Where(o => o.CreatedAt >= effectiveStartDate.Value);
             }
 
-            var effectiveEndDate = query.EndDate ?? query.ToDate;
             if (effectiveEndDate.HasValue)
             {
                 var end = effectiveEndDate.Value;

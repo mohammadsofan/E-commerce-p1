@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using Ecommerce.Application.Common.Commands;
+using Ecommerce.Application.Common.Inventory;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
@@ -47,12 +48,14 @@ namespace Ecommerce.Application.Commands.Orders
                 throw new NotFoundException("Order", command.OrderId);
 
             var wasPaid = order.PaymentStatus == PaymentStatus.Paid;
+            var wasFulfilled = order.FulfillmentStatus == FulfillmentStatus.Delivered;
 
             // Blocks cancellation from terminal states (cancelled/completed/refunded).
             order.Cancel(command.Reason ?? string.Empty);
 
-            // 1. Release reserved inventory
-            if (order.Items != null && order.Items.Any())
+            // 1. Release reserved inventory. A delivered order has already had its
+            //    reservation consumed into on-hand stock, so there is nothing to release.
+            if (!wasFulfilled && order.Items != null && order.Items.Any())
             {
                 var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
                 var variantIds = order.Items
@@ -68,28 +71,15 @@ namespace Ecommerce.Application.Commands.Orders
 
                 foreach (var item in order.Items)
                 {
-                    var matchingInventory = inventoryItems
-                        .Where(inv =>
-                            (item.ProductVariantId != Guid.Empty && inv.ProductVariantId == item.ProductVariantId)
-                            || (item.ProductVariantId == Guid.Empty && inv.ProductId == item.ProductId && !inv.ProductVariantId.HasValue))
-                        .OrderByDescending(inv => inv.QuantityReserved)
-                        .ToList();
-
-                    int remainingToRelease = item.Quantity;
-                    foreach (var inv in matchingInventory)
-                    {
-                        if (remainingToRelease <= 0) break;
-                        if (inv.QuantityReserved <= 0) continue;
-
-                        int canRelease = Math.Min(remainingToRelease, inv.QuantityReserved);
-                        if (canRelease > 0)
-                        {
-                            inv.Release(canRelease);
-                            remainingToRelease -= canRelease;
-                        }
-                    }
+                    var variantId = item.ProductVariantId == Guid.Empty ? (Guid?)null : item.ProductVariantId;
+                    var candidates = InventoryAllocator.CandidatesFor(inventoryItems, item.ProductId, variantId);
+                    InventoryAllocator.Release(candidates, item.Quantity);
                 }
             }
+
+            // 1b. Give the coupon back: a cancelled order must not consume a single-use
+            //     or per-user-limited coupon.
+            await ReleaseCouponUsageAsync(order, cancellationToken);
 
             // 2. Automatically refund or void if order had payments
             if (wasPaid && _paymentService != null)
@@ -158,6 +148,33 @@ namespace Ecommerce.Application.Commands.Orders
             await _db.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<OrderDto>(order);
+        }
+
+        /// <summary>
+        /// Returns a coupon to the customer when their order is cancelled: the usage row is
+        /// removed and the aggregate counter decremented, so a single-use or per-user-limited
+        /// coupon is not consumed by an order that never completed.
+        /// </summary>
+        private async Task ReleaseCouponUsageAsync(Order order, CancellationToken cancellationToken)
+        {
+            var usages = await _db.CouponUsages
+                .Where(u => u.OrderId == order.Id)
+                .ToListAsync(cancellationToken);
+
+            if (usages.Count == 0) return;
+
+            var couponIds = usages.Select(u => u.CouponId).Distinct().ToList();
+            var coupons = await _db.Coupons
+                .Where(c => couponIds.Contains(c.Id))
+                .ToListAsync(cancellationToken);
+
+            foreach (var coupon in coupons)
+            {
+                var released = usages.Count(u => u.CouponId == coupon.Id);
+                coupon.UsedCount = Math.Max(0, coupon.UsedCount - released);
+            }
+
+            _db.CouponUsages.RemoveRange(usages);
         }
     }
 }

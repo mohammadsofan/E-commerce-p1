@@ -26,9 +26,32 @@ namespace Ecommerce.IntegrationTests
         {
             using var ctx = CreateInMemoryContext();
 
-            // seed inventory
+            // seed catalog + inventory (checkout is catalog-authoritative)
             var productId = Guid.NewGuid();
             var variantId = Guid.NewGuid();
+            var product = new Product
+            {
+                Id = productId,
+                Name = "Idempotency Product",
+                Sku = "SKU-" + productId.ToString().Substring(0, 6),
+                BasePrice = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.Products.Add(product);
+            var variant = new ProductVariant
+            {
+                Id = variantId,
+                ProductId = productId,
+                Name = "Variant A",
+                Sku = "VAR-" + variantId.ToString().Substring(0, 6),
+                Price = 10m,
+                IsActive = true,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            ctx.ProductVariants.Add(variant);
             var inventory = new InventoryItem
             {
                 // Handler looks up inventory by ProductVariantId via FindAsync(key),

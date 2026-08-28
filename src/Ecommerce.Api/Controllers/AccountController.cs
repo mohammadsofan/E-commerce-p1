@@ -40,6 +40,11 @@ namespace Ecommerce.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest req)
         {
+            // Validate up-front: an invalid address would otherwise blow up inside the SMTP
+            // client after the user row had already been created, surfacing as a 500.
+            if (string.IsNullOrWhiteSpace(req.Email) || !IsValidEmail(req.Email))
+                return BadRequest(new { message = "عنوان البريد الإلكتروني غير صحيح." });
+
             var now = DateTimeOffset.UtcNow;
             var user = new ApplicationUser
             {
@@ -55,13 +60,21 @@ namespace Ecommerce.Api.Controllers
             };
             var res = await _userManager.CreateAsync(user, req.Password);
             if (!res.Succeeded) return BadRequest(res.Errors);
-            
+
             var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             await _userManager.AddToRoleAsync(user,"Customer");
-            // Send verification email
-            var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email)}";
-            var message = BuildVerificationEmail(user.Email, verifyUrl);
-            await _emailService.SendAsync(message);
+            // Send verification email. A transport failure must not fail registration —
+            // the customer can always request a new link.
+            try
+            {
+                var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email)}";
+                var message = BuildVerificationEmail(user.Email, verifyUrl);
+                await _emailService.SendAsync(message);
+            }
+            catch (Exception)
+            {
+                return Ok(new { message = "Registration successful, but the verification email could not be sent. Please request a new link." });
+            }
 
             return Ok(new { message = "Registration successful. Verification email sent." });
         }
@@ -129,24 +142,33 @@ namespace Ecommerce.Api.Controllers
             if (string.IsNullOrWhiteSpace(req.Email))
                 return BadRequest("Email is required.");
 
-            var user = await _userManager.FindByEmailAsync(req.Email);
-            if (user == null) return Ok(new { message = "If the email exists, a verification email has been sent." });
+            // Always answer identically so the endpoint cannot be used to discover which
+            // addresses are registered or already verified.
+            const string neutralResponse = "If the email exists and is not yet verified, a verification email has been sent.";
 
-            if (user.IsEmailVerified) return BadRequest("Email is already verified.");
+            var user = await _userManager.FindByEmailAsync(req.Email);
+            if (user == null || user.IsEmailVerified) return Ok(new { message = neutralResponse });
 
             var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            
-            var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email)}";
-            var message = new EmailMessage
-            {
-                To = user.Email,
-                Subject = "Verify your email address",
-                Body = $"<p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">{verifyUrl}</a></p><p>This link will expire in 24 hours.</p>",
-                IsHtml = true
-            };
-            await _emailService.SendAsync(message);
 
-            return Ok(new { message = "Verification email sent." });
+            try
+            {
+                var verifyUrl = $"{Request.Scheme}://{Request.Host}/api/account/verify-email?token={Uri.EscapeDataString(emailToken)}&email={Uri.EscapeDataString(user.Email!)}";
+                var message = new EmailMessage
+                {
+                    To = user.Email!,
+                    Subject = "Verify your email address",
+                    Body = $"<p>Please click the link below to verify your email address:</p><p><a href=\"{verifyUrl}\">{verifyUrl}</a></p><p>This link will expire in 24 hours.</p>",
+                    IsHtml = true
+                };
+                await _emailService.SendAsync(message);
+            }
+            catch (Exception)
+            {
+                // Swallowed on purpose: the response must not vary with delivery outcome.
+            }
+
+            return Ok(new { message = neutralResponse });
         }
 
         [HttpPost("forgot-password")]
@@ -155,22 +177,32 @@ namespace Ecommerce.Api.Controllers
             if (string.IsNullOrWhiteSpace(req.Email))
                 return BadRequest("Email is required.");
 
+            // Identical response for known and unknown addresses (no user enumeration).
+            const string neutralResponse = "If the email exists, a password reset link has been sent.";
+
             var user = await _userManager.FindByEmailAsync(req.Email);
-            if (user == null) return Ok(new { message = "If the email exists, a password reset link has been sent." });
+            if (user == null) return Ok(new { message = neutralResponse });
 
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            
-            var resetUrl = $"{Request.Scheme}://{Request.Host}/api/account/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
-            var message = new EmailMessage
-            {
-                To = user.Email,
-                Subject = "Reset your password",
-                Body = $"<p>Click the link below to reset your password:</p><p><a href=\"{resetUrl}\">{resetUrl}</a></p><p>This link will expire in 1 hour.</p>",
-                IsHtml = true
-            };
-            await _emailService.SendAsync(message);
 
-            return Ok(new { message = "Password reset email sent." });
+            try
+            {
+                var resetUrl = $"{Request.Scheme}://{Request.Host}/api/account/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email!)}";
+                var message = new EmailMessage
+                {
+                    To = user.Email!,
+                    Subject = "Reset your password",
+                    Body = $"<p>Click the link below to reset your password:</p><p><a href=\"{resetUrl}\">{resetUrl}</a></p><p>This link will expire in 1 hour.</p>",
+                    IsHtml = true
+                };
+                await _emailService.SendAsync(message);
+            }
+            catch (Exception)
+            {
+                // Swallowed on purpose: the response must not vary with delivery outcome.
+            }
+
+            return Ok(new { message = neutralResponse });
         }
 
         [HttpPost("reset-password")]
@@ -307,6 +339,21 @@ namespace Ecommerce.Api.Controllers
             var sub = User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                    ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return !string.IsNullOrEmpty(sub) && Guid.TryParse(sub, out userId);
+        }
+
+        private static bool IsValidEmail(string email)
+        {
+            try
+            {
+                var trimmed = email.Trim();
+                var address = new System.Net.Mail.MailAddress(trimmed);
+                return string.Equals(address.Address, trimmed, StringComparison.OrdinalIgnoreCase)
+                       && address.Host.Contains('.');
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private EmailMessage BuildVerificationEmail(string toEmail, string verifyUrl)
