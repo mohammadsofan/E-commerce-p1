@@ -55,26 +55,9 @@ namespace Ecommerce.Application.Commands.Orders
 
             // 1. Release reserved inventory. A delivered order has already had its
             //    reservation consumed into on-hand stock, so there is nothing to release.
-            if (!wasFulfilled && order.Items != null && order.Items.Any())
+            if (!wasFulfilled)
             {
-                var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
-                var variantIds = order.Items
-                    .Where(i => i.ProductVariantId != Guid.Empty)
-                    .Select(i => i.ProductVariantId)
-                    .Distinct()
-                    .ToList();
-
-                var inventoryItems = await _db.InventoryItems
-                    .Where(inv => productIds.Contains(inv.ProductId) ||
-                                  (inv.ProductVariantId.HasValue && variantIds.Contains(inv.ProductVariantId.Value)))
-                    .ToListAsync(cancellationToken);
-
-                foreach (var item in order.Items)
-                {
-                    var variantId = item.ProductVariantId == Guid.Empty ? (Guid?)null : item.ProductVariantId;
-                    var candidates = InventoryAllocator.CandidatesFor(inventoryItems, item.ProductId, variantId);
-                    InventoryAllocator.Release(candidates, item.Quantity);
-                }
+                await OrderReservationService.ReleaseAsync(_db, order, cancellationToken);
             }
 
             // 1b. Give the coupon back: a cancelled order must not consume a single-use

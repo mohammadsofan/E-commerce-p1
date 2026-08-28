@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,35 +33,23 @@ namespace Ecommerce.Application.Commands.Admin
             // The goods have physically left the warehouse: turn each reservation into an
             // on-hand deduction so QuantityOnHand reflects real stock and the reservation
             // is not held forever.
-            await ConsumeReservationsAsync(order, cancellationToken);
+            await OrderReservationService.ConsumeAsync(_db, order, cancellationToken);
+
+            // Keep the tracking record in step with the order so customer tracking shows Delivered.
+            var shipment = await _db.Shipments
+                .Where(s => s.OrderId == order.Id)
+                .OrderByDescending(s => s.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (shipment != null)
+            {
+                shipment.Status = "Delivered";
+                shipment.DeliveredAt = DateTimeOffset.UtcNow;
+            }
 
             await _db.SaveChangesAsync(cancellationToken);
 
             return new Unit();
-        }
-
-        private async Task ConsumeReservationsAsync(Domain.Entities.Order order, CancellationToken cancellationToken)
-        {
-            if (order.Items == null || !order.Items.Any()) return;
-
-            var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
-            var variantIds = order.Items
-                .Where(i => i.ProductVariantId != Guid.Empty)
-                .Select(i => i.ProductVariantId)
-                .Distinct()
-                .ToList();
-
-            var inventoryItems = await _db.InventoryItems
-                .Where(inv => productIds.Contains(inv.ProductId) ||
-                              (inv.ProductVariantId.HasValue && variantIds.Contains(inv.ProductVariantId.Value)))
-                .ToListAsync(cancellationToken);
-
-            foreach (var item in order.Items)
-            {
-                var variantId = item.ProductVariantId == Guid.Empty ? (Guid?)null : item.ProductVariantId;
-                var candidates = InventoryAllocator.CandidatesFor(inventoryItems, item.ProductId, variantId);
-                InventoryAllocator.ConsumeReservation(candidates, item.Quantity);
-            }
         }
     }
 }

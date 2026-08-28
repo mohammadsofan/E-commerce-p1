@@ -152,6 +152,79 @@ namespace Ecommerce.Domain.Tests
 
             Assert.Throws<DomainException>(() => order.Cancel("customer changed mind"));
         }
+
+        [Fact]
+        public void ProcessRefund_OnNeverPaidOrder_Throws()
+        {
+            var order = new Order();
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Product", 100m, 1);
+            order.PlaceOrder();
+
+            Assert.Equal(PaymentStatus.Pending, order.PaymentStatus);
+
+            Assert.Throws<DomainException>(() => order.ProcessRefund(100m, "no payment was ever collected"));
+            Assert.Equal(0m, order.RefundedAmount);
+            Assert.Equal(PaymentStatus.Pending, order.PaymentStatus);
+            Assert.Equal(OrderStatus.Placed, order.Status);
+        }
+
+        [Fact]
+        public void ProcessRefund_OnFailedPayment_Throws()
+        {
+            var order = new Order();
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Product", 100m, 1);
+            order.PlaceOrder();
+            order.MarkPaid();
+            order.ProcessRefund(100m, "full refund");
+
+            // Now fully refunded, so no further refund may be taken.
+            Assert.Equal(PaymentStatus.Refunded, order.PaymentStatus);
+            Assert.Throws<DomainException>(() => order.ProcessRefund(1m, "double refund"));
+        }
+
+        [Fact]
+        public void ProcessRefund_OnPaidOrder_Succeeds()
+        {
+            var order = new Order();
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Product", 100m, 1);
+            order.PlaceOrder();
+            order.MarkPaid();
+
+            order.ProcessRefund(40m, "partial");
+
+            Assert.Equal(40m, order.RefundedAmount);
+            Assert.Equal(PaymentStatus.PartiallyRefunded, order.PaymentStatus);
+        }
+
+        [Fact]
+        public void ProcessRefund_OnPartiallyRefundedOrder_Succeeds()
+        {
+            var order = new Order();
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Product", 100m, 1);
+            order.PlaceOrder();
+            order.MarkPaid();
+            order.ProcessRefund(40m, "partial");
+
+            order.ProcessRefund(60m, "remainder");
+
+            Assert.Equal(100m, order.RefundedAmount);
+            Assert.Equal(PaymentStatus.Refunded, order.PaymentStatus);
+            Assert.Equal(OrderStatus.Refunded, order.Status);
+        }
+
+        [Fact]
+        public void ProcessReturn_OnNeverPaidOrder_Throws()
+        {
+            var order = new Order();
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Product", 100m, 1);
+            order.PlaceOrder();
+
+            var itemId = order.Items.First().Id;
+
+            Assert.Throws<DomainException>(() => order.ProcessReturn(new[] { itemId }, "never paid"));
+            Assert.Equal(0m, order.RefundedAmount);
+        }
     }
 }
+
 

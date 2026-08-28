@@ -216,10 +216,14 @@ namespace Ecommerce.Domain.Entities
         }
 
         /// <summary>
-        /// Processes a full or partial refund.
+        /// Processes a full or partial refund. Money can only flow back out of an order that
+        /// actually collected money, so the payment must be <see cref="PaymentStatus.Paid"/>
+        /// or already <see cref="PaymentStatus.PartiallyRefunded"/>.
         /// </summary>
         public void ProcessRefund(decimal amount, string reason)
         {
+            if (PaymentStatus != PaymentStatus.Paid && PaymentStatus != PaymentStatus.PartiallyRefunded)
+                throw new DomainException("Only a paid or partially refunded order can be refunded");
             if (amount <= 0) throw new DomainException("Refund amount must be positive");
             if (amount > TotalAmount - RefundedAmount)
                 throw new DomainException("Refund amount cannot exceed remaining refundable amount");

@@ -3,8 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
 using Ecommerce.Application.Common.Commands;
+using Ecommerce.Application.Common.Inventory;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
+using Ecommerce.Domain.Enums;
 using Ecommerce.Domain.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,7 +39,18 @@ namespace Ecommerce.Application.Commands.Orders
                 throw new NotFoundException("Order", command.OrderId);
 
             // Transitions Paid -> Completed (enforced inside the aggregate).
+            var wasDelivered = order.FulfillmentStatus == FulfillmentStatus.Delivered;
+
             order.Complete();
+
+            // Completing marks the order Delivered, so the goods have left the warehouse: turn the
+            // remaining reservations into an on-hand deduction. A previously delivered order has
+            // already had its reservation consumed, so it must not be consumed a second time.
+            if (!wasDelivered)
+            {
+                await OrderReservationService.ConsumeAsync(_db, order, cancellationToken);
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<OrderDto>(order);

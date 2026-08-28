@@ -86,7 +86,7 @@ namespace Ecommerce.Application.Queries.Admin
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == query.Id, cancellationToken);
             if (shipment == null)
-                throw new DomainException("Shipment not found");
+                throw new NotFoundException("Shipment", query.Id);
 
             var dto = _mapper.Map<ShipmentDto>(shipment);
             dto.WarehouseName = (await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.Id == shipment.WarehouseId, cancellationToken))?.Name ?? string.Empty;
@@ -114,7 +114,7 @@ namespace Ecommerce.Application.Queries.Admin
                 .OrderByDescending(s => s.CreatedAt)
                 .FirstOrDefaultAsync(cancellationToken);
             if (shipment == null)
-                throw new DomainException("No shipment found for this order");
+                throw new NotFoundException("Shipment", query.OrderId);
 
             var dto = _mapper.Map<ShipmentDto>(shipment);
             dto.WarehouseName = (await _db.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.Id == shipment.WarehouseId, cancellationToken))?.Name ?? string.Empty;

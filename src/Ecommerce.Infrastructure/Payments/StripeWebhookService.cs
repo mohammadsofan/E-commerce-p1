@@ -235,7 +235,26 @@ namespace Ecommerce.Infrastructure.Payments
                     var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == payment.OrderId, cancellationToken);
                     if (order != null)
                     {
-                        order.ProcessRefund(refundAmount, "Refunded via Stripe");
+                        // A refund can only be recorded against an order that collected money.
+                        // If the webhooks arrive out of order, settle the payment first so the
+                        // reconciliation does not fail on the aggregate's refund guard.
+                        if (order.Status == Domain.Enums.OrderStatus.Placed)
+                        {
+                            order.MarkPaid();
+                            _logger.LogInformation(
+                                "Order {OrderId} marked as paid before refund reconciliation (out-of-order webhooks)", order.Id);
+                        }
+
+                        if (order.PaymentStatus is Domain.Enums.PaymentStatus.Paid or Domain.Enums.PaymentStatus.PartiallyRefunded)
+                        {
+                            order.ProcessRefund(refundAmount, "Refunded via Stripe");
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "Skipping order refund reconciliation for {OrderId}: payment status is {PaymentStatus}",
+                                order.Id, order.PaymentStatus);
+                        }
                     }
                 }
             }
