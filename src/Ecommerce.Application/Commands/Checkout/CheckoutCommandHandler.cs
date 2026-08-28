@@ -570,7 +570,13 @@ namespace Ecommerce.Application.Commands.Checkout
 
             var match = currencies.FirstOrDefault(c => string.Equals(c.Code, code, StringComparison.OrdinalIgnoreCase));
             if (match == null)
-                throw new DomainException($"العملة '{requested}' غير مدعومة.");
+            {
+                // Client-supplied currency is not configured in this store (e.g. legacy
+                // products priced in USD while the store base is ILS). Persist the order
+                // under the store's base currency so the amount and the label never
+                // disagree (previously JPY/ILS mismatches were stored verbatim).
+                return fallback;
+            }
 
             return match.Code;
         }
