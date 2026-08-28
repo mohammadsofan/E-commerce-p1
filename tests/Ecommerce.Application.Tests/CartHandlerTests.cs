@@ -334,6 +334,121 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
+        public async Task AddToCart_VariantRequiredButNull_ThrowsDomainException()
+        {
+            using var context = CreateInMemoryContext();
+            var mapper = CreateMapper();
+            var currentUser = new FakeCurrentUserService(Guid.NewGuid());
+            var product = await SeedProductAsync(context);
+
+            var variant = new ProductVariant
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product.Id,
+                Name = "Red Variant",
+                Sku = "SKU-RED",
+                Price = 25m,
+                IsActive = true
+            };
+            context.ProductVariants.Add(variant);
+            await context.SaveChangesAsync();
+
+            var handler = new AddToCartCommandHandler(context, currentUser, mapper);
+
+            // Null variant ID
+            await Assert.ThrowsAsync<DomainException>(() =>
+                handler.Handle(new AddToCartCommand
+                {
+                    ProductId = product.Id,
+                    ProductVariantId = null,
+                    Quantity = 1
+                }));
+        }
+
+        [Fact]
+        public async Task AddToCart_VariantRequiredButEmpty_ThrowsDomainException()
+        {
+            using var context = CreateInMemoryContext();
+            var mapper = CreateMapper();
+            var currentUser = new FakeCurrentUserService(Guid.NewGuid());
+            var product = await SeedProductAsync(context);
+
+            var variant = new ProductVariant
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product.Id,
+                Name = "Red Variant",
+                Sku = "SKU-RED",
+                Price = 25m,
+                IsActive = true
+            };
+            context.ProductVariants.Add(variant);
+            await context.SaveChangesAsync();
+
+            var handler = new AddToCartCommandHandler(context, currentUser, mapper);
+
+            // Empty variant ID
+            await Assert.ThrowsAsync<DomainException>(() =>
+                handler.Handle(new AddToCartCommand
+                {
+                    ProductId = product.Id,
+                    ProductVariantId = Guid.Empty,
+                    Quantity = 1
+                }));
+        }
+
+        [Fact]
+        public async Task AddToCart_VariantBelongsToOtherProduct_ThrowsDomainException()
+        {
+            using var context = CreateInMemoryContext();
+            var mapper = CreateMapper();
+            var currentUser = new FakeCurrentUserService(Guid.NewGuid());
+            var product1 = await SeedProductAsync(context);
+            var product2 = await SeedProductAsync(context);
+
+            var variant = new ProductVariant
+            {
+                Id = Guid.NewGuid(),
+                ProductId = product2.Id, // Belongs to product 2
+                Name = "Red Variant",
+                Sku = "SKU-RED",
+                Price = 25m,
+                IsActive = true
+            };
+            context.ProductVariants.Add(variant);
+            await context.SaveChangesAsync();
+
+            var handler = new AddToCartCommandHandler(context, currentUser, mapper);
+
+            await Assert.ThrowsAsync<DomainException>(() =>
+                handler.Handle(new AddToCartCommand
+                {
+                    ProductId = product1.Id, // Adding product 1
+                    ProductVariantId = variant.Id, // With variant from product 2
+                    Quantity = 1
+                }));
+        }
+
+        [Fact]
+        public async Task AddToCart_UnknownVariant_ThrowsNotFoundException()
+        {
+            using var context = CreateInMemoryContext();
+            var mapper = CreateMapper();
+            var currentUser = new FakeCurrentUserService(Guid.NewGuid());
+            var product = await SeedProductAsync(context);
+
+            var handler = new AddToCartCommandHandler(context, currentUser, mapper);
+
+            await Assert.ThrowsAsync<NotFoundException>(() =>
+                handler.Handle(new AddToCartCommand
+                {
+                    ProductId = product.Id,
+                    ProductVariantId = Guid.NewGuid(), // Nonexistent
+                    Quantity = 1
+                }));
+        }
+
+        [Fact]
         public async Task UpdateCartItem_ExceedsAvailableStock_ThrowsDomainException()
         {
             using var context = CreateInMemoryContext();

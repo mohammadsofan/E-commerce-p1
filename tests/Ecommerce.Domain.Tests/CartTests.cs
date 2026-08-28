@@ -211,6 +211,51 @@ namespace Ecommerce.Domain.Tests
         }
 
         [Fact]
+        public void ApplyCoupon_FixedAmountDiscountWithCap_CalculatesCorrectTotal()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Sofa", 250m, 1); // Subtotal = 250
+
+            // Cap is 20, coupon value is 50. Discount should be 20.
+            var coupon = new Coupon { Code = "FIXED50", Type = "fixed_amount", Value = 50m, MaxDiscountAmount = 20m };
+            cart.ApplyCoupon(coupon.Code);
+
+            var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
+            Assert.Equal(20m, calculatedDiscount);
+            Assert.Equal(230m, calculatedTotal);
+        }
+
+        [Fact]
+        public void ApplyCoupon_FixedAmountDiscountWithLargeCap_CalculatesCorrectTotal()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Sofa", 250m, 1); // Subtotal = 250
+
+            // Cap is 100, coupon value is 50. Discount should be 50.
+            var coupon = new Coupon { Code = "FIXED50", Type = "fixed_amount", Value = 50m, MaxDiscountAmount = 100m };
+            cart.ApplyCoupon(coupon.Code);
+
+            var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
+            Assert.Equal(50m, calculatedDiscount);
+            Assert.Equal(200m, calculatedTotal);
+        }
+
+        [Fact]
+        public void ApplyCoupon_FixedAmountDiscountWithCapExceedsSubtotal_ClampsToZeroTotal()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            cart.AddItem(Guid.NewGuid(), null, "Lamp", 40m, 1); // Subtotal = 40
+
+            // Coupon value is 100, Cap is 80. Both exceed 40. Total discount should be 40.
+            var coupon = new Coupon { Code = "MEGA100", Type = "fixed_amount", Value = 100m, MaxDiscountAmount = 80m };
+            cart.ApplyCoupon(coupon.Code);
+
+            var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
+            Assert.Equal(40m, calculatedDiscount);
+            Assert.Equal(0m, calculatedTotal);
+        }
+
+        [Fact]
         public void ApplyCoupon_DiscountExceedsSubtotal_ClampsToZeroTotal()
         {
             var cart = Cart.Create(Guid.NewGuid(), null);
@@ -224,6 +269,21 @@ namespace Ecommerce.Domain.Tests
             var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
             Assert.Equal(40m, calculatedDiscount);
             Assert.Equal(0m, calculatedTotal);
+        }
+
+        [Fact]
+        public void ApplyCoupon_ZeroValueCart_ReturnsZero()
+        {
+            var cart = Cart.Create(Guid.NewGuid(), null);
+            // No items, subtotal = 0
+
+            var coupon = new Coupon { Code = "FIXED50", Type = "fixed_amount", Value = 50m };
+            cart.ApplyCoupon(coupon.Code);
+
+            var calculatedTotal = cart.CalculateTotals(coupon, out var calculatedDiscount);
+            Assert.Equal(0m, calculatedDiscount);
+            Assert.Equal(0m, calculatedTotal);
+            Assert.Null(cart.AppliedCouponCode);
         }
 
         [Fact]

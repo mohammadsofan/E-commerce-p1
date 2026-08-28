@@ -49,6 +49,10 @@ namespace Ecommerce.Application.Commands.Carts
             string productName = product.Name;
             bool allowBackorder = product.AllowBackorder;
 
+            bool hasVariants = await Db.ProductVariants.AnyAsync(v => v.ProductId == product.Id, cancellationToken);
+            if (hasVariants && (command.ProductVariantId == null || command.ProductVariantId == Guid.Empty))
+                throw new DomainException("يجب اختيار خيار للمنتج.");
+
             if (command.ProductVariantId is Guid variantId && variantId != Guid.Empty)
             {
                 var variant = await Db.ProductVariants

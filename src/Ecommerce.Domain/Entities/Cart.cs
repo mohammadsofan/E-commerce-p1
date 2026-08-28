@@ -146,6 +146,8 @@ namespace Ecommerce.Domain.Entities
                 else if (type == "fixed_amount")
                 {
                     calculatedDiscount = coupon.Value;
+                    if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
+                        calculatedDiscount = Math.Min(calculatedDiscount, coupon.MaxDiscountAmount.Value);
                 }
                 else if (type != "free_shipping")
                 {
