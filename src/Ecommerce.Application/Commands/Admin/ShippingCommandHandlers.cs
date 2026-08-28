@@ -203,6 +203,9 @@ namespace Ecommerce.Application.Commands.Admin
             if (zone == null)
                 throw new Domain.Exceptions.NotFoundException("ShippingZone", command.ShippingZoneId);
 
+            if (command.BaseRate < 0)
+                throw new Ecommerce.Domain.Exceptions.DomainException("Shipping BaseRate cannot be negative.");
+
             var method = new ShippingMethod
             {
                 ShippingZoneId = command.ShippingZoneId,
@@ -223,6 +226,9 @@ namespace Ecommerce.Application.Commands.Admin
 
             foreach (var rateCmd in command.Rates)
             {
+                if (rateCmd.Rate < 0)
+                    throw new Ecommerce.Domain.Exceptions.DomainException("Shipping Rate cannot be negative.");
+
                 method.Rates.Add(new ShippingRate
                 {
                     ShippingMethodId = method.Id,
@@ -276,6 +282,9 @@ namespace Ecommerce.Application.Commands.Admin
             if (method == null)
                 throw new Domain.Exceptions.NotFoundException("ShippingMethod", command.Id);
 
+            if (command.BaseRate < 0)
+                throw new Ecommerce.Domain.Exceptions.DomainException("Shipping BaseRate cannot be negative.");
+
             if (command.RowVersion.Length > 0)
             {
                 var entry = _db.GetEntry(method);
@@ -314,6 +323,8 @@ namespace Ecommerce.Application.Commands.Admin
 
             foreach (var rateCmd in command.Rates)
             {
+                if (!rateCmd.IsDeleted && rateCmd.Rate < 0)
+                    throw new Ecommerce.Domain.Exceptions.DomainException("Shipping Rate cannot be negative.");
                 if (rateCmd.IsDeleted && rateCmd.Id.HasValue)
                 {
                     var rate = method.Rates.FirstOrDefault(r => r.Id == rateCmd.Id.Value);
@@ -413,6 +424,9 @@ namespace Ecommerce.Application.Commands.Admin
             if (method == null)
                 throw new Domain.Exceptions.NotFoundException("ShippingMethod", command.ShippingMethodId);
 
+            if (command.Rate < 0)
+                throw new Ecommerce.Domain.Exceptions.DomainException("Shipping Rate cannot be negative.");
+
             var rate = new ShippingRate
             {
                 ShippingMethodId = command.ShippingMethodId,
@@ -448,6 +462,9 @@ namespace Ecommerce.Application.Commands.Admin
             var rate = await _db.ShippingRates.FindAsync(new object[] { command.Id }, cancellationToken);
             if (rate == null)
                 throw new Domain.Exceptions.NotFoundException("ShippingRate", command.Id);
+
+            if (command.Rate < 0)
+                throw new Ecommerce.Domain.Exceptions.DomainException("Shipping Rate cannot be negative.");
 
             rate.ConditionType = command.ConditionType;
             rate.ConditionOperator = command.ConditionOperator;

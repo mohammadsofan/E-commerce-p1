@@ -201,6 +201,52 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
+        public async Task CreateShippingMethod_NegativeBaseRate_Throws()
+        {
+            using var ctx = CreateInMemoryContext();
+            var zone = new ShippingZone { Id = Guid.NewGuid(), Name = "US", IsActive = true };
+            await ctx.ShippingZones.AddAsync(zone);
+            await ctx.SaveChangesAsync();
+
+            var handler = new CreateShippingMethodCommandHandler(ctx, CreateMapper());
+            var command = new CreateShippingMethodCommand
+            {
+                ShippingZoneId = zone.Id,
+                Name = "Standard Shipping",
+                Type = "flat_rate",
+                BaseRate = -5m,
+            };
+
+            var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command));
+            Assert.Equal("Shipping BaseRate cannot be negative.", ex.Message);
+        }
+
+        [Fact]
+        public async Task CreateShippingMethod_NegativeRate_Throws()
+        {
+            using var ctx = CreateInMemoryContext();
+            var zone = new ShippingZone { Id = Guid.NewGuid(), Name = "US", IsActive = true };
+            await ctx.ShippingZones.AddAsync(zone);
+            await ctx.SaveChangesAsync();
+
+            var handler = new CreateShippingMethodCommandHandler(ctx, CreateMapper());
+            var command = new CreateShippingMethodCommand
+            {
+                ShippingZoneId = zone.Id,
+                Name = "Standard Shipping",
+                Type = "weight_based",
+                BaseRate = 5m,
+                Rates = new List<CreateShippingRateCommand>
+                {
+                    new CreateShippingRateCommand { Rate = -2m }
+                }
+            };
+
+            var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command));
+            Assert.Equal("Shipping Rate cannot be negative.", ex.Message);
+        }
+
+        [Fact]
         public async Task UpdateShippingMethod_UpdatesMethodAndRates()
         {
             using var ctx = CreateInMemoryContext();
@@ -251,6 +297,21 @@ namespace Ecommerce.Application.Tests
             Assert.Equal("price_based", result.Type);
             Assert.Equal(19.99m, result.BaseRate);
             Assert.Single(result.Rates);
+        }
+
+        [Fact]
+        public async Task UpdateShippingMethod_NegativeBaseRate_Throws()
+        {
+            using var ctx = CreateInMemoryContext();
+            var zone = new ShippingZone { Id = Guid.NewGuid(), Name = "US", IsActive = true };
+            var method = new ShippingMethod { Id = Guid.NewGuid(), ShippingZoneId = zone.Id, Name = "M", BaseRate = 10m };
+            await ctx.ShippingZones.AddAsync(zone);
+            await ctx.ShippingMethods.AddAsync(method);
+            await ctx.SaveChangesAsync();
+
+            var handler = new UpdateShippingMethodCommandHandler(ctx, CreateMapper());
+            var ex = await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new UpdateShippingMethodCommand { Id = method.Id, BaseRate = -10m }));
+            Assert.Equal("Shipping BaseRate cannot be negative.", ex.Message);
         }
 
         [Fact]
