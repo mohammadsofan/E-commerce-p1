@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AutoMapper;
+using Ecommerce.Application.Common.Discounts;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
@@ -217,7 +218,9 @@ namespace Ecommerce.Application.Common.Carts
                 }
             }
 
-            // Dynamically evaluate coupon discount against current subtotal
+            // Dynamically evaluate coupon discount against current subtotal.
+            // Scoping, the max-discount cap and the never-below-zero clamp all come from the
+            // shared CouponDiscountCalculator so the cart cannot diverge from checkout.
             result.DiscountAmount = 0m;
             if (!string.IsNullOrWhiteSpace(cart.AppliedCouponCode))
             {
@@ -228,18 +231,10 @@ namespace Ecommerce.Application.Common.Carts
                     (!coupon.EndAt.HasValue || coupon.EndAt >= DateTimeOffset.UtcNow) && 
                     (!coupon.MinOrderAmount.HasValue || applicableSubtotal >= coupon.MinOrderAmount.Value))
                 {
-                    var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
-                    if (type == "percentage")
-                    {
-                        result.DiscountAmount = Math.Round(applicableSubtotal * (coupon.Value / 100m), 2, MidpointRounding.AwayFromZero);
-                        if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
-                            result.DiscountAmount = Math.Min(result.DiscountAmount, coupon.MaxDiscountAmount.Value);
-                    }
-                    else if (type == "fixed_amount" || type != "free_shipping")
-                    {
-                        result.DiscountAmount = coupon.Value;
-                    }
-                    result.DiscountAmount = Math.Max(0m, Math.Min(applicableSubtotal, result.DiscountAmount));
+                    var categoryLookup = products.ToDictionary(p => p.Id, p => p.CategoryId);
+                    var couponLines = BuildCouponLines(result.Items, categoryLookup);
+                    var evaluation = CouponDiscountCalculator.Calculate(coupon, couponLines, result.CartLevelDiscountAmount);
+                    result.DiscountAmount = evaluation.DiscountAmount;
                 }
             }
 
@@ -248,6 +243,41 @@ namespace Ecommerce.Application.Common.Carts
             result.TotalAmount = result.Total;
 
             return result;
+        }
+
+        /// <summary>
+        /// Projects the mapped cart lines onto the shared coupon engine's input shape. The
+        /// line amount handed over is <see cref="CartItemDto.LineTotal"/> — the amount payable
+        /// after item-level promotions — so a coupon can never discount more than is charged.
+        /// </summary>
+        protected static List<CouponLine> BuildCouponLines(
+            IEnumerable<CartItemDto> items,
+            IReadOnlyDictionary<Guid, Guid?> categoryByProductId)
+        {
+            return items.Select(item => new CouponLine
+            {
+                ProductId = item.ProductId,
+                CategoryId = categoryByProductId.TryGetValue(item.ProductId, out var categoryId) ? categoryId : null,
+                LineTotal = item.LineTotal
+            }).ToList();
+        }
+
+        /// <summary>
+        /// Same projection for callers that hold a mapped <see cref="CartDto"/> but not the
+        /// products it was built from (the coupon-apply command), fetching only the categories.
+        /// </summary>
+        protected async Task<List<CouponLine>> BuildCouponLinesAsync(CartDto cart, CancellationToken cancellationToken)
+        {
+            var productIds = cart.Items.Select(i => i.ProductId).Distinct().ToList();
+            if (productIds.Count == 0) return new List<CouponLine>();
+
+            var categoryByProductId = await Db.Products
+                .AsNoTracking()
+                .Where(p => productIds.Contains(p.Id))
+                .Select(p => new { p.Id, p.CategoryId })
+                .ToDictionaryAsync(p => p.Id, p => p.CategoryId, cancellationToken);
+
+            return BuildCouponLines(cart.Items, categoryByProductId);
         }
     }
 }

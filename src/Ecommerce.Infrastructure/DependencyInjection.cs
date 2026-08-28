@@ -82,6 +82,10 @@ namespace Ecommerce.Infrastructure
                     Ecommerce.Application.Validators.CreateCouponCommandFluentValidator>(services);
                 AddFluentValidator<Ecommerce.Application.Commands.Admin.UpdateCouponCommand,
                     Ecommerce.Application.Validators.UpdateCouponCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.CreatePromotionCommand,
+                    Ecommerce.Application.Validators.CreatePromotionCommandFluentValidator>(services);
+                AddFluentValidator<Ecommerce.Application.Commands.Admin.UpdatePromotionCommand,
+                    Ecommerce.Application.Validators.UpdatePromotionCommandFluentValidator>(services);
                 AddFluentValidator<Ecommerce.Application.Commands.Admin.CreateProductCommand,
                     Ecommerce.Application.Validators.CreateProductCommandFluentValidator>(services);
                 AddFluentValidator<Ecommerce.Application.Commands.Admin.UpdateProductCommand,

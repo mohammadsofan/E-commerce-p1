@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Ecommerce.Application.Common.Carts;
 using Ecommerce.Application.Common.Commands;
+using Ecommerce.Application.Common.Discounts;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Exceptions;
@@ -59,6 +60,17 @@ namespace Ecommerce.Application.Commands.Carts
             {
                 cart.RemoveCoupon();
                 throw new DomainException("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
+            }
+
+            // D-02: product/category scoping is enforced here with the same evaluator checkout
+            // uses. A coupon whose scope excludes everything in the cart is rejected outright
+            // rather than being stored and silently yielding a zero discount later.
+            var couponLines = await BuildCouponLinesAsync(cartDto, cancellationToken);
+            var evaluation = CouponDiscountCalculator.Calculate(coupon, couponLines, cartDto.CartLevelDiscountAmount);
+            if (!evaluation.IsApplicable)
+            {
+                cart.RemoveCoupon();
+                throw new DomainException(evaluation.RejectionReason ?? CouponDiscountCalculator.IneligibleProductsMessage);
             }
 
             await Db.SaveChangesAsync(cancellationToken);

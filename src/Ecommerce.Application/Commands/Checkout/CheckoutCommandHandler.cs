@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ecommerce.Application.Common.DomainEvents;
+using Ecommerce.Application.Common.Discounts;
 using Ecommerce.Application.Common.Inventory;
 using Ecommerce.Application.Interfaces;
 using Ecommerce.Domain.Entities;
@@ -195,6 +196,14 @@ namespace Ecommerce.Application.Commands.Checkout
                                 lineDiscount = (baseUnitPrice - promoEval.PromotionalPrice) * it.Quantity;
                             }
 
+                            // D-07: a malformed promotion rule (250%, a negative value, an
+                            // oversized fixed amount) must never push a line below zero.
+                            // Validation rejects such rules on the way in; this clamp is the last
+                            // line of defence for rules already persisted, and it runs *before*
+                            // the usage row is built so the recorded discount is always the
+                            // discount the customer actually received.
+                            lineDiscount = Math.Clamp(lineDiscount, 0m, Math.Max(0m, baseUnitPrice * it.Quantity));
+
                             if (lineDiscount > 0 && promoEval.PromotionId.HasValue)
                             {
                                 promotionUsages.Add(new Ecommerce.Domain.Entities.PromotionUsage
@@ -332,33 +341,27 @@ namespace Ecommerce.Application.Commands.Checkout
                         await ClearCartsCouponAndFail("لم يتم الوصول للحد الأدنى للطلب لاستخدام هذا الكوبون");
                     }
 
-                    isFreeShippingCoupon = false;
-                    decimal discount = 0m;
-                    var type = (coupon.Type ?? string.Empty).ToLowerInvariant();
-                    if (type == "percentage")
-                    {
-                        var percentage = Math.Clamp(coupon.Value, 0m, 100m);
-                        discount = Math.Round(applicableSubtotal * (percentage / 100m), 2, MidpointRounding.AwayFromZero);
-                        if (coupon.MaxDiscountAmount.HasValue && coupon.MaxDiscountAmount.Value > 0)
+                    // D-02 / D-21: scoping and the max-discount cap are evaluated by the same
+                    // CouponDiscountCalculator the cart uses. Each line contributes its payable
+                    // amount (unit price x qty minus any item-level promotion), so an out-of-scope
+                    // cart yields a zero discount and the cap applies to fixed_amount coupons too.
+                    var couponLines = order.Items
+                        .Select(i => new CouponLine
                         {
-                            discount = Math.Min(discount, coupon.MaxDiscountAmount.Value);
-                        }
-                    }
-                    else if (type == "fixed_amount")
+                            ProductId = i.ProductId,
+                            CategoryId = products.FirstOrDefault(p => p.Id == i.ProductId)?.CategoryId,
+                            LineTotal = i.TotalAmount
+                        })
+                        .ToList();
+
+                    var evaluation = CouponDiscountCalculator.Calculate(coupon, couponLines, order.CartLevelDiscountAmount);
+                    if (!evaluation.IsApplicable)
                     {
-                        discount = coupon.Value;
-                    }
-                    else if (type == "free_shipping")
-                    {
-                        isFreeShippingCoupon = true;
-                        discount = 0m;
-                    }
-                    else
-                    {
-                        discount = coupon.Value;
+                        await ClearCartsCouponAndFail(evaluation.RejectionReason ?? CouponDiscountCalculator.IneligibleProductsMessage);
                     }
 
-                    discount = Math.Max(0m, Math.Min(applicableSubtotal, discount));
+                    isFreeShippingCoupon = evaluation.IsFreeShipping;
+                    var discount = evaluation.DiscountAmount;
 
                     order.ApplyCoupon(coupon.Code, discount);
                     coupon.UsedCount++;
