@@ -217,9 +217,10 @@ namespace Ecommerce.Application.Queries.Admin
 
             var now = DateTimeOffset.UtcNow;
 
-            // Prefer the most recent rate effective at or before now.
+            // Prefer the most recent effective rate at or before now. Zero/negative rates
+            // are never considered valid — they would silently produce 0 or negative prices.
             var rate = await _db.ExchangeRates.AsNoTracking()
-                .Where(r => r.FromCurrencyId == fromCurrency.Id && r.ToCurrencyId == toCurrency.Id && r.EffectiveAt <= now)
+                .Where(r => r.FromCurrencyId == fromCurrency.Id && r.ToCurrencyId == toCurrency.Id && r.EffectiveAt <= now && r.Rate > 0)
                 .OrderByDescending(r => r.EffectiveAt)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -227,10 +228,10 @@ namespace Ecommerce.Application.Queries.Admin
             if (rate == null)
             {
                 var reverse = await _db.ExchangeRates.AsNoTracking()
-                    .Where(r => r.FromCurrencyId == toCurrency.Id && r.ToCurrencyId == fromCurrency.Id && r.EffectiveAt <= now)
+                    .Where(r => r.FromCurrencyId == toCurrency.Id && r.ToCurrencyId == fromCurrency.Id && r.EffectiveAt <= now && r.Rate > 0)
                     .OrderByDescending(r => r.EffectiveAt)
                     .FirstOrDefaultAsync(cancellationToken);
-                if (reverse != null && reverse.Rate != 0)
+                if (reverse != null && reverse.Rate > 0)
                 {
                     var inverseRate = 1m / reverse.Rate;
                     return new CurrencyConversionResult

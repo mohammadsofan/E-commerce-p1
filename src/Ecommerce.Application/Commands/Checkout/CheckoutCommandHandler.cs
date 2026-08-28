@@ -549,8 +549,11 @@ namespace Ecommerce.Application.Commands.Checkout
         }
 
         /// <summary>
-        /// Validates the requested currency against the configured currencies and falls back to
-        /// the store's base currency rather than persisting an arbitrary client-supplied code.
+        /// All persisted monetary amounts are in the store's base currency (ILS).
+        /// The display currency is a presentation-only concern handled by the frontend's
+        /// CurrencyContext. We therefore always persist the base code regardless of what
+        /// the client requested, so the stored amount and label can never disagree and
+        /// the payment provider is never charged a converted amount.
         /// </summary>
         private async Task<string> ResolveCurrencyCodeAsync(string? requested, CancellationToken cancellationToken)
         {
@@ -559,26 +562,10 @@ namespace Ecommerce.Application.Commands.Checkout
                 .Select(c => new { c.Code, c.IsBaseCurrency })
                 .ToListAsync(cancellationToken);
 
-            var fallback = currencies.FirstOrDefault(c => c.IsBaseCurrency)?.Code
+            var baseCode = currencies.FirstOrDefault(c => c.IsBaseCurrency)?.Code
                            ?? currencies.FirstOrDefault()?.Code
-                           ?? "USD";
-
-            if (string.IsNullOrWhiteSpace(requested)) return fallback;
-
-            var code = requested.Trim().ToUpperInvariant();
-            if (currencies.Count == 0) return code;
-
-            var match = currencies.FirstOrDefault(c => string.Equals(c.Code, code, StringComparison.OrdinalIgnoreCase));
-            if (match == null)
-            {
-                // Client-supplied currency is not configured in this store (e.g. legacy
-                // products priced in USD while the store base is ILS). Persist the order
-                // under the store's base currency so the amount and the label never
-                // disagree (previously JPY/ILS mismatches were stored verbatim).
-                return fallback;
-            }
-
-            return match.Code;
+                           ?? "ILS";
+            return baseCode;
         }
 
         /// <summary>

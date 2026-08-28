@@ -141,21 +141,107 @@ namespace Ecommerce.Infrastructure.Persistence
 
         private async Task SeedCurrenciesAsync(ApplicationDbContext db)
         {
-            if (await db.Currencies.AnyAsync()) return;
-
-            var currencies = new List<Currency>
+            // ILS is the single base currency — all amounts are persisted in ILS and conversion
+            // is presentation-only. This method is idempotent and repairs legacy seeds where
+            // USD was incorrectly marked as base or where expected currencies are missing.
+            var existing = await db.Currencies.ToListAsync();
+            if (!existing.Any())
             {
-                new Currency { Id = Guid.NewGuid(), Code = "USD", Symbol = "$", IsBaseCurrency = true },
-                new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = false },
-                new Currency { Id = Guid.NewGuid(), Code = "EUR", Symbol = "€", IsBaseCurrency = false },
-                new Currency { Id = Guid.NewGuid(), Code = "GBP", Symbol = "£", IsBaseCurrency = false },
-                new Currency { Id = Guid.NewGuid(), Code = "SAR", Symbol = "ر.س", IsBaseCurrency = false },
-                new Currency { Id = Guid.NewGuid(), Code = "AED", Symbol = "د.إ", IsBaseCurrency = false },
-            };
+                var currencies = new List<Currency>
+                {
+                    new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true },
+                    new Currency { Id = Guid.NewGuid(), Code = "USD", Symbol = "$", IsBaseCurrency = false },
+                    new Currency { Id = Guid.NewGuid(), Code = "EUR", Symbol = "€", IsBaseCurrency = false },
+                    new Currency { Id = Guid.NewGuid(), Code = "GBP", Symbol = "£", IsBaseCurrency = false },
+                    new Currency { Id = Guid.NewGuid(), Code = "JOD", Symbol = "د.أ", IsBaseCurrency = false },
+                    new Currency { Id = Guid.NewGuid(), Code = "SAR", Symbol = "ر.س", IsBaseCurrency = false },
+                    new Currency { Id = Guid.NewGuid(), Code = "AED", Symbol = "د.إ", IsBaseCurrency = false },
+                };
+                await db.Currencies.AddRangeAsync(currencies);
+                await db.SaveChangesAsync();
+                _logger.LogInformation("Seeded {Count} currencies with ILS as base", currencies.Count);
+                existing = currencies;
+            }
 
-            await db.Currencies.AddRangeAsync(currencies);
-            await db.SaveChangesAsync();
-            _logger.LogInformation("Seeded {Count} currencies", currencies.Count);
+            // Repair: ensure exactly one base currency and it is ILS.
+            var baseCurrency = existing.FirstOrDefault(c => c.IsBaseCurrency);
+            var ils = existing.FirstOrDefault(c => c.Code == "ILS");
+            if (baseCurrency == null || baseCurrency.Code != "ILS")
+            {
+                foreach (var c in existing) c.IsBaseCurrency = false;
+                if (ils != null) ils.IsBaseCurrency = true;
+                else
+                {
+                    ils = new Currency { Id = Guid.NewGuid(), Code = "ILS", Symbol = "₪", IsBaseCurrency = true };
+                    await db.Currencies.AddAsync(ils);
+                    existing.Add(ils);
+                }
+                await db.SaveChangesAsync();
+                _logger.LogInformation("Repaired base currency to ILS");
+            }
+
+            // Ensure all expected demo currencies exist so the selector can offer them.
+            var expected = new Dictionary<string, string>
+            {
+                ["USD"] = "$", ["EUR"] = "€", ["GBP"] = "£", ["JOD"] = "د.أ", ["SAR"] = "ر.س", ["AED"] = "د.إ"
+            };
+            var added = 0;
+            foreach (var kv in expected)
+            {
+                if (!existing.Any(c => c.Code == kv.Key))
+                {
+                    await db.Currencies.AddAsync(new Currency { Id = Guid.NewGuid(), Code = kv.Key, Symbol = kv.Value, IsBaseCurrency = false });
+                    added++;
+                }
+            }
+            if (added > 0) await db.SaveChangesAsync();
+            if (added > 0) _logger.LogInformation("Seeded {Count} missing currencies", added);
+
+            // Seed sensible exchange rates in demo/dev so conversion is actually observable.
+            await SeedExchangeRatesAsync(db);
+        }
+
+        private async Task SeedExchangeRatesAsync(ApplicationDbContext db)
+        {
+            var currencies = await db.Currencies.ToListAsync();
+            var ils = currencies.FirstOrDefault(c => c.Code == "ILS");
+            if (ils == null) return;
+            // Rates are ILS -> target (how many target units per 1 ILS). Chosen to make
+            // the spec example hold: ₪100 → $27 at 0.27, and to be plausible for demo.
+            // Idempotent per pair: never duplicates an existing rate nor overwrites an
+            // administrator's manually configured rate for the same pair.
+            var seededRates = new Dictionary<string, decimal>
+            {
+                ["USD"] = 0.27m,
+                ["EUR"] = 0.25m,
+                ["GBP"] = 0.22m,
+                ["JOD"] = 0.19m,
+                ["SAR"] = 1.02m,
+                ["AED"] = 0.99m,
+            };
+            var now = DateTimeOffset.UtcNow;
+            var created = 0;
+            foreach (var kv in seededRates)
+            {
+                var target = currencies.FirstOrDefault(c => c.Code == kv.Key);
+                if (target == null) continue;
+                var alreadyExists = await db.ExchangeRates.AnyAsync(r => r.FromCurrencyId == ils.Id && r.ToCurrencyId == target.Id);
+                if (alreadyExists) continue;
+                await db.ExchangeRates.AddAsync(new ExchangeRate
+                {
+                    Id = Guid.NewGuid(),
+                    FromCurrencyId = ils.Id,
+                    ToCurrencyId = target.Id,
+                    Rate = kv.Value,
+                    EffectiveAt = now
+                });
+                created++;
+            }
+            if (created > 0)
+            {
+                await db.SaveChangesAsync();
+                _logger.LogInformation("Seeded {Count} ILS exchange rates", created);
+            }
         }
 
         private async Task SeedWarehousesAsync(ApplicationDbContext db)
