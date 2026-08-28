@@ -83,16 +83,16 @@ namespace Ecommerce.Application.Commands.Checkout
             var checkoutLines = ResolveCheckoutLines(command, userCarts);
             if (checkoutLines.Count == 0) throw new DomainException("سلة التسوق فارغة. يرجى إضافة منتجات قبل إتمام الطلب.");
 
+            // The transaction is opened as late as possible (see PHASE 2 below). Reference data
+            // — currencies, store settings, shipping methods, coupons and the catalog — is read
+            // with no transaction open, so those reads cannot hold shared locks for the lifetime
+            // of the inventory update. Holding them under RepeatableRead was what turned two
+            // simultaneous checkouts into an SQL Server deadlock (error 1205).
             IDbContextTransaction? tx = null;
-            if (_db.Database.IsRelational())
-            {
-                tx = await _db.Database.BeginTransactionAsync(
-                    System.Data.IsolationLevel.RepeatableRead,
-                    cancellationToken);
-            }
 
             try
             {
+                // ================= PHASE 1: reads and pricing, no transaction =================
                 var currencyCode = await ResolveCurrencyCodeAsync(command.Currency, cancellationToken);
 
                 // Build order
@@ -135,17 +135,18 @@ namespace Ecommerce.Application.Commands.Checkout
                         .ToListAsync(cancellationToken)
                     : new List<ProductVariant>();
 
-                var inventoryItems = await _db.InventoryItems
-                    .Where(inv => productIds.Contains(inv.ProductId) ||
-                                  (inv.ProductVariantId.HasValue && variantIds.Contains(inv.ProductVariantId.Value)))
-                    .ToListAsync(cancellationToken);
-
                 var orderedItems = checkoutLines
                     .OrderBy(i => i.ProductId)
                     .ThenBy(i => i.ProductVariantId ?? Guid.Empty)
                     .ToList();
 
                 var promotionUsages = new System.Collections.Generic.List<Ecommerce.Domain.Entities.PromotionUsage>();
+
+                // Inventory is not touched while pricing: each line is resolved against the
+                // catalog here and reserved in PHASE 2 inside the write transaction. The list
+                // keeps the deterministic product/variant ordering of orderedItems so every
+                // checkout acquires inventory locks in the same sequence.
+                var reservationPlan = new List<InventoryReservationLine>();
 
                 foreach (var it in orderedItems)
                 {
@@ -216,22 +217,17 @@ namespace Ecommerce.Application.Commands.Checkout
 
                     order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, lineDiscount, variantName, sku, imageUrl, it.SelectedOptions);
 
-                    // --- Multi-warehouse Inventory Allocation ---
-                    // Shared with add-to-cart and cancellation so the three paths cannot drift.
-                    // Backorder is allowed when the catalog entity permits it OR any warehouse
-                    // row is flagged for backorder — the same rule add-to-cart applies.
-                    var candidateLocations = InventoryAllocator.CandidatesFor(inventoryItems, it.ProductId, it.ProductVariantId);
-                    var catalogAllowsBackorder = variant?.AllowBackorder ?? product.AllowBackorder;
-                    var backorderAllowed = catalogAllowsBackorder || InventoryAllocator.AllowsBackorder(candidateLocations);
-                    var totalAvailableForItem = InventoryAllocator.AvailableFor(candidateLocations, it.Quantity);
-
-                    if (!backorderAllowed && totalAvailableForItem < it.Quantity)
+                    // Inventory is only *planned* here. The actual read-and-reserve runs in
+                    // PHASE 2 under a short ReadCommitted transaction so no inventory lock is
+                    // held across promotion/coupon/shipping evaluation.
+                    reservationPlan.Add(new InventoryReservationLine
                     {
-                        throw new DomainException($"المنتج '{productName}' غير متوفر بالكمية المطلوبة. الكمية المتاحة: {totalAvailableForItem}.");
-                    }
-
-                    InventoryAllocator.Reserve(candidateLocations, it.Quantity, backorderAllowed);
-                    // --------------------------------------------
+                        ProductId = it.ProductId,
+                        ProductVariantId = it.ProductVariantId,
+                        Quantity = it.Quantity,
+                        CatalogAllowsBackorder = variant?.AllowBackorder ?? product.AllowBackorder,
+                        ProductName = productName
+                    });
                 }
 
                 // --- CART LEVEL PROMOTIONS ---
@@ -412,6 +408,22 @@ namespace Ecommerce.Application.Commands.Checkout
                     userCart.Clear();
                 }
 
+                // ============ PHASE 2: reserve inventory and persist, in a transaction ============
+                // Only the inventory read/reserve and the order insert run inside the transaction,
+                // and it is ReadCommitted: correctness under concurrency comes from the RowVersion
+                // optimistic-concurrency token on InventoryItem (a lost update surfaces as
+                // DbUpdateConcurrencyException below), not from holding range/shared locks. Under
+                // RepeatableRead the reference-data reads above kept shared locks for the whole
+                // handler, which is what escalated two simultaneous checkouts into deadlock 1205.
+                if (_db.Database.IsRelational())
+                {
+                    tx = await _db.Database.BeginTransactionAsync(
+                        System.Data.IsolationLevel.ReadCommitted,
+                        cancellationToken);
+                }
+
+                await ReserveInventoryAsync(reservationPlan, cancellationToken);
+
                 if (promotionUsages.Count > 0)
                 {
                     var groupedUsages = promotionUsages
@@ -499,6 +511,68 @@ namespace Ecommerce.Application.Commands.Checkout
                 {
                     await tx.DisposeAsync();
                 }
+            }
+        }
+
+        /// <summary>
+        /// A single planned inventory movement. Built during pricing (PHASE 1) and executed
+        /// inside the write transaction (PHASE 2) so no inventory row is locked while
+        /// promotions, coupons and shipping are being evaluated.
+        /// </summary>
+        private sealed class InventoryReservationLine
+        {
+            public Guid ProductId { get; init; }
+            public Guid? ProductVariantId { get; init; }
+            public int Quantity { get; init; }
+            public bool CatalogAllowsBackorder { get; init; }
+            public string ProductName { get; init; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Reads and reserves inventory for every planned line.
+        ///
+        /// Each line is fetched with an equality predicate on ProductId plus an explicit
+        /// ProductVariantId comparison, which is a seek on IX_InventoryItems_ProductId_ProductVariantId_WarehouseId.
+        /// The previous single query used an OR of two <c>Contains</c> lists
+        /// (<c>productIds.Contains(inv.ProductId) || variantIds.Contains(inv.ProductVariantId)</c>),
+        /// which SQL Server could only answer with a table scan; combined with RepeatableRead
+        /// that took shared locks on the whole table and two concurrent checkouts deadlocked (1205).
+        ///
+        /// Lines are processed in the caller's deterministic product/variant order so all
+        /// checkouts touch inventory rows in the same sequence.
+        /// </summary>
+        private async Task ReserveInventoryAsync(
+            List<InventoryReservationLine> plan,
+            CancellationToken cancellationToken)
+        {
+            foreach (var line in plan)
+            {
+                var hasVariant = line.ProductVariantId.HasValue && line.ProductVariantId.Value != Guid.Empty;
+
+                var query = hasVariant
+                    ? _db.InventoryItems.Where(inv =>
+                        inv.ProductId == line.ProductId &&
+                        inv.ProductVariantId == line.ProductVariantId)
+                    : _db.InventoryItems.Where(inv =>
+                        inv.ProductId == line.ProductId &&
+                        inv.ProductVariantId == null);
+
+                var candidateLocations = await query.ToListAsync(cancellationToken);
+
+                // --- Multi-warehouse Inventory Allocation ---
+                // Shared with add-to-cart and cancellation so the three paths cannot drift.
+                // Backorder is allowed when the catalog entity permits it OR any warehouse
+                // row is flagged for backorder — the same rule add-to-cart applies.
+                var backorderAllowed = line.CatalogAllowsBackorder || InventoryAllocator.AllowsBackorder(candidateLocations);
+                var totalAvailableForItem = InventoryAllocator.AvailableFor(candidateLocations, line.Quantity);
+
+                if (!backorderAllowed && totalAvailableForItem < line.Quantity)
+                {
+                    throw new DomainException($"المنتج '{line.ProductName}' غير متوفر بالكمية المطلوبة. الكمية المتاحة: {totalAvailableForItem}.");
+                }
+
+                InventoryAllocator.Reserve(candidateLocations, line.Quantity, backorderAllowed);
+                // --------------------------------------------
             }
         }
 

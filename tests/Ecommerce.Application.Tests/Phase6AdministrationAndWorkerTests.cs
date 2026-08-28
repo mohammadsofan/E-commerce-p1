@@ -173,6 +173,154 @@ namespace Ecommerce.Application.Tests
         }
 
         // =========================================================================
+        // D-04: cleanup must not be wedged by a single unclosable order
+        // =========================================================================
+        [Fact]
+        public async Task AbandonedOrderCleanupService_SkipsShippedAndDeliveredOrders_AndStillCancelsTheRest()
+        {
+            var dbName = Guid.NewGuid().ToString();
+            var warehouseId = Guid.NewGuid();
+            var productId = Guid.NewGuid();
+            var invId = Guid.NewGuid();
+            var shippedId = Guid.NewGuid();
+            var deliveredId = Guid.NewGuid();
+            var cancellableId = Guid.NewGuid();
+
+            using (var ctx = CreateInMemoryContext(dbName))
+            {
+                var invItem = new InventoryItem(productId, warehouseId, quantityOnHand: 30);
+                invItem.Id = invId;
+                invItem.Reserve(6); // 2 units per stale order
+                await ctx.InventoryItems.AddAsync(invItem);
+
+                await ctx.Orders.AddAsync(StaleOrder(shippedId, "ORD-SHIPPED", productId, FulfillmentStatus.Shipped));
+                await ctx.Orders.AddAsync(StaleOrder(deliveredId, "ORD-DELIVERED", productId, FulfillmentStatus.Delivered));
+                await ctx.Orders.AddAsync(StaleOrder(cancellableId, "ORD-OPEN", productId, FulfillmentStatus.Unfulfilled));
+
+                await ctx.SaveChangesAsync();
+            }
+
+            var services = new ServiceCollection();
+            services.AddDbContext<ApplicationDbContext>(opt => opt.UseInMemoryDatabase(dbName));
+            services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+            var provider = services.BuildServiceProvider();
+
+            var cleanupService = new AbandonedOrderCleanupService(
+                provider,
+                NullLogger<AbandonedOrderCleanupService>.Instance,
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromMinutes(30));
+
+            // The shipped/delivered orders are rejected by Order.Cancel(); before the fix they
+            // were pulled into the batch and their exception aborted every other order.
+            var cleanedCount = await cleanupService.CleanupAbandonedOrdersAsync(CancellationToken.None);
+            Assert.Equal(1, cleanedCount);
+
+            using (var verifyCtx = CreateInMemoryContext(dbName))
+            {
+                Assert.Equal(OrderStatus.Cancelled, (await verifyCtx.Orders.FindAsync(cancellableId))!.Status);
+                Assert.Equal(OrderStatus.Placed, (await verifyCtx.Orders.FindAsync(shippedId))!.Status);
+                Assert.Equal(OrderStatus.Placed, (await verifyCtx.Orders.FindAsync(deliveredId))!.Status);
+
+                // Only the cancelled order's 2 units were released (6 - 2 = 4).
+                Assert.Equal(4, (await verifyCtx.InventoryItems.FindAsync(invId))!.QuantityReserved);
+            }
+        }
+
+        [Fact]
+        public async Task AbandonedOrderCleanupService_OneFailingOrder_DoesNotBlockTheBatch()
+        {
+            var dbName = Guid.NewGuid().ToString();
+            var warehouseId = Guid.NewGuid();
+            var productId = Guid.NewGuid();
+            var invId = Guid.NewGuid();
+            var failingId = Guid.NewGuid();
+            var goodId1 = Guid.NewGuid();
+            var goodId2 = Guid.NewGuid();
+
+            using (var ctx = CreateInMemoryContext(dbName))
+            {
+                var invItem = new InventoryItem(productId, warehouseId, quantityOnHand: 30);
+                invItem.Id = invId;
+                invItem.Reserve(6);
+                await ctx.InventoryItems.AddAsync(invItem);
+
+                await ctx.Orders.AddAsync(StaleOrder(failingId, "ORD-FAIL", productId, FulfillmentStatus.Unfulfilled));
+                await ctx.Orders.AddAsync(StaleOrder(goodId1, "ORD-OK-1", productId, FulfillmentStatus.Unfulfilled));
+                await ctx.Orders.AddAsync(StaleOrder(goodId2, "ORD-OK-2", productId, FulfillmentStatus.Unfulfilled));
+
+                await ctx.SaveChangesAsync();
+            }
+
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(dbName)
+                .Options;
+
+            var services = new ServiceCollection();
+            services.AddScoped<IApplicationDbContext>(_ => new FailingSaveDbContext(options, failingId));
+            var provider = services.BuildServiceProvider();
+
+            var cleanupService = new AbandonedOrderCleanupService(
+                provider,
+                NullLogger<AbandonedOrderCleanupService>.Instance,
+                TimeSpan.FromMinutes(5),
+                TimeSpan.FromMinutes(30));
+
+            // With a single shared SaveChangesAsync, the one failing order took the whole batch
+            // down with it. Per-order try/catch + per-order save isolates it.
+            var cleanedCount = await cleanupService.CleanupAbandonedOrdersAsync(CancellationToken.None);
+            Assert.Equal(2, cleanedCount);
+
+            using (var verifyCtx = CreateInMemoryContext(dbName))
+            {
+                Assert.Equal(OrderStatus.Placed, (await verifyCtx.Orders.FindAsync(failingId))!.Status);
+                Assert.Equal(OrderStatus.Cancelled, (await verifyCtx.Orders.FindAsync(goodId1))!.Status);
+                Assert.Equal(OrderStatus.Cancelled, (await verifyCtx.Orders.FindAsync(goodId2))!.Status);
+
+                // The two successful orders released 2 units each; the failing one released none.
+                Assert.Equal(2, (await verifyCtx.InventoryItems.FindAsync(invId))!.QuantityReserved);
+            }
+        }
+
+        private static Order StaleOrder(Guid id, string orderNumber, Guid productId, FulfillmentStatus fulfillmentStatus)
+        {
+            var order = new Order { Id = id, OrderNumber = orderNumber };
+            order.AddItem(productId, Guid.Empty, "Test Product", 50m, 2);
+            SetPrivateProperty(order, "Status", OrderStatus.Placed);
+            SetPrivateProperty(order, "FulfillmentStatus", fulfillmentStatus);
+            SetPrivateProperty(order, "CreatedAt", DateTimeOffset.UtcNow.AddMinutes(-40));
+            return order;
+        }
+
+        /// <summary>
+        /// Fails the save of one specific order so the cleanup loop's per-order isolation can be
+        /// observed without depending on a domain rule.
+        /// </summary>
+        private sealed class FailingSaveDbContext : ApplicationDbContext
+        {
+            private readonly Guid _failingOrderId;
+
+            public FailingSaveDbContext(DbContextOptions<ApplicationDbContext> options, Guid failingOrderId)
+                : base(options)
+            {
+                _failingOrderId = failingOrderId;
+            }
+
+            public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+            {
+                var touchesFailingOrder = ChangeTracker.Entries<Order>()
+                    .Any(e => e.Entity.Id == _failingOrderId && e.State == EntityState.Modified);
+
+                if (touchesFailingOrder)
+                {
+                    throw new InvalidOperationException("Simulated persistence failure.");
+                }
+
+                return base.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        // =========================================================================
         // Issue 2: User Management Pagination Fix
         // =========================================================================
         [Fact]

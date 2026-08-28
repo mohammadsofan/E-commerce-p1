@@ -503,6 +503,106 @@ namespace Ecommerce.Application.Tests
 
             await Assert.ThrowsAsync<DomainException>(() => handler.Handle(command));
         }
+        [Fact]
+        public async Task Checkout_WithMixedBaseAndVariantLines_ReservesAgainstTheMatchingInventoryRowsOnly()
+        {
+            using var context = CreateInMemoryContext();
+
+            var warehouseId = Guid.NewGuid();
+
+            // Product A is sold as a bare product; product B is sold through a variant. Both have
+            // inventory rows for the same warehouse, so a per-line lookup that leaked across the
+            // product/variant boundary would reserve against the wrong row.
+            var productAId = Guid.NewGuid();
+            var productBId = Guid.NewGuid();
+            var variantBId = Guid.NewGuid();
+
+            await context.Products.AddRangeAsync(
+                new Product { Id = productAId, Name = "Base Only", Sku = "BASE-1", BasePrice = 10m, IsActive = true },
+                new Product { Id = productBId, Name = "Variant Parent", Sku = "VAR-P", BasePrice = 20m, IsActive = true });
+
+            await context.ProductVariants.AddAsync(new ProductVariant
+            {
+                Id = variantBId,
+                ProductId = productBId,
+                Name = "Large",
+                Sku = "VAR-L",
+                Price = 20m,
+                IsActive = true
+            });
+
+            var invA = new InventoryItem(productAId, warehouseId, quantityOnHand: 10);
+            var invBVariant = new InventoryItem(productBId, warehouseId, quantityOnHand: 10, productVariantId: variantBId);
+            // A base row for product B that no line should ever touch (product B is variant-only).
+            var invBBase = new InventoryItem(productBId, warehouseId, quantityOnHand: 10);
+
+            await context.InventoryItems.AddRangeAsync(invA, invBVariant, invBBase);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            var orderId = await handler.Handle(new CheckoutCommand
+            {
+                ExpectedTotal = -1m,
+                UserId = Guid.NewGuid(),
+                Currency = "ILS",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productAId, Quantity = 2 },
+                    new CheckoutItem { ProductId = productBId, ProductVariantId = variantBId, Quantity = 3 }
+                }
+            });
+
+            Assert.NotNull(await context.Orders.FindAsync(orderId));
+
+            Assert.Equal(2, (await context.InventoryItems.FindAsync(invA.Id))!.QuantityReserved);
+            Assert.Equal(3, (await context.InventoryItems.FindAsync(invBVariant.Id))!.QuantityReserved);
+            Assert.Equal(0, (await context.InventoryItems.FindAsync(invBBase.Id))!.QuantityReserved);
+        }
+
+        [Fact]
+        public async Task Checkout_WhenTotalMismatches_DoesNotReserveInventory()
+        {
+            using var context = CreateInMemoryContext();
+
+            var productId = Guid.NewGuid();
+            await context.Products.AddAsync(new Product
+            {
+                Id = productId,
+                Name = "Price Guard Product",
+                Sku = "GUARD-1",
+                BasePrice = 40m,
+                IsActive = true
+            });
+
+            var inv = new InventoryItem(productId, Guid.NewGuid(), quantityOnHand: 10);
+            await context.InventoryItems.AddAsync(inv);
+            await context.SaveChangesAsync();
+
+            var idempotency = new Ecommerce.Infrastructure.Services.IdempotencyService(context);
+            var handler = new CheckoutCommandHandler(context, idempotency, new Ecommerce.Application.Common.DomainEvents.NullDomainEventDispatcher());
+
+            // Reservation now happens after price validation, so a rejected checkout must leave
+            // inventory untouched even without a transaction to roll back.
+            await Assert.ThrowsAsync<DomainException>(() => handler.Handle(new CheckoutCommand
+            {
+                ExpectedTotal = 1m,
+                UserId = Guid.NewGuid(),
+                Currency = "ILS",
+                ShippingAddress = "Test Address",
+                IdempotencyKey = Guid.NewGuid().ToString(),
+                Items = new List<CheckoutItem>
+                {
+                    new CheckoutItem { ProductId = productId, Quantity = 1 }
+                }
+            }));
+
+            Assert.Equal(0, (await context.InventoryItems.FindAsync(inv.Id))!.QuantityReserved);
+            Assert.Empty(await context.Orders.ToListAsync());
+        }
     }
 }
 

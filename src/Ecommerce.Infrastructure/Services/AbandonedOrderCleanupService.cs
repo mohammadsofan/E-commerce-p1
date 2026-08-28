@@ -72,63 +72,110 @@ namespace Ecommerce.Infrastructure.Services
 
             var cutoff = DateTimeOffset.UtcNow.Subtract(_orderTimeout);
 
-            var staleOrders = await db.Orders
-                .Include(o => o.Items)
-                .Where(o => o.Status == OrderStatus.Placed && o.CreatedAt <= cutoff)
+            // Order.Cancel() refuses to cancel once fulfilment has started, so an order that was
+            // shipped or delivered while still sitting in Placed can never be closed by this
+            // worker. Filtering those rows out in the query keeps the batch free of orders that
+            // are guaranteed to throw.
+            //
+            // Only the ids are selected up front: each order is then loaded, cancelled and saved
+            // in its own iteration, so a failure can be isolated without discarding work that
+            // has already been done or entities that are still pending.
+            var staleOrderIds = await db.Orders
+                .Where(o => o.Status == OrderStatus.Placed
+                            && o.FulfillmentStatus != FulfillmentStatus.Shipped
+                            && o.FulfillmentStatus != FulfillmentStatus.Delivered
+                            && o.CreatedAt <= cutoff)
+                .Select(o => o.Id)
                 .ToListAsync(cancellationToken);
 
-            if (!staleOrders.Any())
+            if (staleOrderIds.Count == 0)
             {
                 return 0;
             }
 
-            foreach (var order in staleOrders)
+            var cancelledCount = 0;
+
+            foreach (var orderId in staleOrderIds)
             {
-                order.Cancel("Abandoned order timeout");
-
-                if (order.Items != null && order.Items.Any())
+                // Each order is cancelled and saved on its own. A single unclosable order used to
+                // abort the whole batch: the loop had no per-order guard and one shared
+                // SaveChangesAsync at the end, so every other stale order stayed Placed and its
+                // inventory stayed reserved forever.
+                try
                 {
-                    var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
-                    var variantIds = order.Items
-                        .Where(i => i.ProductVariantId != Guid.Empty)
-                        .Select(i => i.ProductVariantId)
-                        .Distinct()
-                        .ToList();
+                    var order = await db.Orders
+                        .Include(o => o.Items)
+                        .FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
 
-                    var inventoryItems = await db.InventoryItems
-                        .Where(inv => productIds.Contains(inv.ProductId) ||
-                                      (inv.ProductVariantId.HasValue && variantIds.Contains(inv.ProductVariantId.Value)))
-                        .ToListAsync(cancellationToken);
+                    // Cancelled, shipped or delivered in the window between the id scan and now.
+                    if (order == null || order.Status != OrderStatus.Placed) continue;
 
-                    foreach (var item in order.Items)
+                    order.Cancel("Abandoned order timeout");
+
+                    if (order.Items != null && order.Items.Any())
                     {
-                        var matchingInventory = inventoryItems
-                            .Where(inv =>
-                                (item.ProductVariantId != Guid.Empty && inv.ProductVariantId == item.ProductVariantId)
-                                || (item.ProductVariantId == Guid.Empty && inv.ProductId == item.ProductId && !inv.ProductVariantId.HasValue))
-                            .OrderByDescending(inv => inv.QuantityReserved)
+                        var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
+                        var variantIds = order.Items
+                            .Where(i => i.ProductVariantId != Guid.Empty)
+                            .Select(i => i.ProductVariantId)
+                            .Distinct()
                             .ToList();
 
-                        int remainingToRelease = item.Quantity;
-                        foreach (var inv in matchingInventory)
-                        {
-                            if (remainingToRelease <= 0) break;
-                            if (inv.QuantityReserved <= 0) continue;
+                        var inventoryItems = await db.InventoryItems
+                            .Where(inv => productIds.Contains(inv.ProductId) ||
+                                          (inv.ProductVariantId.HasValue && variantIds.Contains(inv.ProductVariantId.Value)))
+                            .ToListAsync(cancellationToken);
 
-                            int canRelease = Math.Min(remainingToRelease, inv.QuantityReserved);
-                            if (canRelease > 0)
+                        foreach (var item in order.Items)
+                        {
+                            var matchingInventory = inventoryItems
+                                .Where(inv =>
+                                    (item.ProductVariantId != Guid.Empty && inv.ProductVariantId == item.ProductVariantId)
+                                    || (item.ProductVariantId == Guid.Empty && inv.ProductId == item.ProductId && !inv.ProductVariantId.HasValue))
+                                .OrderByDescending(inv => inv.QuantityReserved)
+                                .ToList();
+
+                            int remainingToRelease = item.Quantity;
+                            foreach (var inv in matchingInventory)
                             {
-                                inv.Release(canRelease);
-                                remainingToRelease -= canRelease;
+                                if (remainingToRelease <= 0) break;
+                                if (inv.QuantityReserved <= 0) continue;
+
+                                int canRelease = Math.Min(remainingToRelease, inv.QuantityReserved);
+                                if (canRelease > 0)
+                                {
+                                    inv.Release(canRelease);
+                                    remainingToRelease -= canRelease;
+                                }
                             }
                         }
                     }
+
+                    await db.SaveChangesAsync(cancellationToken);
+                    cancelledCount++;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // Drop the failed order's pending changes so they cannot leak into the next
+                    // iteration's SaveChangesAsync, then carry on with the rest of the batch.
+                    db.ClearChangeTracker();
+                    _logger.LogWarning(
+                        ex,
+                        "Skipped abandoned order {OrderId} during cleanup; continuing with the remaining orders.",
+                        orderId);
                 }
             }
 
-            await db.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Cancelled {Count} abandoned orders and released inventory.", staleOrders.Count);
-            return staleOrders.Count;
+            _logger.LogInformation(
+                "Cancelled {Count} of {Total} abandoned orders and released inventory.",
+                cancelledCount,
+                staleOrderIds.Count);
+
+            return cancelledCount;
         }
     }
 }
