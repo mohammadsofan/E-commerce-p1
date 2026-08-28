@@ -57,7 +57,7 @@ namespace Ecommerce.Application.Commands.Admin
             {
                 await _db.SaveChangesAsync(cancellationToken);
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Currencies_IsBaseCurrency_Unique") == true)
             {
                 throw new ConcurrencyException("Another operation concurrently modified the base currency. Please try again.");
             }
@@ -114,15 +114,15 @@ namespace Ecommerce.Application.Commands.Admin
                     b.IsBaseCurrency = false;
                 currency.IsBaseCurrency = true;
             }
-            else if (!command.IsBaseCurrency)
+            else if (!command.IsBaseCurrency && currency.IsBaseCurrency)
             {
-                currency.IsBaseCurrency = false;
+                throw new DomainException("Cannot demote the base currency. Promote another currency to base instead.");
             }
             try
             {
                 await _db.SaveChangesAsync(cancellationToken);
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_Currencies_IsBaseCurrency_Unique") == true)
             {
                 throw new ConcurrencyException("Another operation concurrently modified the base currency. Please try again.");
             }

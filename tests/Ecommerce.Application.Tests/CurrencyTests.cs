@@ -79,6 +79,26 @@ namespace Ecommerce.Application.Tests
         }
 
         [Fact]
+        public async Task DemoteBaseCurrency_ThrowsDomainException()
+        {
+            using var ctx = CreateInMemoryContext();
+            var createHandler = new CreateCurrencyCommandHandler(ctx, CreateMapper());
+            var baseCurrency = await createHandler.Handle(new CreateCurrencyCommand { Code = "ILS", Symbol = "₪", IsBaseCurrency = true });
+
+            var updateHandler = new UpdateCurrencyCommandHandler(ctx, CreateMapper());
+            
+            var ex = await Assert.ThrowsAsync<DomainException>(() => updateHandler.Handle(new UpdateCurrencyCommand
+            {
+                Id = baseCurrency.Id,
+                Code = "ILS",
+                Symbol = "₪",
+                IsBaseCurrency = false
+            }, default));
+
+            Assert.Equal("Cannot demote the base currency. Promote another currency to base instead.", ex.Message);
+        }
+
+        [Fact]
         public async Task CreateExchangeRate_AndConvert_UsesLatestRate()
         {
             using var ctx = CreateInMemoryContext();
