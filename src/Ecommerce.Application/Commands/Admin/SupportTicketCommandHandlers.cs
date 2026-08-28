@@ -74,9 +74,10 @@ namespace Ecommerce.Application.Commands.Admin
             var userId = _currentUser.UserId ?? throw new DomainException("User is not authenticated");
 
             var ticket = await _db.SupportTickets
+                .Include(t => t.Messages)
                 .FirstOrDefaultAsync(t => t.Id == command.Id, cancellationToken);
-            if (ticket == null)
-                throw new DomainException("Support ticket not found");
+            if (ticket == null || (!_currentUser.IsAdmin && ticket.UserId != userId))
+                throw new NotFoundException("SupportTicket", command.Id);
 
             ticket.Messages.Add(new SupportTicketMessage
             {

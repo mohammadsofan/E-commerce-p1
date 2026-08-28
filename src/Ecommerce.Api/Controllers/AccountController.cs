@@ -91,9 +91,10 @@ namespace Ecommerce.Api.Controllers
             if (!user.IsActive)
                 return Unauthorized("Account is deactivated. Please contact support.");
 
-            var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, false);
+            var res = await _signInManager.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: true);
+            if (res.IsLockedOut)
+                return StatusCode(423, new { message = "تم قفل الحساب مؤقتاً بسبب محاولات الدخول الخاطئة" });
             if (!res.Succeeded) return Unauthorized();
-
             user.LastLoginAt = DateTimeOffset.UtcNow;
             await _userManager.UpdateAsync(user);
 

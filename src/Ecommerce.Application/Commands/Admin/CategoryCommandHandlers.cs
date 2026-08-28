@@ -98,6 +98,23 @@ namespace Ecommerce.Application.Commands.Admin
             if (conflict != null)
                 throw new DomainException($"Category with slug '{slug}' already exists");
 
+            if (command.ParentCategoryId.HasValue)
+            {
+                if (command.ParentCategoryId.Value == command.Id)
+                    throw new DomainException("Category cannot be its own parent.");
+
+                var currentParentId = command.ParentCategoryId.Value;
+                while (true)
+                {
+                    var parent = await _db.Categories.FirstOrDefaultAsync(c => c.Id == currentParentId, cancellationToken);
+                    if (parent == null) break;
+                    if (parent.Id == command.Id)
+                        throw new DomainException("Category cannot be a descendant of itself.");
+                    if (!parent.ParentCategoryId.HasValue) break;
+                    currentParentId = parent.ParentCategoryId.Value;
+                }
+            }
+
             category.ParentCategoryId = command.ParentCategoryId;
             category.Name = name;
             category.Slug = slug;

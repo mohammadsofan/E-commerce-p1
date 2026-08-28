@@ -27,6 +27,9 @@ namespace Ecommerce.Application.Commands.Admin
         public async Task<CurrencyDto> Handle(CreateCurrencyCommand command, CancellationToken cancellationToken = default)
         {
             var code = command.Code.Trim().ToUpperInvariant();
+            if (code.Length != 3 || !System.Text.RegularExpressions.Regex.IsMatch(code, "^[A-Z]{3}$"))
+                throw new DomainException("Currency code must be exactly 3 uppercase letters");
+
             var existing = await _db.Currencies
                 .FirstOrDefaultAsync(c => c.Code == code, cancellationToken);
             if (existing != null)
@@ -41,7 +44,12 @@ namespace Ecommerce.Application.Commands.Admin
             };
 
             if (currency.IsBaseCurrency)
+            {
+                var ordersExist = await _db.Orders.AnyAsync(cancellationToken);
+                if (ordersExist)
+                    throw new DomainException("Cannot change base currency because orders already exist.");
                 await ClearBaseCurrencyAsync(cancellationToken);
+            }
 
             _db.Currencies.Add(currency);
             await _db.SaveChangesAsync(cancellationToken);
@@ -76,6 +84,9 @@ namespace Ecommerce.Application.Commands.Admin
                 throw new DomainException("Currency not found");
 
             var code = command.Code.Trim().ToUpperInvariant();
+            if (code.Length != 3 || !System.Text.RegularExpressions.Regex.IsMatch(code, "^[A-Z]{3}$"))
+                throw new DomainException("Currency code must be exactly 3 uppercase letters");
+
             var conflict = await _db.Currencies
                 .FirstOrDefaultAsync(c => c.Code == code && c.Id != command.Id, cancellationToken);
             if (conflict != null)
@@ -86,6 +97,10 @@ namespace Ecommerce.Application.Commands.Admin
 
             if (command.IsBaseCurrency && !currency.IsBaseCurrency)
             {
+                var ordersExist = await _db.Orders.AnyAsync(cancellationToken);
+                if (ordersExist)
+                    throw new DomainException("Cannot change base currency because orders already exist.");
+
                 var bases = await _db.Currencies.Where(c => c.IsBaseCurrency && c.Id != currency.Id).ToListAsync(cancellationToken);
                 foreach (var b in bases)
                     b.IsBaseCurrency = false;
