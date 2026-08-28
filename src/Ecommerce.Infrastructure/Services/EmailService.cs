@@ -175,7 +175,7 @@ namespace Ecommerce.Infrastructure.Services
 
             if (order.DiscountAmount > 0)
             {
-                var couponTag = !string.IsNullOrWhiteSpace(order.CouponCode) ? $" ({order.CouponCode})" : "";
+                var couponTag = !string.IsNullOrWhiteSpace(order.CouponCode) ? $" ({System.Net.WebUtility.HtmlEncode(order.CouponCode)})" : "";
                 sb.AppendLine($"<tr style='color: #059669;'><td>الخصم{couponTag}</td><td style='text-align:left;'>-${order.DiscountAmount:F2}</td></tr>");
             }
 
@@ -256,7 +256,7 @@ namespace Ecommerce.Infrastructure.Services
             sb.AppendLine("<table><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th></tr></thead><tbody>");
             foreach (var item in order.Items)
             {
-                var options = !string.IsNullOrWhiteSpace(item.SelectedOptions) ? $" ({item.SelectedOptions})" : "";
+                var options = !string.IsNullOrWhiteSpace(item.SelectedOptions) ? $" ({System.Net.WebUtility.HtmlEncode(item.SelectedOptions)})" : "";
                 sb.AppendLine($"<tr><td>{System.Net.WebUtility.HtmlEncode(item.ProductName)}{options}</td><td>{item.Quantity}</td><td>${item.UnitPrice:F2}</td></tr>");
             }
             sb.AppendLine("</tbody></table>");
