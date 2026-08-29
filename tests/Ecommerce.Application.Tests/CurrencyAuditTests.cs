@@ -24,7 +24,7 @@ namespace Ecommerce.Application.Tests
         public async Task Convert_100ILS_To_27USD()
         {
             using var ctx = CreateInMemoryContext();
-            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance);
+            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance, new DummyConfig(), new DummySearchService());
             // Seed via public SeedAsync which will seed currencies and rates
             await seeder.SeedAsync(ctx, null, null);
             var handler = new ConvertCurrencyQueryHandler(ctx);
@@ -37,7 +37,7 @@ namespace Ecommerce.Application.Tests
         public async Task Convert_Inverse_USD_To_ILS_Is_Correct()
         {
             using var ctx = CreateInMemoryContext();
-            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance);
+            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance, new DummyConfig(), new DummySearchService());
             await seeder.SeedAsync(ctx, null, null);
             var handler = new ConvertCurrencyQueryHandler(ctx);
             var result = await handler.Handle(new ConvertCurrencyQuery { Amount = 27m, From = "USD", To = "ILS" });
@@ -52,7 +52,7 @@ namespace Ecommerce.Application.Tests
         public async Task MissingRate_ShouldThrow_NotSilentlyReturnOneToOne()
         {
             using var ctx = CreateInMemoryContext();
-            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance);
+            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance, new DummyConfig(), new DummySearchService());
             await seeder.SeedAsync(ctx, null, null);
             // Create a new currency without rate
             var jpy = new Currency { Id = Guid.NewGuid(), Code = "JPY", Symbol = "¥", IsBaseCurrency = false };
@@ -67,7 +67,7 @@ namespace Ecommerce.Application.Tests
         public async Task Checkout_Persists_Base_ILS_Not_Display_Currency()
         {
             using var ctx = CreateInMemoryContext();
-            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance);
+            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance, new DummyConfig(), new DummySearchService());
             await seeder.SeedAsync(ctx, null, null);
             // Create product and inventory
             var productId = Guid.NewGuid();
@@ -110,7 +110,7 @@ namespace Ecommerce.Application.Tests
         public async Task SeedExchangeRates_Is_Idempotent_NoDuplicates()
         {
             using var ctx = CreateInMemoryContext();
-            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance);
+            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance, new DummyConfig(), new DummySearchService());
             await seeder.SeedAsync(ctx, null, null);
             var count1 = await ctx.ExchangeRates.CountAsync();
             await seeder.SeedAsync(ctx, null, null);
@@ -124,7 +124,7 @@ namespace Ecommerce.Application.Tests
         public async Task SeedExchangeRates_Does_Not_Overwrite_Admin_Rate()
         {
             using var ctx = CreateInMemoryContext();
-            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance);
+            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance, new DummyConfig(), new DummySearchService());
             await seeder.SeedAsync(ctx, null, null);
             var ils = await ctx.Currencies.FirstAsync(c => c.Code == "ILS");
             var usd = await ctx.Currencies.FirstAsync(c => c.Code == "USD");
@@ -141,7 +141,7 @@ namespace Ecommerce.Application.Tests
         public async Task ZeroOrNegativeRate_Is_Rejected_And_Not_Used_For_Conversion()
         {
             using var ctx = CreateInMemoryContext();
-            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance);
+            var seeder = new Ecommerce.Infrastructure.Persistence.DbSeeder(NullLogger<Ecommerce.Infrastructure.Persistence.DbSeeder>.Instance, new DummyConfig(), new DummySearchService());
             await seeder.SeedAsync(ctx, null, null);
             var ils = await ctx.Currencies.FirstAsync(c => c.Code == "ILS");
             var eur = await ctx.Currencies.FirstAsync(c => c.Code == "EUR");
