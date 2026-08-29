@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,16 +8,24 @@ using Ecommerce.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Ecommerce.Infrastructure.Persistence
 {
     public class DbSeeder
     {
         private readonly ILogger<DbSeeder> _logger;
+        private readonly IConfiguration _configuration;
+        private readonly Ecommerce.Application.Interfaces.IProductSearchService _searchService;
 
-        public DbSeeder(ILogger<DbSeeder> logger)
+        public DbSeeder(
+            ILogger<DbSeeder> logger,
+            IConfiguration configuration,
+            Ecommerce.Application.Interfaces.IProductSearchService searchService)
         {
             _logger = logger;
+            _configuration = configuration;
+            _searchService = searchService;
         }
 
         public async Task SeedAsync(ApplicationDbContext db, RoleManager<ApplicationRole>? roleManager = null, UserManager<ApplicationUser>? userManager = null)
@@ -1319,6 +1327,12 @@ namespace Ecommerce.Infrastructure.Persistence
 
                     await db.SaveChangesAsync();
                 }
+
+                // Keep search index in sync with seeded data (idempotent upsert)
+                // If indexing fails, we allow the exception to bubble up and fail startup
+                // to prevent a successful seed with a permanently stale search index.
+                var productIdToIndex = existingProduct != null ? existingProduct.Id : item.product.Id;
+                await _searchService.IndexProductAsync(productIdToIndex);
             }
 
             _logger.LogInformation("Seeded and synchronized rich products, variants and variant options");

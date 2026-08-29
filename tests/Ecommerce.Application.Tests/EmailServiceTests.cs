@@ -118,6 +118,20 @@ namespace Ecommerce.Application.Tests
 
             await service.SendOrderShippedAsync(order, "customer@example.com");
         }
+        private class SpyEmailService : Ecommerce.Infrastructure.Services.EmailService
+        {
+            public List<EmailMessage> SentMessages { get; } = new List<EmailMessage>();
+
+            public SpyEmailService(IOptions<EmailOptions> options, Microsoft.Extensions.Logging.ILogger<Ecommerce.Infrastructure.Services.EmailService> logger) 
+                : base(options, logger) { }
+
+            public override Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+            {
+                SentMessages.Add(message);
+                return Task.CompletedTask;
+            }
+        }
+
         [Theory]
         [InlineData("Normal English address", "Normal English address")]
         [InlineData("شارع الإرسال، عمارة البرج، طابق 4", "شارع الإرسال، عمارة البرج، طابق 4")]
@@ -129,7 +143,10 @@ namespace Ecommerce.Application.Tests
         [InlineData("<a href=\"javascript:alert(1)\" onmouseover=\"alert(2)\">Click me</a>", "&lt;a href=&quot;javascript:alert(1)&quot; onmouseover=&quot;alert(2)&quot;&gt;Click me&lt;/a&gt;")]
         public async Task SendOrderConfirmationAsync_EncodesXssPayloadsInAddress(string maliciousAddress, string expectedEncodedAddress)
         {
-            var service = CreateService(o => o.Host = string.Empty);
+            var options = Options.Create(new EmailOptions { Host = "smtp.example.com", FromEmail = "admin@example.com" });
+            var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<Ecommerce.Infrastructure.Services.EmailService>.Instance;
+            var service = new SpyEmailService(options, logger);
+
             var order = new Ecommerce.Domain.Entities.Order
             {
                 Id = Guid.NewGuid(),
@@ -137,11 +154,58 @@ namespace Ecommerce.Application.Tests
                 CustomerNotes = maliciousAddress
             };
 
-            // We mock the IOptions and Logger, but we need to intercept the actual email body
-            // However, EmailService is concrete and does not expose the rendered HTML.
-            // Wait, we can't easily capture the HTML output from the SmtpClient if we mock it...
-            // Let's use a mocked IEmailService? No, the SmtpClient is instantiated directly inside SendAsync!
-            // This is a unit test limitation. Let's see if we can use a reflection or local SMTP server?
+            await service.SendOrderConfirmationAsync(order, "customer@example.com");
+
+            var sent = Assert.Single(service.SentMessages);
+            Assert.Contains(expectedEncodedAddress, sent.Body);
+            if (maliciousAddress != expectedEncodedAddress)
+            {
+                Assert.DoesNotContain(maliciousAddress, sent.Body);
+            }
+        }
+
+        [Fact]
+        public async Task SendOrderConfirmationAsync_EncodesCouponCode()
+        {
+            var options = Options.Create(new EmailOptions { Host = "smtp.example.com", FromEmail = "admin@example.com" });
+            var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<Ecommerce.Infrastructure.Services.EmailService>.Instance;
+            var service = new SpyEmailService(options, logger);
+
+            var order = new Ecommerce.Domain.Entities.Order
+            {
+                Id = Guid.NewGuid(),
+                OrderNumber = "ORD-COUPON-XSS"
+            };
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Test Product", 100m, 1);
+            order.ApplyCoupon("<script>alert(1)</script>", 10m);
+
+            await service.SendOrderConfirmationAsync(order, "customer@example.com");
+
+            var sent = Assert.Single(service.SentMessages);
+            Assert.Contains("&lt;script&gt;alert(1)&lt;/script&gt;", sent.Body);
+            Assert.DoesNotContain("<script>alert(1)</script>", sent.Body);
+        }
+
+        [Fact]
+        public async Task SendAdminOrderAlertAsync_EncodesSelectedOptions()
+        {
+            var options = Options.Create(new EmailOptions { Host = "smtp.example.com", FromEmail = "admin@example.com" });
+            var logger = Microsoft.Extensions.Logging.Abstractions.NullLogger<Ecommerce.Infrastructure.Services.EmailService>.Instance;
+            var service = new SpyEmailService(options, logger);
+
+            var order = new Ecommerce.Domain.Entities.Order
+            {
+                Id = Guid.NewGuid(),
+                OrderNumber = "ORD-OPT-XSS"
+            };
+            
+            order.AddItem(Guid.NewGuid(), Guid.NewGuid(), "Test Product", 100m, 1, 0m, "", "", "", "<img src=x onerror=alert(1)>");
+
+            await service.SendAdminOrderAlertAsync(order);
+
+            var sent = Assert.Single(service.SentMessages);
+            Assert.Contains("&lt;img src=x onerror=alert(1)&gt;", sent.Body);
+            Assert.DoesNotContain("<img src=x onerror=alert(1)>", sent.Body);
         }
     }
 }

@@ -35,7 +35,7 @@ namespace Ecommerce.Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
+        public virtual async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(_options.Host))
             {
