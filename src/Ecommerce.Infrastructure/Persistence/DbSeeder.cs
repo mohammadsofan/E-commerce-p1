@@ -2833,13 +2833,76 @@ namespace Ecommerce.Infrastructure.Persistence
 
         private async Task SeedPromotionsAsync(ApplicationDbContext db)
         {
+            var electronicsCatIds = await db.Categories
+                .Where(c => c.Slug == "electronics" || c.Slug == "smartphones" || c.Slug == "laptops" || c.Slug == "audio-headphones" || c.Slug == "gaming-consoles" || c.Slug == "tablets" || c.Slug == "tv-displays" || c.Slug == "phone-accessories" || c.Slug == "smart-home")
+                .Select(c => c.Id.ToString())
+                .ToListAsync();
+
+            var fashionCatIds = await db.Categories
+                .Where(c => c.Slug == "clothing-fashion" || c.Slug == "mens-clothing" || c.Slug == "womens-clothing" || c.Slug == "shoes-bags" || c.Slug == "mens-shoes" || c.Slug == "womens-shoes" || c.Slug == "womens-bags")
+                .Select(c => c.Id.ToString())
+                .ToListAsync();
+
+            var beautyCatIds = await db.Categories
+                .Where(c => c.Slug == "beauty-perfumes" || c.Slug == "perfumes-fragrances" || c.Slug == "skincare" || c.Slug == "makeup")
+                .Select(c => c.Id.ToString())
+                .ToListAsync();
+
             var seedPromotions = new List<Promotion>
             {
                 new Promotion
                 {
                     Id = Guid.NewGuid(),
+                    Name = "عرض باقة الإلكترونيات والهواتف (Tech Festival 20%)",
+                    Description = "خصم خاص 20% فوري يطبق تلقائياً على جميع الهواتف الذكية والحواسيب وملحقات الإلكترونيات.",
+                    Type = "percentage",
+                    RulesJson = "{\"discountPercentage\": 20}",
+                    ApplicableCategoryIds = System.Text.Json.JsonSerializer.Serialize(electronicsCatIds),
+                    Priority = 30,
+                    AllowCombine = true,
+                    IsActive = true,
+                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
+                    EndAt = DateTimeOffset.UtcNow.AddYears(5),
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                },
+                new Promotion
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "عرض اشتري 2 واحصل على 1 مجاناً (Buy 2 Get 1 Free)",
+                    Description = "اشتري قطعتين من الملابس والأزياء واحصل على القطعة الثالثة مجاناً 100%.",
+                    Type = "buy_x_get_y",
+                    RulesJson = "{\"buyQuantity\": 2, \"getQuantity\": 1, \"discountPercentage\": 100}",
+                    ApplicableCategoryIds = System.Text.Json.JsonSerializer.Serialize(fashionCatIds),
+                    Priority = 25,
+                    AllowCombine = false,
+                    IsActive = true,
+                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
+                    EndAt = DateTimeOffset.UtcNow.AddYears(5),
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                },
+                new Promotion
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "عرض وفر 50 شيكل فوري على العطور (Save 50 ILS)",
+                    Description = "خصم فوري بقيمة 50 ₪ يخصم تلقائياً عند شراء أفخم العطور ومستحضرات الجمال.",
+                    Type = "fixed_amount",
+                    RulesJson = "{\"discountAmount\": 50}",
+                    ApplicableCategoryIds = System.Text.Json.JsonSerializer.Serialize(beautyCatIds),
+                    Priority = 20,
+                    AllowCombine = true,
+                    IsActive = true,
+                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
+                    EndAt = DateTimeOffset.UtcNow.AddYears(5),
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                },
+                new Promotion
+                {
+                    Id = Guid.NewGuid(),
                     Name = "خصم الصيف الكبير 15% (Summer Mega Sale)",
-                    Description = "خصم فوري 15% على جميع المنتجات المؤهلة عند إضافتها للسلة.",
+                    Description = "خصم فوري 15% على المنتجات المؤهلة في المتجر.",
                     Type = "percentage",
                     RulesJson = "{\"discountPercentage\": 15}",
                     Priority = 10,
@@ -2853,56 +2916,11 @@ namespace Ecommerce.Infrastructure.Persistence
                 new Promotion
                 {
                     Id = Guid.NewGuid(),
-                    Name = "عرض وفر 50 شيكل فوري (Save 50 ILS)",
-                    Description = "خصم فوري بقيمة 50 ₪ يخصم تلقائياً عند الدفع.",
-                    Type = "fixed_amount",
-                    RulesJson = "{\"discountAmount\": 50}",
-                    Priority = 5,
-                    AllowCombine = true,
-                    IsActive = true,
-                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
-                    EndAt = DateTimeOffset.UtcNow.AddYears(5),
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                },
-                new Promotion
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "عرض اشتري 2 واحصل على 1 مجاناً (Buy 2 Get 1 Free)",
-                    Description = "اشتري قطعتين من المنتجات المشمولة بالعرض واحصل على القطعة الثالثة مجاناً 100%.",
-                    Type = "buy_x_get_y",
-                    RulesJson = "{\"buyQuantity\": 2, \"getQuantity\": 1, \"discountPercentage\": 100}",
-                    Priority = 15,
-                    AllowCombine = false,
-                    IsActive = true,
-                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
-                    EndAt = DateTimeOffset.UtcNow.AddYears(5),
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                },
-                new Promotion
-                {
-                    Id = Guid.NewGuid(),
                     Name = "خصومات السلة المتدرجة (Tiered Cart Discount)",
                     Description = "وفّر فوراً على مشترياتك حسب إجمالي السلة: وفّر 25 ₪ عند الشراء بـ 250 ₪ فأكثر، وفّر 60 ₪ عند الشراء بـ 500 ₪ فأكثر، ووفّر 150 ₪ عند الشراء بـ 1000 ₪ فأكثر.",
                     Type = "tiered_discount",
                     RulesJson = "{\"tiers\": [{\"minSpend\": 250, \"discount\": 25, \"discountType\": \"fixed_amount\"}, {\"minSpend\": 500, \"discount\": 60, \"discountType\": \"fixed_amount\"}, {\"minSpend\": 1000, \"discount\": 150, \"discountType\": \"fixed_amount\"}]}",
-                    Priority = 20,
-                    AllowCombine = true,
-                    IsActive = true,
-                    StartAt = DateTimeOffset.UtcNow.AddDays(-30),
-                    EndAt = DateTimeOffset.UtcNow.AddYears(5),
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
-                },
-                new Promotion
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "عرض باقة الإلكترونيات والهواتف (Tech Festival 20%)",
-                    Description = "خصم 20% خاص على جميع الهواتف الذكية، الحواسيب، والملحقات الإلكترونية.",
-                    Type = "percentage",
-                    RulesJson = "{\"discountPercentage\": 20}",
-                    Priority = 12,
+                    Priority = 1,
                     AllowCombine = true,
                     IsActive = true,
                     StartAt = DateTimeOffset.UtcNow.AddDays(-30),
@@ -2914,16 +2932,18 @@ namespace Ecommerce.Infrastructure.Persistence
 
             foreach (var promo in seedPromotions)
             {
-                var existing = await db.Promotions.FirstOrDefaultAsync(p => p.Name == promo.Name);
+                var existing = await db.Promotions.FirstOrDefaultAsync(p => p.Name == promo.Name || p.Type == promo.Type && p.Type == "tiered_discount");
                 if (existing == null)
                 {
                     await db.Promotions.AddAsync(promo);
                 }
                 else
                 {
+                    existing.Name = promo.Name;
                     existing.Description = promo.Description;
                     existing.Type = promo.Type;
                     existing.RulesJson = promo.RulesJson;
+                    existing.ApplicableCategoryIds = promo.ApplicableCategoryIds;
                     existing.Priority = promo.Priority;
                     existing.IsActive = promo.IsActive;
                     existing.StartAt = promo.StartAt;
