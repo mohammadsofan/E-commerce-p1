@@ -24,6 +24,7 @@ namespace Ecommerce.Application.Interfaces
         public bool HasActivePromotion { get; set; }
         public string? PromotionName { get; set; }
         public string? PromotionBadge { get; set; }
+        public string? PromotionDescription { get; set; }
         public Guid? PromotionId { get; set; }
     }
 

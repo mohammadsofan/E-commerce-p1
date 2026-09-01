@@ -102,6 +102,7 @@ namespace Ecommerce.Infrastructure.Services
                             HasActivePromotion = true,
                             PromotionName = promo.Name,
                             PromotionBadge = badge ?? (discountPercent > 0 ? $"خصم {discountPercent}%" : $"وفر {unitDiscount:G29} ₪"),
+                            PromotionDescription = promo.Description,
                             PromotionId = promo.Id
                         };
                         break; // Highest priority matching promotion takes effect
@@ -119,6 +120,7 @@ namespace Ecommerce.Infrastructure.Services
                             HasActivePromotion = true,
                             PromotionName = promo.Name,
                             PromotionBadge = badge,
+                            PromotionDescription = promo.Description,
                             PromotionId = promo.Id
                         };
                         break;
@@ -481,7 +483,28 @@ namespace Ecommerce.Infrastructure.Services
             }
             else if (type is "bundle" or "tiered_discount" or "free_gift")
             {
-                return (false, basePrice, 0, 0, 0, promo.Name);
+                if (type == "tiered_discount")
+                {
+                    // Build a short cart-level badge from the tiers so the frontend can display it meaningfully
+                    var tieredRules = ParseRules(promo.RulesJson);
+                    string cartBadge = "خصم على السلة ↗";
+                    if (tieredRules.TryGetValue("tiers", out var tiersEl) && tiersEl.ValueKind == JsonValueKind.Array)
+                    {
+                        decimal maxDiscount = 0;
+                        foreach (var tier in tiersEl.EnumerateArray())
+                        {
+                            if (tier.TryGetProperty("discount", out var discProp))
+                            {
+                                decimal d = discProp.GetDecimal();
+                                if (d > maxDiscount) maxDiscount = d;
+                            }
+                        }
+                        if (maxDiscount > 0)
+                            cartBadge = $"وفر حتى {maxDiscount:G29} ₪ على السلة";
+                    }
+                    return (false, basePrice, 0, 0, 0, cartBadge);
+                }
+                return (false, basePrice, 0, 0, 0, null);
             }
 
             return (false, basePrice, 0, 0, 0, null);

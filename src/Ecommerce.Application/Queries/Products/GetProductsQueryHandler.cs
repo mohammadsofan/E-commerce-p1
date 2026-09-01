@@ -116,6 +116,7 @@ namespace Ecommerce.Application.Queries.Products
                         item.DiscountPercentage = eval.DiscountPercentage;
                         item.PromotionName = eval.PromotionName;
                         item.PromotionBadge = eval.PromotionBadge;
+                        item.PromotionDescription = eval.PromotionDescription;
                     }
                 }
             }
