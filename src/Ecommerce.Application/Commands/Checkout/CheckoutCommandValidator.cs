@@ -9,20 +9,16 @@ namespace Ecommerce.Application.Commands.Checkout
         {
             var result = new ValidationResult();
 
-            if (instance.Items == null || instance.Items.Count == 0)
+            if (instance.Items != null)
             {
-                result.IsValid = false;
-                result.Errors.Add("Cart must contain at least one item.");
-                return Task.FromResult(result);
-            }
-
-            foreach (var it in instance.Items)
-            {
-                if (it.Quantity <= 0)
+                foreach (var it in instance.Items)
                 {
-                    result.IsValid = false;
-                    result.Errors.Add("Quantity must be greater than zero for all items.");
-                    break;
+                    if (it.Quantity <= 0)
+                    {
+                        result.IsValid = false;
+                        result.Errors.Add("Quantity must be greater than zero for all items.");
+                        break;
+                    }
                 }
             }
 

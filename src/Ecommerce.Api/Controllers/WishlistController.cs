@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.Wishlist;
@@ -7,6 +7,7 @@ using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.Wishlist;
+using Ecommerce.Api.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,6 +37,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Adds a product to the current user's wishlist.</summary>
         [HttpPost("items")]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> AddItem([FromBody] AddToWishlistRequest request)
         {
             var command = new AddToWishlistCommand
@@ -48,6 +50,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Removes a product from the current user's wishlist.</summary>
         [HttpDelete("items/{productId:guid}")]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> RemoveItem(Guid productId)
         {
             var command = new RemoveFromWishlistCommand { ProductId = productId };
@@ -57,6 +60,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Clears the current user's wishlist.</summary>
         [HttpDelete]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> Clear()
         {
             await _commandDispatcher.Send<ClearWishlistCommand, Unit>(new ClearWishlistCommand());
@@ -69,3 +73,4 @@ namespace Ecommerce.Api.Controllers
         public Guid ProductId { get; set; }
     }
 }
+

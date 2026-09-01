@@ -5,6 +5,7 @@ using Ecommerce.Application.Common.Commands;
 using Ecommerce.Application.Common.Queries;
 using Ecommerce.Application.DTOs;
 using Ecommerce.Application.Queries.Carts;
+using Ecommerce.Api.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,6 +35,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Adds a product (or variant) to the current user's cart.</summary>
         [HttpPost("items")]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> AddItem([FromBody] AddToCartRequest request)
         {
             var command = new AddToCartCommand
@@ -49,6 +51,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Updates the quantity of a cart line (quantity <= 0 removes it).</summary>
         [HttpPut("items/{itemId:guid}")]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> UpdateItem(Guid itemId, [FromBody] UpdateCartItemRequest request)
         {
             var command = new UpdateCartItemCommand { CartItemId = itemId, Quantity = request.Quantity };
@@ -58,6 +61,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Removes a single line from the cart.</summary>
         [HttpDelete("items/{itemId:guid}")]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> RemoveItem(Guid itemId)
         {
             var command = new RemoveFromCartCommand { CartItemId = itemId };
@@ -67,6 +71,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Removes all lines from the current user's cart.</summary>
         [HttpDelete]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> Clear()
         {
             var result = await _commandDispatcher.Send<ClearCartCommand, CartDto>(new ClearCartCommand());
@@ -75,6 +80,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Applies a coupon code to the current user's cart.</summary>
         [HttpPost("coupon")]
+        [ValidateCustomCsrf]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("CouponRateLimit")]
         public async Task<IActionResult> ApplyCoupon([FromBody] ApplyCouponToCartRequest request)
         {
@@ -85,6 +91,7 @@ namespace Ecommerce.Api.Controllers
 
         /// <summary>Removes the applied coupon code from the current user's cart.</summary>
         [HttpDelete("coupon")]
+        [ValidateCustomCsrf]
         public async Task<IActionResult> RemoveCoupon()
         {
             var result = await _commandDispatcher.Send<RemoveCouponFromCartCommand, CartDto>(new RemoveCouponFromCartCommand());

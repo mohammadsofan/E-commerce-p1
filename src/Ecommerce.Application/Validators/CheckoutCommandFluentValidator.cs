@@ -7,7 +7,10 @@ namespace Ecommerce.Application.Commands.Checkout
         public CheckoutCommandFluentValidator()
         {
             RuleFor(x => x.UserId).NotEmpty();
-            RuleFor(x => x.Items).NotEmpty().WithMessage("Cart must contain at least one item.");
+            // Items is intentionally NOT required to be non-empty at the API boundary.
+            // When Items is null or empty, CheckoutCommandHandler reads from the authenticated
+            // user's server-side cart, which is the secure source of truth.
+            // The handler will throw a DomainException if both the payload and cart are empty.
             RuleForEach(x => x.Items).ChildRules(items =>
             {
                 items.RuleFor(i => i.Quantity).GreaterThan(0);

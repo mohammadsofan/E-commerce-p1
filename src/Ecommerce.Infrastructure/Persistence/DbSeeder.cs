@@ -147,6 +147,57 @@ namespace Ecommerce.Infrastructure.Persistence
                 await db.SaveChangesAsync();
                 _logger.LogInformation("Seeded default shipping address for E2E user.");
             }
+
+            // ── Admin seed ────────────────────────────────────────────────────────────
+            var adminEmail = "admin@sofan.local";
+            var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+            if (existingAdmin == null)
+            {
+                var adminUser = new ApplicationUser
+                {
+                    Id = Guid.NewGuid(),
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    FirstName = "مدير",
+                    LastName = "النظام",
+                    DisplayName = "مدير النظام",
+                    EmailConfirmed = true,
+                    IsEmailVerified = true,
+                    IsActive = true,
+                    PhoneNumber = "0599000000",
+                    PhoneNumberConfirmed = true,
+                    IsPhoneVerified = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+
+                var adminResult = await userManager.CreateAsync(adminUser, "AdminPassword123!");
+                if (adminResult.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(adminUser, "Admin");
+                    _logger.LogInformation("Seeded Admin user: {Email}", adminEmail);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to seed Admin user: {Errors}", string.Join(", ", adminResult.Errors.Select(e => e.Description)));
+                }
+            }
+            else
+            {
+                // Ensure the existing admin record is healthy (active, verified, in Admin role)
+                var needsUpdate = false;
+                if (!existingAdmin.EmailConfirmed || !existingAdmin.IsEmailVerified || !existingAdmin.IsActive)
+                {
+                    existingAdmin.EmailConfirmed = true;
+                    existingAdmin.IsEmailVerified = true;
+                    existingAdmin.IsActive = true;
+                    needsUpdate = true;
+                }
+                if (needsUpdate) await userManager.UpdateAsync(existingAdmin);
+
+                if (!await userManager.IsInRoleAsync(existingAdmin, "Admin"))
+                    await userManager.AddToRoleAsync(existingAdmin, "Admin");
+            }
         }
 
         private async Task SeedCurrenciesAsync(ApplicationDbContext db)

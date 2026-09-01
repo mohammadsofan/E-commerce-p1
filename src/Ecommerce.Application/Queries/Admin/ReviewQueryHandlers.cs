@@ -125,7 +125,7 @@ namespace Ecommerce.Application.Queries.Admin
                 {
                     hasCompletedOrder = await _db.OrderItems
                         .AsNoTracking()
-                        .AnyAsync(oi => completedOrderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || allTargetIds.Contains(oi.ProductVariantId)), cancellationToken);
+                        .AnyAsync(oi => completedOrderIds.Contains(oi.OrderId) && (allTargetIds.Contains(oi.ProductId) || (oi.ProductVariantId.HasValue && allTargetIds.Contains(oi.ProductVariantId.Value))), cancellationToken);
                 }
             }
 

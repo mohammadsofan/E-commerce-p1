@@ -222,9 +222,7 @@ namespace Ecommerce.Application.Commands.Checkout
                     var variantName = variant?.Name ?? string.Empty;
                     var sku = variant?.Sku ?? product.Sku ?? string.Empty;
                     var imageUrl = product.Images?.FirstOrDefault()?.Url ?? string.Empty;
-                    var variantId = it.ProductVariantId ?? Guid.Empty;
-
-                    order.AddItem(it.ProductId, variantId, productName, unitPrice, it.Quantity, lineDiscount, variantName, sku, imageUrl, it.SelectedOptions);
+                    order.AddItem(it.ProductId, it.ProductVariantId, productName, unitPrice, it.Quantity, lineDiscount, variantName, sku, imageUrl, it.SelectedOptions);
 
                     // Inventory is only *planned* here. The actual read-and-reserve runs in
                     // PHASE 2 under a short ReadCommitted transaction so no inventory lock is

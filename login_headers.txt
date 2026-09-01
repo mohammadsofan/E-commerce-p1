@@ -1,0 +1,13 @@
+HTTP/1.1 400 Bad Request
+Content-Type: application/problem+json; charset=utf-8
+Date: Tue, 01 Sep 2026 12:01:45 GMT
+Server: Kestrel
+Transfer-Encoding: chunked
+X-Correlation-Id: 72f81cf088314c8fb5fc778a8e81cd36
+X-Frame-Options: DENY
+X-Content-Type-Options: nosniff
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+X-XSS-Protection: 1; mode=block
+Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'
+

@@ -59,7 +59,12 @@ namespace Ecommerce.Api.Controllers
                 UpdatedAt = now
             };
             var res = await _userManager.CreateAsync(user, req.Password);
-            if (!res.Succeeded) return BadRequest(res.Errors);
+            if (!res.Succeeded)
+            {
+                var problemDetails = new Microsoft.AspNetCore.Mvc.ValidationProblemDetails();
+                problemDetails.Errors["identity"] = res.Errors.Select(e => e.Description).ToArray();
+                return BadRequest(problemDetails);
+            }
 
             var emailToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             await _userManager.AddToRoleAsync(user,"Customer");
@@ -111,7 +116,12 @@ namespace Ecommerce.Api.Controllers
             if (user == null) return BadRequest("Invalid request.");
 
             var result = await _userManager.ConfirmEmailAsync(user, req.Token);
-            if (!result.Succeeded) return BadRequest(result.Errors);
+            if (!result.Succeeded)
+            {
+                var problemDetails = new Microsoft.AspNetCore.Mvc.ValidationProblemDetails();
+                problemDetails.Errors["identity"] = result.Errors.Select(e => e.Description).ToArray();
+                return BadRequest(problemDetails);
+            }
 
             user.IsEmailVerified = true;
             await _userManager.UpdateAsync(user);
@@ -129,7 +139,12 @@ namespace Ecommerce.Api.Controllers
             if (user == null) return BadRequest("Invalid request.");
 
             var result = await _userManager.ConfirmEmailAsync(user, token);
-            if (!result.Succeeded) return BadRequest(result.Errors);
+            if (!result.Succeeded)
+            {
+                var problemDetails = new Microsoft.AspNetCore.Mvc.ValidationProblemDetails();
+                problemDetails.Errors["identity"] = result.Errors.Select(e => e.Description).ToArray();
+                return BadRequest(problemDetails);
+            }
 
             user.IsEmailVerified = true;
             await _userManager.UpdateAsync(user);
@@ -216,7 +231,12 @@ namespace Ecommerce.Api.Controllers
             if (user == null) return BadRequest("Invalid request.");
 
             var result = await _userManager.ResetPasswordAsync(user, req.Token, req.NewPassword);
-            if (!result.Succeeded) return BadRequest(result.Errors);
+            if (!result.Succeeded)
+            {
+                var problemDetails = new Microsoft.AspNetCore.Mvc.ValidationProblemDetails();
+                problemDetails.Errors["identity"] = result.Errors.Select(e => e.Description).ToArray();
+                return BadRequest(problemDetails);
+            }
 
             // Revoke all refresh tokens for security
             await _refreshTokenService.RevokeAllAsync(user.Id);

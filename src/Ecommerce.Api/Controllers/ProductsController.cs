@@ -35,6 +35,11 @@ namespace Ecommerce.Api.Controllers
             [FromQuery] string? sortBy = null,
             [FromQuery] string? tag = null)
         {
+            // Clamp pagination to safe limits: page ≥ 1, pageSize in [1, 100].
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 1;
+            if (pageSize > 100) pageSize = 100;
+
             var query = new GetProductsQuery
             {
                 Page = page,

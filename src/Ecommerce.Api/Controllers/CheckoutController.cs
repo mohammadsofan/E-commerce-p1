@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Ecommerce.Application.Commands.Checkout;
 using Ecommerce.Application.Common.Commands;
+using Ecommerce.Api.Filters;
 
 namespace Ecommerce.Api.Controllers
 {
@@ -20,6 +21,7 @@ namespace Ecommerce.Api.Controllers
         }
 
         [HttpPost]
+        [ValidateCustomCsrf]
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("CheckoutRateLimit")]
         public async Task<IActionResult> Post([FromBody] CheckoutCommand command)
         {

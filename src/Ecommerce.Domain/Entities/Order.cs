@@ -42,7 +42,7 @@ namespace Ecommerce.Domain.Entities
 
         public ICollection<OrderItem> Items { get; private set; } = new List<OrderItem>();
 
-        public void AddItem(Guid productId, Guid productVariantId, string productName, decimal unitPrice, int quantity, decimal discount = 0m, string variantName = "", string sku = "", string productImageUrl = "", string? selectedOptions = null)
+        public void AddItem(Guid productId, Guid? productVariantId, string productName, decimal unitPrice, int quantity, decimal discount = 0m, string variantName = "", string sku = "", string productImageUrl = "", string? selectedOptions = null)
         {
             if (quantity <= 0) throw new DomainException("Quantity must be positive");
             if (unitPrice < 0) throw new DomainException("Unit price cannot be negative");

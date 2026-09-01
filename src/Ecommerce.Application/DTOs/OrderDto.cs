@@ -40,7 +40,7 @@ namespace Ecommerce.Application.DTOs
     {
         public Guid Id { get; set; }
         public Guid ProductId { get; set; }
-        public Guid ProductVariantId { get; set; }
+        public Guid? ProductVariantId { get; set; }
         public string ProductName { get; set; } = string.Empty;
         public string VariantName { get; set; } = string.Empty;
         public string Sku { get; set; } = string.Empty;

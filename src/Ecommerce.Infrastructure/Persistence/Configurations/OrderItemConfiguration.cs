@@ -22,6 +22,8 @@ namespace Ecommerce.Infrastructure.Persistence.Configurations
             builder.Property(x => x.DiscountAmount).HasColumnType("decimal(18,2)");
             builder.Property(x => x.TotalAmount).HasColumnType("decimal(18,2)");
 
+            builder.Property(x => x.ProductVariantId).IsRequired(false);
+
             builder.HasIndex(x => x.OrderId);
         }
     }
